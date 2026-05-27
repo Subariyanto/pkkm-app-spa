@@ -114,6 +114,57 @@ function buktiBadgeHTML(b, index, isFinal) {
   return `<span class="d-inline-flex align-items-center gap-1 me-1" data-bukti-wrapper="${index}" title="${safeName} (${sizeKB} KB)">${thumb}${removeBtn}</span>`;
 }
 
+function openPenggalianModal(aspek_id) {
+  const info = window.getAspekById?.(aspek_id);
+  if (!info) { toast('Aspek tidak ditemukan.', 'error'); return; }
+  const k = info.komponen, a = info.aspek, p = info.penggalian;
+  const renderList = (label, icon, items) => {
+    if (!items || !items.length) return '';
+    return `
+      <div class="mb-3">
+        <div class="fw-semibold mb-1"><i class="bi ${icon} text-primary"></i> ${label}</div>
+        <ul class="mb-0 ps-3 text-tiny">
+          ${items.map(t => `<li>${escapeHTML(t)}</li>`).join('')}
+        </ul>
+      </div>`;
+  };
+  const body = p
+    ? `${renderList('Dokumen yang Dicek', 'bi-folder2-open', p.dokumen)}
+       ${renderList('Observasi Lapangan', 'bi-eye', p.observasi)}
+       ${renderList('Wawancara / Narasumber', 'bi-chat-dots', p.wawancara)}`
+    : `<div class="text-muted text-tiny"><i class="bi bi-info-circle"></i> Belum ada panduan penggalian data spesifik untuk aspek ini. Silakan kembangkan teknik supervisi sesuai konteks (dokumen, observasi, wawancara).</div>`;
+  const html = `
+    <div class="modal fade" id="penggalianModal" tabindex="-1">
+      <div class="modal-dialog modal-lg modal-dialog-centered modal-dialog-scrollable">
+        <div class="modal-content">
+          <div class="modal-header bg-light">
+            <div>
+              <div class="text-tiny text-muted">${k.no}. ${escapeHTML(k.label)}</div>
+              <h5 class="modal-title mb-0"><i class="bi bi-search text-primary"></i> ${k.no}.${a.no} ${escapeHTML(a.judul)}</h5>
+            </div>
+            <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+          </div>
+          <div class="modal-body">
+            <div class="alert alert-info py-2 text-tiny mb-3">
+              <strong>Indikator:</strong> ${escapeHTML(a.deskripsi||'-')}
+            </div>
+            <h6 class="text-muted mb-3"><i class="bi bi-clipboard-check"></i> Catatan Penggalian Data</h6>
+            ${body}
+          </div>
+          <div class="modal-footer">
+            <span class="text-tiny text-muted me-auto"><i class="bi bi-lightbulb"></i> Skor: 1=Kurang, 2=Cukup, 3=Baik, 4=Amat Baik</span>
+            <button type="button" class="btn btn-light" data-bs-dismiss="modal">Tutup</button>
+          </div>
+        </div>
+      </div>
+    </div>`;
+  let host = document.getElementById('penggalianModalHost');
+  if (!host) { host = document.createElement('div'); host.id = 'penggalianModalHost'; document.body.appendChild(host); }
+  host.innerHTML = html;
+  const m = new bootstrap.Modal(document.getElementById('penggalianModal'));
+  m.show();
+}
+
 function openBuktiPreview(bukti) {
   const isImg = (bukti.mime || '').startsWith('image/');
   const html = `
@@ -810,7 +861,10 @@ route('#/penilaian/:kamadId/:periodeId', (root, params) => {
                 return `
                   <div class="aspek-row" data-aspek-id="${id}">
                     <div class="flex-grow-1">
-                      <div class="fw-semibold">${k.no}.${a.no} ${escapeHTML(a.judul)}</div>
+                      <div class="fw-semibold d-flex align-items-center gap-2">
+                        <span>${k.no}.${a.no} ${escapeHTML(a.judul)}</span>
+                        <button type="button" class="btn btn-sm btn-link p-0 text-primary" data-action="open-penggalian" data-aspek-id="${id}" title="Catatan penggalian data"><i class="bi bi-info-circle"></i></button>
+                      </div>
                       <div class="text-tiny text-muted mb-1">${escapeHTML(a.deskripsi||'')}</div>
                       <textarea class="form-control form-control-sm mt-1" rows="1" placeholder="Catatan / bukti pendukung (opsional)" data-field="catatan" ${isFinal?'disabled':''}>${escapeHTML(cur.catatan||'')}</textarea>
                       ${suggestionHtml}
@@ -989,6 +1043,12 @@ route('#/penilaian/:kamadId/:periodeId', (root, params) => {
     });
 
     root.addEventListener('click', (ev) => {
+      const pengBtn = ev.target.closest('[data-action="open-penggalian"]');
+      if (pengBtn) {
+        ev.preventDefault();
+        openPenggalianModal(pengBtn.dataset.aspekId);
+        return;
+      }
       const remBtn = ev.target.closest('[data-action="remove-bukti"]');
       if (remBtn) {
         const wrapper = remBtn.closest('.aspek-row');
@@ -1630,7 +1690,10 @@ route('#/instrumen', (root) => {
               ${k.aspek.map(a => `
                 <tr>
                   <td class="text-center">${k.no}.${a.no}</td>
-                  <td><strong>${escapeHTML(a.judul)}</strong></td>
+                  <td>
+                    <strong>${escapeHTML(a.judul)}</strong>
+                    <button type="button" class="btn btn-sm btn-link p-0 ms-1 text-primary" data-action="open-penggalian" data-aspek-id="${k.code}_${a.no}" title="Catatan penggalian data"><i class="bi bi-info-circle"></i></button>
+                  </td>
                   <td class="text-tiny">${escapeHTML(a.deskripsi||'')}</td>
                 </tr>`).join('')}
             </tbody>
@@ -1642,6 +1705,10 @@ route('#/instrumen', (root) => {
       Skor 1=Kurang, 2=Cukup, 3=Baik, 4=Amat Baik. Bobot komponen dapat diubah di <a href="#/pengaturan">Pengaturan</a>.
     </div>
   `;
+  root.addEventListener('click', (ev) => {
+    const b = ev.target.closest('[data-action="open-penggalian"]');
+    if (b) { ev.preventDefault(); openPenggalianModal(b.dataset.aspekId); }
+  });
 });
 
 // --- Backup / Restore ------------------------------------------
