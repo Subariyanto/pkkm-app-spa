@@ -114,25 +114,21 @@ function buktiBadgeHTML(b, index, isFinal) {
   return `<span class="d-inline-flex align-items-center gap-1 me-1" data-bukti-wrapper="${index}" title="${safeName} (${sizeKB} KB)">${thumb}${removeBtn}</span>`;
 }
 
-function openPenggalianModal(aspek_id) {
-  const info = window.getAspekById?.(aspek_id);
-  if (!info) { toast('Aspek tidak ditemukan.', 'error'); return; }
-  const k = info.komponen, a = info.aspek, p = info.penggalian;
-  const renderList = (label, icon, items) => {
-    if (!items || !items.length) return '';
-    return `
-      <div class="mb-3">
-        <div class="fw-semibold mb-1"><i class="bi ${icon} text-primary"></i> ${label}</div>
-        <ul class="mb-0 ps-3 text-tiny">
-          ${items.map(t => `<li>${escapeHTML(t)}</li>`).join('')}
-        </ul>
-      </div>`;
-  };
-  const body = p
-    ? `${renderList('Dokumen yang Dicek', 'bi-folder2-open', p.dokumen)}
-       ${renderList('Observasi Lapangan', 'bi-eye', p.observasi)}
-       ${renderList('Wawancara / Narasumber', 'bi-chat-dots', p.wawancara)}`
-    : `<div class="text-muted text-tiny"><i class="bi bi-info-circle"></i> Belum ada panduan penggalian data spesifik untuk aspek ini. Silakan kembangkan teknik supervisi sesuai konteks (dokumen, observasi, wawancara).</div>`;
+function openPenggalianModal(indikator_id) {
+  const info = window.getIndikatorById?.(indikator_id);
+  if (!info) {
+    // Fallback for legacy aspek_id
+    const legacy = window.getAspekById?.(indikator_id);
+    if (legacy) return openPenggalianModalLegacy(legacy);
+    toast('Indikator tidak ditemukan.', 'error');
+    return;
+  }
+  const k = info.komponen, a = info.aspek, ind = info.indikator;
+  const buktiText = (ind.bukti||'').trim();
+  const dataText = (ind.data||'').trim();
+  const buktiHtml = buktiText
+    ? `<pre class="bukti-fisik mb-0 p-2 bg-light rounded" style="white-space:pre-wrap;font-family:inherit;font-size:0.9rem">${escapeHTML(buktiText)}</pre>`
+    : `<div class="text-muted text-tiny"><i class="bi bi-info-circle"></i> Belum ada panduan bukti fisik untuk indikator ini.</div>`;
   const html = `
     <div class="modal fade" id="penggalianModal" tabindex="-1">
       <div class="modal-dialog modal-lg modal-dialog-centered modal-dialog-scrollable">
@@ -140,16 +136,23 @@ function openPenggalianModal(aspek_id) {
           <div class="modal-header bg-light">
             <div>
               <div class="text-tiny text-muted">${k.no}. ${escapeHTML(k.label)}</div>
-              <h5 class="modal-title mb-0"><i class="bi bi-search text-primary"></i> ${k.no}.${a.no} ${escapeHTML(a.judul)}</h5>
+              <div class="text-tiny text-muted">${escapeHTML(a.kode)} · ${escapeHTML(a.unsur||'')}</div>
+              <h5 class="modal-title mb-0 mt-1"><i class="bi bi-search text-primary"></i> Indikator ${ind.no}</h5>
             </div>
             <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
           </div>
           <div class="modal-body">
-            <div class="alert alert-info py-2 text-tiny mb-3">
-              <strong>Indikator:</strong> ${escapeHTML(a.deskripsi||'-')}
+            <div class="alert alert-primary py-2 mb-3">
+              <strong>Indikator Kinerja:</strong><br>${escapeHTML(ind.indikator||'-')}
             </div>
-            <h6 class="text-muted mb-3"><i class="bi bi-clipboard-check"></i> Catatan Penggalian Data</h6>
-            ${body}
+            <div class="mb-3">
+              <div class="fw-semibold mb-1"><i class="bi bi-clipboard-data text-success"></i> Data Yang Diharapkan</div>
+              <div class="text-tiny">${escapeHTML(dataText) || '<span class="text-muted">-</span>'}</div>
+            </div>
+            <div class="mb-2">
+              <div class="fw-semibold mb-1"><i class="bi bi-folder2-open text-warning"></i> Bukti Fisik / Cara Penggalian Data</div>
+              ${buktiHtml}
+            </div>
           </div>
           <div class="modal-footer">
             <span class="text-tiny text-muted me-auto"><i class="bi bi-lightbulb"></i> Skor: 1=Kurang, 2=Cukup, 3=Baik, 4=Amat Baik</span>
@@ -163,6 +166,21 @@ function openPenggalianModal(aspek_id) {
   host.innerHTML = html;
   const m = new bootstrap.Modal(document.getElementById('penggalianModal'));
   m.show();
+}
+
+// Legacy fallback (v1 aspek_id) - kept for backward compat
+function openPenggalianModalLegacy(info) {
+  const k = info.komponen, a = info.aspek, p = info.penggalian;
+  const renderList = (label, icon, items) => {
+    if (!items || !items.length) return '';
+    return `<div class="mb-3"><div class="fw-semibold mb-1"><i class="bi ${icon} text-primary"></i> ${label}</div><ul class="mb-0 ps-3 text-tiny">${items.map(t => `<li>${escapeHTML(t)}</li>`).join('')}</ul></div>`;
+  };
+  const body = p ? `${renderList('Dokumen', 'bi-folder2-open', p.dokumen)}${renderList('Observasi', 'bi-eye', p.observasi)}${renderList('Wawancara', 'bi-chat-dots', p.wawancara)}` : '<div class="text-muted">Tidak ada panduan.</div>';
+  const html = `<div class="modal fade" id="penggalianModal" tabindex="-1"><div class="modal-dialog modal-lg modal-dialog-centered modal-dialog-scrollable"><div class="modal-content"><div class="modal-header"><h5 class="modal-title">${escapeHTML(a.judul||'')}</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div><div class="modal-body">${body}</div></div></div></div>`;
+  let host = document.getElementById('penggalianModalHost');
+  if (!host) { host = document.createElement('div'); host.id = 'penggalianModalHost'; document.body.appendChild(host); }
+  host.innerHTML = html;
+  new bootstrap.Modal(document.getElementById('penggalianModal')).show();
 }
 
 function openBuktiPreview(bukti) {
@@ -822,8 +840,9 @@ route('#/penilaian/:kamadId/:periodeId', (root, params) => {
   const isFinal = pen.status === 'final';
 
   function renderKomponenAccordion() {
+    const skorRows = Skor.forPenilaian(pen.id);
     const skorMap = {};
-    for (const s of Skor.forPenilaian(pen.id)) skorMap[s.aspek_id] = s;
+    for (const s of skorRows) if (s.indikator_id) skorMap[s.indikator_id] = s;
 
     return window.PKKM_KOMPONEN.map((k, idx) => {
       const h = hitungNilaiKomponen(pen.id, k.code);
@@ -833,56 +852,72 @@ route('#/penilaian/:kamadId/:periodeId', (root, params) => {
             <button class="accordion-button ${idx===0?'':'collapsed'}" type="button" data-bs-toggle="collapse" data-bs-target="#k_${k.code}">
               <strong class="me-2">${k.no}.</strong> ${escapeHTML(k.label)}
               <span class="ms-auto me-3 text-tiny">
-                <span class="badge bg-light text-dark">${h.terisi}/${h.totalAspek} aspek</span>
+                <span class="badge bg-light text-dark">${h.terisi}/${h.totalIndikator} ind</span>
                 <span class="badge bg-primary">Nilai: ${fmtNilai(h.nilai)}</span>
               </span>
             </button>
           </h2>
           <div id="k_${k.code}" class="accordion-collapse collapse ${idx===0?'show':''}">
             <div class="accordion-body p-0">
-              <div class="px-3 pt-3 pb-2 text-tiny text-muted">${escapeHTML(k.deskripsi||'')}</div>
-              ${k.aspek.map(a => {
-                const id = `${k.code}_${a.no}`;
-                const cur = skorMap[id] || {};
-                const skor = cur.skor;
-                const buktiList = Array.isArray(cur.bukti) ? cur.bukti : [];
-                // Suggestion PKG khusus aspek HK_2 (Capaian Mutu Pembelajaran)
-                let suggestionHtml = '';
-                if (id === 'HK_2') {
-                  const ringkas = window.PKKMTools?.getRingkasanPkg?.();
-                  const rec = ringkas?.rows?.find(rr => (rr.madrasah||'').toLowerCase().trim() === (kamad.nama_madrasah||'').toLowerCase().trim());
-                  if (rec && rec.rata_pkg != null) {
-                    const sug = window.PKKMTools.suggestSkorFromPkg(rec.rata_pkg);
-                    suggestionHtml = `<div class="text-tiny mt-1"><i class="bi bi-magic text-primary"></i> Rata PKG madrasah ini: <strong>${fmtNilai(rec.rata_pkg)}</strong> → saran skor <strong>${sug}</strong>. <a href="#" data-action="apply-pkg-suggest" data-aspek-id="${id}" data-skor="${sug}">Terapkan</a></div>`;
-                  } else if (ringkas) {
-                    suggestionHtml = `<div class="text-tiny text-muted mt-1"><i class="bi bi-info-circle"></i> Madrasah "${escapeHTML(kamad.nama_madrasah||'-')}" belum ditemukan di ringkasan PKG.</div>`;
-                  }
-                }
+              ${k.aspek.map((a, ai) => {
+                const ha = hitungNilaiAspek(pen.id, k.code, a.kode);
                 return `
-                  <div class="aspek-row" data-aspek-id="${id}">
-                    <div class="flex-grow-1">
-                      <div class="fw-semibold d-flex align-items-center gap-2">
-                        <span>${k.no}.${a.no} ${escapeHTML(a.judul)}</span>
-                        <button type="button" class="btn btn-sm btn-link p-0 text-primary" data-action="open-penggalian" data-aspek-id="${id}" title="Catatan penggalian data"><i class="bi bi-info-circle"></i></button>
-                      </div>
-                      <div class="text-tiny text-muted mb-1">${escapeHTML(a.deskripsi||'')}</div>
-                      <textarea class="form-control form-control-sm mt-1" rows="1" placeholder="Catatan / bukti pendukung (opsional)" data-field="catatan" ${isFinal?'disabled':''}>${escapeHTML(cur.catatan||'')}</textarea>
-                      ${suggestionHtml}
-                      <div class="d-flex flex-wrap gap-2 align-items-center mt-2 bukti-host" data-bukti-host="${id}">
-                        ${buktiList.map((b, bi) => buktiBadgeHTML(b, bi, isFinal)).join('')}
-                        ${isFinal ? '' : `
-                          <label class="btn btn-sm btn-outline-secondary mb-0" title="Upload bukti dukung">
-                            <i class="bi bi-paperclip"></i> Bukti
-                            <input type="file" class="d-none" data-action="upload-bukti" data-aspek-id="${id}" accept="image/*,application/pdf" multiple>
-                          </label>`}
+                  <div class="sub-aspek-block border-bottom">
+                    <div class="sub-aspek-header bg-light px-3 py-2">
+                      <div class="d-flex justify-content-between align-items-center">
+                        <div class="flex-grow-1">
+                          <strong>${escapeHTML(a.kode)}</strong> &middot;
+                          <span>${escapeHTML(a.unsur||'')}</span>
+                        </div>
+                        <span class="text-tiny">
+                          <span class="badge bg-light text-dark border">${ha.terisi}/${ha.total} ind</span>
+                          <span class="badge bg-secondary">Nilai: ${fmtNilai(ha.nilai)}</span>
+                        </span>
                       </div>
                     </div>
-                    <div class="skor-pill" role="group" aria-label="Skor">
-                      ${[1,2,3,4].map(v => `
-                        <input type="radio" name="skor_${id}" id="skor_${id}_${v}" value="${v}" ${skor===v?'checked':''} ${isFinal?'disabled':''}>
-                        <label for="skor_${id}_${v}" class="lbl-${v}" title="${['','Kurang','Cukup','Baik','Amat Baik'][v]}">${v}</label>
-                      `).join('')}
-                    </div>
+                    ${a.indikator.map(ind => {
+                      const id = `${k.code}_${a.kode}_${ind.no}`;
+                      const cur = skorMap[id] || {};
+                      const skor = cur.skor;
+                      const buktiList = Array.isArray(cur.bukti) ? cur.bukti : [];
+                      // PKG suggestion (only on aspek 5.4 ind 1 = HK Capaian Mutu)
+                      let suggestionHtml = '';
+                      if (k.code === 'HK' && a.kode === '5.4' && ind.no === 1) {
+                        const ringkas = window.PKKMTools?.getRingkasanPkg?.();
+                        const rec = ringkas?.rows?.find(rr => (rr.madrasah||'').toLowerCase().trim() === (kamad.nama_madrasah||'').toLowerCase().trim());
+                        if (rec && rec.rata_pkg != null) {
+                          const sug = window.PKKMTools.suggestSkorFromPkg(rec.rata_pkg);
+                          suggestionHtml = `<div class="text-tiny mt-1"><i class="bi bi-magic text-primary"></i> Rata PKG: <strong>${fmtNilai(rec.rata_pkg)}</strong> → saran <strong>${sug}</strong>. <a href="#" data-action="apply-pkg-suggest" data-indikator-id="${id}" data-skor="${sug}">Terapkan</a></div>`;
+                        }
+                      }
+                      return `
+                        <div class="aspek-row" data-indikator-id="${id}">
+                          <div class="flex-grow-1">
+                            <div class="fw-semibold d-flex align-items-start gap-2">
+                              <span class="text-muted text-tiny pt-1" style="min-width:24px">${ind.no}.</span>
+                              <span class="flex-grow-1">${escapeHTML(ind.indikator||'')}</span>
+                              <button type="button" class="btn btn-sm btn-link p-0 text-primary" data-action="open-penggalian" data-indikator-id="${id}" title="Catatan penggalian data"><i class="bi bi-info-circle"></i></button>
+                            </div>
+                            <div class="text-tiny text-muted ms-3 mt-1"><i class="bi bi-clipboard-data"></i> Data yang diharapkan: ${escapeHTML(ind.data||'-')}</div>
+                            <textarea class="form-control form-control-sm mt-1" rows="1" placeholder="Catatan penilaian (opsional)" data-field="catatan" ${isFinal?'disabled':''}>${escapeHTML(cur.catatan||'')}</textarea>
+                            ${suggestionHtml}
+                            <div class="d-flex flex-wrap gap-2 align-items-center mt-2 bukti-host" data-bukti-host="${id}">
+                              ${buktiList.map((b, bi) => buktiBadgeHTML(b, bi, isFinal)).join('')}
+                              ${isFinal ? '' : `
+                                <label class="btn btn-sm btn-outline-secondary mb-0" title="Upload bukti dukung">
+                                  <i class="bi bi-paperclip"></i> Bukti
+                                  <input type="file" class="d-none" data-action="upload-bukti" data-indikator-id="${id}" accept="image/*,application/pdf" multiple>
+                                </label>`}
+                            </div>
+                          </div>
+                          <div class="skor-pill" role="group" aria-label="Skor">
+                            ${[1,2,3,4].map(v => `
+                              <input type="radio" name="skor_${id}" id="skor_${id}_${v}" value="${v}" ${skor===v?'checked':''} ${isFinal?'disabled':''}>
+                              <label for="skor_${id}_${v}" class="lbl-${v}" title="${['','Kurang','Cukup','Baik','Amat Baik'][v]}">${v}</label>
+                            `).join('')}
+                          </div>
+                        </div>`;
+                    }).join('')}
                   </div>`;
               }).join('')}
             </div>
@@ -971,22 +1006,16 @@ route('#/penilaian/:kamadId/:periodeId', (root, params) => {
 
     // Skor pill change
     $$('.aspek-row').forEach(row => {
-      const aspek_id = row.dataset.aspekId;
+      const indikator_id = row.dataset.indikatorId;
+      if (!indikator_id) return;
       row.querySelectorAll('input[type=radio]').forEach(r => {
         r.addEventListener('change', () => {
           const v = Number(r.value);
-          const cur = Skor.get(pen.id, aspek_id) || {};
-          Skor.set(pen.id, aspek_id, { skor: v, catatan: cur.catatan || row.querySelector('[data-field="catatan"]').value, bukti: cur.bukti || [] });
+          const cur = Skor.get(pen.id, indikator_id) || {};
+          Skor.set(pen.id, indikator_id, { skor: v, catatan: cur.catatan || row.querySelector('[data-field="catatan"]').value, bukti: cur.bukti || [] });
           $('#ringkasanHost').innerHTML = renderRingkasan();
-          // update accordion header live
-          const k = aspek_id.split('_')[0];
-          const h = hitungNilaiKomponen(pen.id, k);
-          const headerBtn = document.querySelector(`#komponenAcc [data-bs-target="#k_${k}"]`);
-          if (headerBtn) {
-            const badges = headerBtn.querySelectorAll('.badge');
-            if (badges[0]) badges[0].textContent = `${h.terisi}/${h.totalAspek} aspek`;
-            if (badges[1]) badges[1].textContent = `Nilai: ${fmtNilai(h.nilai)}`;
-          }
+          // refresh badges di header komponen + sub-aspek
+          updateAccordionBadges(indikator_id);
         });
       });
       const ta = row.querySelector('[data-field="catatan"]');
@@ -995,24 +1024,48 @@ route('#/penilaian/:kamadId/:periodeId', (root, params) => {
         ta.addEventListener('input', () => {
           clearTimeout(t);
           t = setTimeout(() => {
-            const cur = Skor.get(pen.id, aspek_id) || {};
-            Skor.set(pen.id, aspek_id, { skor: cur.skor ?? null, catatan: ta.value, bukti: cur.bukti || [] });
+            const cur = Skor.get(pen.id, indikator_id) || {};
+            Skor.set(pen.id, indikator_id, { skor: cur.skor ?? null, catatan: ta.value, bukti: cur.bukti || [] });
           }, 350);
         });
       }
     });
 
+    function updateAccordionBadges(indikator_id) {
+      // indikator_id format: PM_1.1_1 → komponenCode = first underscore split
+      const code = indikator_id.split('_')[0];
+      const aspekKode = indikator_id.split('_')[1];
+      const h = hitungNilaiKomponen(pen.id, code);
+      const headerBtn = document.querySelector(`#komponenAcc [data-bs-target="#k_${code}"]`);
+      if (headerBtn) {
+        const badges = headerBtn.querySelectorAll('.badge');
+        if (badges[0]) badges[0].textContent = `${h.terisi}/${h.totalIndikator} ind`;
+        if (badges[1]) badges[1].textContent = `Nilai: ${fmtNilai(h.nilai)}`;
+      }
+      // sub-aspek badges
+      const ha = hitungNilaiAspek(pen.id, code, aspekKode);
+      const subBlocks = document.querySelectorAll('.sub-aspek-block');
+      subBlocks.forEach(sb => {
+        const head = sb.querySelector('.sub-aspek-header strong');
+        if (head && head.textContent.trim() === aspekKode) {
+          const subBadges = sb.querySelectorAll('.sub-aspek-header .badge');
+          if (subBadges[0]) subBadges[0].textContent = `${ha.terisi}/${ha.total} ind`;
+          if (subBadges[1]) subBadges[1].textContent = `Nilai: ${fmtNilai(ha.nilai)}`;
+        }
+      });
+    }
+
     // Bukti dukung handlers
-    function rerenderBuktiHost(aspek_id) {
-      const host = root.querySelector(`[data-bukti-host="${aspek_id}"]`);
+    function rerenderBuktiHost(indikator_id) {
+      const host = root.querySelector(`[data-bukti-host="${indikator_id}"]`);
       if (!host) return;
-      const cur = Skor.get(pen.id, aspek_id) || {};
+      const cur = Skor.get(pen.id, indikator_id) || {};
       const list = Array.isArray(cur.bukti) ? cur.bukti : [];
       const badges = list.map((b, bi) => buktiBadgeHTML(b, bi, isFinal)).join('');
       const addBtn = isFinal ? '' : `
         <label class="btn btn-sm btn-outline-secondary mb-0" title="Upload bukti dukung">
           <i class="bi bi-paperclip"></i> Bukti
-          <input type="file" class="d-none" data-action="upload-bukti" data-aspek-id="${aspek_id}" accept="image/*,application/pdf" multiple>
+          <input type="file" class="d-none" data-action="upload-bukti" data-indikator-id="${indikator_id}" accept="image/*,application/pdf" multiple>
         </label>`;
       host.innerHTML = badges + addBtn;
     }
@@ -1020,10 +1073,10 @@ route('#/penilaian/:kamadId/:periodeId', (root, params) => {
     root.addEventListener('change', async (ev) => {
       const inp = ev.target.closest('[data-action="upload-bukti"]');
       if (!inp) return;
-      const aspek_id = inp.dataset.aspekId;
+      const indikator_id = inp.dataset.indikatorId;
       const files = Array.from(inp.files || []);
       if (!files.length) return;
-      const cur = Skor.get(pen.id, aspek_id) || {};
+      const cur = Skor.get(pen.id, indikator_id) || {};
       const arr = Array.isArray(cur.bukti) ? cur.bukti.slice() : [];
       let totalNew = 0;
       for (const f of files) {
@@ -1036,9 +1089,9 @@ route('#/penilaian/:kamadId/:periodeId', (root, params) => {
           toast(`Gagal memproses ${f.name}: ${e.message}`, 'error');
         }
       }
-      Skor.set(pen.id, aspek_id, { skor: cur.skor ?? null, catatan: cur.catatan || '', bukti: arr });
+      Skor.set(pen.id, indikator_id, { skor: cur.skor ?? null, catatan: cur.catatan || '', bukti: arr });
       inp.value = '';
-      rerenderBuktiHost(aspek_id);
+      rerenderBuktiHost(indikator_id);
       if (totalNew > 0) toast(`Bukti tersimpan (${files.length} file).`);
     });
 
@@ -1046,30 +1099,32 @@ route('#/penilaian/:kamadId/:periodeId', (root, params) => {
       const pengBtn = ev.target.closest('[data-action="open-penggalian"]');
       if (pengBtn) {
         ev.preventDefault();
-        openPenggalianModal(pengBtn.dataset.aspekId);
+        // support both old (aspek-id) and new (indikator-id)
+        const id = pengBtn.dataset.indikatorId || pengBtn.dataset.aspekId;
+        openPenggalianModal(id);
         return;
       }
       const remBtn = ev.target.closest('[data-action="remove-bukti"]');
       if (remBtn) {
         const wrapper = remBtn.closest('.aspek-row');
-        const aspek_id = wrapper?.dataset.aspekId;
+        const indikator_id = wrapper?.dataset.indikatorId;
         const idx = Number(remBtn.dataset.buktiIdx);
-        if (!aspek_id || isNaN(idx)) return;
+        if (!indikator_id || isNaN(idx)) return;
         if (!confirmAction('Hapus bukti ini?')) return;
-        const cur = Skor.get(pen.id, aspek_id) || {};
+        const cur = Skor.get(pen.id, indikator_id) || {};
         const arr = Array.isArray(cur.bukti) ? cur.bukti.slice() : [];
         arr.splice(idx, 1);
-        Skor.set(pen.id, aspek_id, { skor: cur.skor ?? null, catatan: cur.catatan || '', bukti: arr });
-        rerenderBuktiHost(aspek_id);
+        Skor.set(pen.id, indikator_id, { skor: cur.skor ?? null, catatan: cur.catatan || '', bukti: arr });
+        rerenderBuktiHost(indikator_id);
         return;
       }
       const openImg = ev.target.closest('[data-action="open-bukti"]');
       if (openImg) {
         const wrapper = openImg.closest('.aspek-row');
-        const aspek_id = wrapper?.dataset.aspekId;
+        const indikator_id = wrapper?.dataset.indikatorId;
         const idx = Number(openImg.dataset.buktiIdx);
-        if (!aspek_id || isNaN(idx)) return;
-        const cur = Skor.get(pen.id, aspek_id) || {};
+        if (!indikator_id || isNaN(idx)) return;
+        const cur = Skor.get(pen.id, indikator_id) || {};
         const b = (cur.bukti || [])[idx];
         if (b) openBuktiPreview(b);
       }
@@ -1077,23 +1132,15 @@ route('#/penilaian/:kamadId/:periodeId', (root, params) => {
       if (applySug) {
         ev.preventDefault();
         if (isFinal) { toast('Penilaian sudah final.', 'error'); return; }
-        const aspek_id = applySug.dataset.aspekId;
+        const indikator_id = applySug.dataset.indikatorId || applySug.dataset.aspekId;
         const v = Number(applySug.dataset.skor);
-        if (!aspek_id || !v) return;
-        const cur = Skor.get(pen.id, aspek_id) || {};
-        Skor.set(pen.id, aspek_id, { skor: v, catatan: cur.catatan || '', bukti: cur.bukti || [] });
-        const radio = root.querySelector(`#skor_${aspek_id}_${v}`);
+        if (!indikator_id || !v) return;
+        const cur = Skor.get(pen.id, indikator_id) || {};
+        Skor.set(pen.id, indikator_id, { skor: v, catatan: cur.catatan || '', bukti: cur.bukti || [] });
+        const radio = root.querySelector(`#skor_${indikator_id}_${v}`);
         if (radio) radio.checked = true;
         $('#ringkasanHost').innerHTML = renderRingkasan();
-        // update badges
-        const k = aspek_id.split('_')[0];
-        const h = hitungNilaiKomponen(pen.id, k);
-        const headerBtn = document.querySelector(`#komponenAcc [data-bs-target="#k_${k}"]`);
-        if (headerBtn) {
-          const badges = headerBtn.querySelectorAll('.badge');
-          if (badges[0]) badges[0].textContent = `${h.terisi}/${h.totalAspek} aspek`;
-          if (badges[1]) badges[1].textContent = `Nilai: ${fmtNilai(h.nilai)}`;
-        }
+        updateAccordionBadges(indikator_id);
         toast(`Saran skor ${v} diterapkan.`);
       }
     });
@@ -1295,7 +1342,7 @@ route('#/cetak/:id', (root, params) => {
   const akhir = hitungNilaiAkhir(pen.id);
   const sebutan = window.getPKKMSebutan(akhir.nilaiAkhir);
   const skorRows = Skor.forPenilaian(pen.id);
-  const skorMap = {}; for (const s of skorRows) skorMap[s.aspek_id] = s;
+  const skorMap = {}; for (const s of skorRows) if (s.indikator_id) skorMap[s.indikator_id] = s;
 
   const pengawas = Meta.get('identitas_pengawas', { nama: '', nip: '' });
   const pokjawas = Meta.get('identitas_ketua_pokjawas', { nama: 'SUBARIYANTO, S.Pd, M.Pd.I', nip: '197002122005011004' });
@@ -1356,12 +1403,12 @@ route('#/cetak/:id', (root, params) => {
           </tbody>
         </table>
 
-        <h6>Detail Skor per Aspek</h6>
+        <h6>Detail Skor per Sub-Aspek &amp; Indikator</h6>
         <table class="print-table mb-3" style="width:100%;">
           <thead>
             <tr>
               <th width="50">No</th>
-              <th>Aspek</th>
+              <th>Sub-Aspek / Indikator</th>
               <th width="60" class="text-center">Skor</th>
               <th>Catatan</th>
             </tr>
@@ -1370,14 +1417,19 @@ route('#/cetak/:id', (root, params) => {
             ${window.PKKM_KOMPONEN.map(k => `
               <tr><td colspan="4" style="background:#f4faf5;"><strong>${k.no}. ${escapeHTML(k.label)}</strong></td></tr>
               ${k.aspek.map(a => {
-                const id = `${k.code}_${a.no}`;
-                const s = skorMap[id];
-                return `<tr>
-                  <td class="text-center">${k.no}.${a.no}</td>
-                  <td>${escapeHTML(a.judul)}</td>
-                  <td class="text-center">${s && s.skor != null ? s.skor : '-'}</td>
-                  <td class="text-tiny">${escapeHTML(s?.catatan||'')}</td>
-                </tr>`;
+                const ha = hitungNilaiAspek(pen.id, k.code, a.kode);
+                return `
+                  <tr><td colspan="4" style="background:#fafafa;"><em>${escapeHTML(a.kode)} ${escapeHTML(a.unsur||'')} — Nilai: ${fmtNilai(ha.nilai)}</em></td></tr>
+                  ${a.indikator.map(ind => {
+                    const id = `${k.code}_${a.kode}_${ind.no}`;
+                    const s = skorMap[id];
+                    return `<tr>
+                      <td class="text-center">${a.kode}.${ind.no}</td>
+                      <td class="text-tiny">${escapeHTML(ind.indikator||'')}</td>
+                      <td class="text-center">${s && s.skor != null ? s.skor : '-'}</td>
+                      <td class="text-tiny">${escapeHTML(s?.catatan||'')}</td>
+                    </tr>`;
+                  }).join('')}`;
               }).join('')}
             `).join('')}
           </tbody>
@@ -1673,41 +1725,53 @@ route('#/rekap-kkma', (root) => {
 
 // --- Instrumen viewer ------------------------------------------
 route('#/instrumen', (root) => {
+  const totalInd = window.PKKM_TOTAL_INDIKATOR || 0;
   root.innerHTML = `
-    <h5 class="mb-3"><i class="bi bi-list-check"></i> Instrumen PKKM</h5>
-    ${window.PKKM_KOMPONEN.map(k => `
+    <div class="d-flex justify-content-between align-items-center mb-3">
+      <h5 class="mb-0"><i class="bi bi-list-check"></i> Instrumen PKKM</h5>
+      <span class="text-tiny text-muted">5 komponen · ${window.PKKM_KOMPONEN.reduce((s,k)=>s+k.aspek.length,0)} sub-aspek · ${totalInd} indikator</span>
+    </div>
+    <div class="alert alert-info py-2 text-tiny"><i class="bi bi-info-circle"></i> Sumber: Aplikasi PKKM Excel v.110820 (Sarjono &amp; Ida Syam, Pengawas Kemenag Lamongan). Klik ℹ️ untuk panduan penggalian data per indikator.</div>
+    ${window.PKKM_KOMPONEN.map(k => {
+      const totalIndK = k.aspek.reduce((s,a)=>s+a.indikator.length,0);
+      const meta = (window.PKKM_KOMPONEN_META||[]).find(x=>x.code===k.code);
+      return `
       <div class="card mb-3 komponen-card">
         <div class="card-header">
           <strong>${k.no}. ${escapeHTML(k.label)}</strong>
-          <span class="text-tiny text-muted ms-2">(${k.aspek.length} aspek &middot; bobot default ${k.bobot_default}%)</span>
+          <span class="text-tiny text-muted ms-2">(${k.aspek.length} sub-aspek · ${totalIndK} indikator · bobot default ${meta?.bobot_default ?? 20}%)</span>
         </div>
         <div class="card-body p-0">
-          <table class="table mb-0">
-            <thead class="table-light">
-              <tr><th width="80">No</th><th>Aspek</th><th>Deskripsi</th></tr>
-            </thead>
-            <tbody>
-              ${k.aspek.map(a => `
-                <tr>
-                  <td class="text-center">${k.no}.${a.no}</td>
-                  <td>
-                    <strong>${escapeHTML(a.judul)}</strong>
-                    <button type="button" class="btn btn-sm btn-link p-0 ms-1 text-primary" data-action="open-penggalian" data-aspek-id="${k.code}_${a.no}" title="Catatan penggalian data"><i class="bi bi-info-circle"></i></button>
-                  </td>
-                  <td class="text-tiny">${escapeHTML(a.deskripsi||'')}</td>
-                </tr>`).join('')}
-            </tbody>
-          </table>
+          ${k.aspek.map(a => `
+            <div class="border-bottom">
+              <div class="bg-light px-3 py-2">
+                <strong>${escapeHTML(a.kode)}</strong> · ${escapeHTML(a.unsur||'')}
+                <span class="text-tiny text-muted ms-2">(${a.indikator.length} indikator)</span>
+              </div>
+              <table class="table mb-0 table-sm">
+                <tbody>
+                  ${a.indikator.map(ind => `
+                    <tr>
+                      <td class="text-center text-muted" width="60">${a.kode}.${ind.no}</td>
+                      <td>
+                        ${escapeHTML(ind.indikator||'')}
+                        <button type="button" class="btn btn-sm btn-link p-0 ms-1 text-primary" data-action="open-penggalian" data-indikator-id="${k.code}_${a.kode}_${ind.no}" title="Panduan penggalian data"><i class="bi bi-info-circle"></i></button>
+                        <div class="text-tiny text-muted"><i class="bi bi-clipboard-data"></i> ${escapeHTML(ind.data||'-')}</div>
+                      </td>
+                    </tr>`).join('')}
+                </tbody>
+              </table>
+            </div>`).join('')}
         </div>
-      </div>
-    `).join('')}
+      </div>`;
+    }).join('')}
     <div class="text-tiny text-muted">
       Skor 1=Kurang, 2=Cukup, 3=Baik, 4=Amat Baik. Bobot komponen dapat diubah di <a href="#/pengaturan">Pengaturan</a>.
     </div>
   `;
   root.addEventListener('click', (ev) => {
     const b = ev.target.closest('[data-action="open-penggalian"]');
-    if (b) { ev.preventDefault(); openPenggalianModal(b.dataset.aspekId); }
+    if (b) { ev.preventDefault(); openPenggalianModal(b.dataset.indikatorId || b.dataset.aspekId); }
   });
 });
 

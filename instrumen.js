@@ -1,90 +1,1816 @@
-// instrumen.js - Master data PKKM (Penilaian Kinerja Kepala Madrasah)
-// Sumber referensi: KMA & juknis PKKM Pokjawas (default; override via menu Instrumen)
-// Struktur: 5 komponen utama, masing-masing punya aspek (skor 1-4)
+// instrumen.js - Master data PKKM
+// Sumber: Aplikasi PKKM Excel v.110820 (Sarjono & Ida Syam, Pengawas Kemenag Lamongan)
+// Struktur: 5 komponen × 29 sub-aspek × N indikator (skor per indikator 1-4)
 // Skor: 1 = Kurang, 2 = Cukup, 3 = Baik, 4 = Amat Baik
-// Bobot komponen default: 20% × 5 (rata, total 100). Bobot dapat di-edit di menu Pengaturan.
+// Bobot komponen default 20% rata, total 100. Bisa diubah di Pengaturan.
+// Tiap indikator punya popup berisi:
+//   - data    : "Data Yang Diharapkan" (single line, ringkas)
+//   - bukti   : "BUKTI FISIK" (panduan supervisi: dokumen/observasi/wawancara)
 
-window.PKKM_VERSION = '1.0.0';
+window.PKKM_VERSION = '2.0.0';
 
-window.PKKM_KOMPONEN = [
-  {
-    no: 1,
-    code: 'PM',
-    label: 'Pengembangan Madrasah',
-    bobot_default: 20,
-    deskripsi: 'Visi-misi, RKM/RKAM, program kerja, evaluasi & tindak lanjut.',
-    aspek: [
-      { no: 1, judul: 'Visi, Misi, dan Tujuan Madrasah', deskripsi: 'Kepala madrasah memiliki dan mensosialisasikan visi, misi, dan tujuan madrasah yang jelas, terukur, dan berorientasi mutu.' },
-      { no: 2, judul: 'Rencana Kerja Madrasah (RKM/RKJM)', deskripsi: 'Menyusun RKJM 4 tahunan & RKT/RKAM 1 tahunan berbasis EDM/Rapor Pendidikan.' },
-      { no: 3, judul: 'Program Kerja Tahunan', deskripsi: 'Menyusun program kerja tahunan yang relevan dengan RKM dan dapat dilaksanakan.' },
-      { no: 4, judul: 'Evaluasi Diri Madrasah (EDM)', deskripsi: 'Melakukan EDM secara berkala dan menggunakannya sebagai dasar perbaikan.' },
-      { no: 5, judul: 'Tindak Lanjut Hasil Evaluasi', deskripsi: 'Menindaklanjuti hasil evaluasi (EDM, akreditasi, audit) menjadi program perbaikan.' },
-      { no: 6, judul: 'Pengembangan Budaya Madrasah', deskripsi: 'Membangun budaya religius, disiplin, kolaboratif, dan berbasis cinta.' },
-    ],
-  },
-  {
-    no: 2,
-    code: 'MJ',
-    label: 'Pelaksanaan Tugas Manajerial',
-    bobot_default: 20,
-    deskripsi: 'Kepemimpinan, kelola SDM, kurikulum, sarpras, keuangan, humas, sistem informasi.',
-    aspek: [
-      { no: 1, judul: 'Kepemimpinan Pembelajaran', deskripsi: 'Mengarahkan dan menggerakkan guru untuk meningkatkan mutu pembelajaran.' },
-      { no: 2, judul: 'Pengelolaan Kurikulum', deskripsi: 'Mengelola implementasi kurikulum (Kurikulum Merdeka/K13) sesuai jenjang.' },
-      { no: 3, judul: 'Pengelolaan Tenaga Pendidik & Kependidikan', deskripsi: 'Pembagian tugas, pembinaan, pengembangan profesi guru/tendik.' },
-      { no: 4, judul: 'Pengelolaan Peserta Didik', deskripsi: 'PPDB, pembinaan kesiswaan, layanan BK, ekstrakurikuler.' },
-      { no: 5, judul: 'Pengelolaan Sarana & Prasarana', deskripsi: 'Pemenuhan, pemeliharaan, pemanfaatan sarpras pembelajaran.' },
-      { no: 6, judul: 'Pengelolaan Keuangan & Pembiayaan', deskripsi: 'Penyusunan RKAM/RAPBM, pelaksanaan, pelaporan, transparansi.' },
-      { no: 7, judul: 'Pengelolaan Hubungan Masyarakat', deskripsi: 'Kerja sama dengan komite, orang tua, pemangku kepentingan.' },
-      { no: 8, judul: 'Pengelolaan Sistem Informasi Manajemen', deskripsi: 'Pemanfaatan EMIS, RDM, SIM madrasah, dan teknologi pendukung.' },
-    ],
-  },
-  {
-    no: 3,
-    code: 'KW',
-    label: 'Pengembangan Kewirausahaan',
-    bobot_default: 20,
-    deskripsi: 'Inovasi, kerja sama, unit usaha, kemandirian madrasah.',
-    aspek: [
-      { no: 1, judul: 'Inovasi Layanan Madrasah', deskripsi: 'Memunculkan inovasi pembelajaran, layanan, atau produk khas madrasah.' },
-      { no: 2, judul: 'Kerja Sama dengan Pihak Lain', deskripsi: 'Membangun kemitraan dengan dunia usaha, kampus, lembaga sosial.' },
-      { no: 3, judul: 'Pengembangan Unit Usaha / Income Generating', deskripsi: 'Mengembangkan unit usaha (koperasi, BLUD, kantin sehat, dsb).' },
-      { no: 4, judul: 'Etos Kerja & Pantang Menyerah', deskripsi: 'Menunjukkan etos kerja tinggi dan menularkannya kepada warga madrasah.' },
-      { no: 5, judul: 'Kepekaan terhadap Peluang', deskripsi: 'Memanfaatkan peluang (program pemerintah, hibah, beasiswa, lomba).' },
-    ],
-  },
-  {
-    no: 4,
-    code: 'SP',
-    label: 'Supervisi Guru & Tenaga Kependidikan',
-    bobot_default: 20,
-    deskripsi: 'Perencanaan, pelaksanaan, evaluasi, dan tindak lanjut supervisi.',
-    aspek: [
-      { no: 1, judul: 'Perencanaan Supervisi', deskripsi: 'Menyusun program/jadwal supervisi guru & tendik.' },
-      { no: 2, judul: 'Pelaksanaan Supervisi Akademik', deskripsi: 'Melaksanakan supervisi pembelajaran (kunjungan kelas, observasi, klinis).' },
-      { no: 3, judul: 'Pelaksanaan Supervisi Manajerial Tendik', deskripsi: 'Supervisi terhadap TU, pustakawan, laboran, dan tendik lain.' },
-      { no: 4, judul: 'Evaluasi Hasil Supervisi', deskripsi: 'Menganalisis hasil supervisi dan menyusun rekomendasi.' },
-      { no: 5, judul: 'Tindak Lanjut Supervisi', deskripsi: 'Pembinaan, mentoring, pelatihan, atau pengembangan profesi berkelanjutan.' },
-    ],
-  },
-  {
-    no: 5,
-    code: 'HK',
-    label: 'Hasil Kinerja Kepala Madrasah',
-    bobot_default: 20,
-    deskripsi: 'Capaian akreditasi, prestasi, kepuasan stakeholder, peningkatan mutu.',
-    aspek: [
-      { no: 1, judul: 'Status Akreditasi Madrasah', deskripsi: 'Status akreditasi terkini (A/B/C/Belum) dan upaya peningkatan.' },
-      { no: 2, judul: 'Capaian Mutu Pembelajaran', deskripsi: 'Rata-rata nilai PKG guru, hasil AKMI/AM, peringkat madrasah.' },
-      { no: 3, judul: 'Prestasi Akademik & Non-akademik', deskripsi: 'Prestasi siswa/guru tingkat kabupaten/provinsi/nasional dalam 1 periode.' },
-      { no: 4, judul: 'Kepuasan Stakeholder', deskripsi: 'Indeks kepuasan guru, siswa, orang tua, komite madrasah.' },
-      { no: 5, judul: 'Peningkatan Jumlah Peserta Didik', deskripsi: 'Tren PPDB, retensi, dan minat masyarakat terhadap madrasah.' },
-      { no: 6, judul: 'Tugas Tambahan (Ketua KKM, dll)', deskripsi: 'Pelaksanaan tugas tambahan di luar kepala madrasah, jika ada.' },
-    ],
-  },
+// 5 komponen utama (kode + label + bobot default)
+window.PKKM_KOMPONEN_META = [
+  { no: 1, code: 'PM', label: 'Usaha Pengembangan Madrasah', bobot_default: 20 },
+  { no: 2, code: 'MJ', label: 'Pelaksanaan Tugas Manajerial', bobot_default: 20 },
+  { no: 3, code: 'KW', label: 'Pengembangan Kewirausahaan', bobot_default: 20 },
+  { no: 4, code: 'SP', label: 'Supervisi Guru dan Tenaga Kependidikan', bobot_default: 20 },
+  { no: 5, code: 'HK', label: 'Hasil Kinerja Kepala Madrasah', bobot_default: 20 },
 ];
 
-// Sebutan / kategori berdasarkan nilai akhir (skala 0-100)
+// Instrumen lengkap untuk role "pengawas" (Pengawas-1 / Pengawas-2 share instrumen sama)
+window.PKKM_INSTRUMEN_PENGAWAS = [
+  {
+    "no": 1,
+    "code": "PM",
+    "label": "Usaha Pengembangan Madrasah",
+    "aspek": [
+      {
+        "kode": "1.1",
+        "no": 1,
+        "unsur": "Mengembangkan madrasah sesuai dengan kebutuhan.",
+        "indikator": [
+          {
+            "no": 1,
+            "indikator": "Mampu menggembangkan struktur organisasi yang sesuai dengan kebutuhan program.",
+            "data": "Dokumen struktur madrasah",
+            "bukti": "Melalui observasi dan studi dokumen: (1) bagan/struktur organisasi; (2) notulen rapat yang berisi keputusan tentang penyusunan struktur organisasi; (3) dokumen sosialisasi; dan (4) Daftar Hadir"
+          },
+          {
+            "no": 2,
+            "indikator": "Mampu menempatkan personalia yang sesuai dengan kebutuhan",
+            "data": "Dokumen uraian tugas personalia di madrasah",
+            "bukti": "Melalui studi dokumen: (1) dokumen penetapan/pengesahan susunan organisasi madrsaha; (2) rincian tugas setiap personil pada struktur organisasi madrasah; (3) SOP Personalia; dan (4) Sertifikat"
+          },
+          {
+            "no": 3,
+            "indikator": "Mampu mengembangkan pedoman dan prosedur kerja organisasi madrasah",
+            "data": "Pedoman dan prosedur kerja organisasi madrasah",
+            "bukti": "Melalui obsevasi dokumen: \r\nSOP madrasah"
+          }
+        ]
+      },
+      {
+        "kode": "1.2",
+        "no": 2,
+        "unsur": "Mengelola perubahan dan pengembangan madrasah menuju organisasi pembelajar yang efektif.",
+        "indikator": [
+          {
+            "no": 1,
+            "indikator": "Mampu mengembangkan program baru untuk meningkatkan pencapaian target yang lebih tinggi.",
+            "data": "Program pengembangan madrasah mengandung target pencapaian pada indikator keunggulan khas satuan pendidikan, kerja sama tim, dan data realisasi target yang meningkat daripada pencapaian sebelumnya.",
+            "bukti": "Melalui studi dokumen: (1) visi dan Misi madrasah; (2) data prestasi madrasah; (3) data hasil UN 3 tahun terahir; (4) Data Alumni"
+          },
+          {
+            "no": 2,
+            "indikator": "Mampu dan terampil dalam membangun tim kerja yang efektif untuk mendapatkan produk kinerja yang lebih unggul.",
+            "data": "Terdapat struktur organisasi yang dilengkapi dengan distribusi dan deskripsi pembagian tugas",
+            "bukti": "Melalui observasi dan studi dokumen: (1) bagan/struktur organisasi; (2) SK; (3) tugas dan fungsi; (4) Terbentuknya KKG/MGMP; (5) Program KKG/MGMP; dan (6) Laporan kegiatan KKG/MGMP"
+          },
+          {
+            "no": 3,
+            "indikator": "Mampu menerapkan berbagai teknik pembaharuan dalam pengelolaan pembelajaran.",
+            "data": "Terdapat penerapan strategi pembaharuan dengan strategi yang terprogram",
+            "bukti": "Melalui studi dokumen: (1) KTSP; (2) kalender pendidikan; (3) perangkat pembelajaran; (4) penilaian; DAN (5) peraturan akademik"
+          },
+          {
+            "no": 4,
+            "indikator": "Mampu mengembangkan potensi dan meningkatkan prestasi madrasah",
+            "data": "Dokumen bukti perkembanganpotensi dan prestasi peserta didik, yang meningkat dari waktu ke waktu.",
+            "bukti": "Melalui studi dokumen: (1) data prestasi madrasah 1 tahun terahir; (2) data hasil UN 1 tahun terahir; (3)  Dokumen Akreditasi; dan (4) Program Ekstrakurikuler"
+          }
+        ]
+      },
+      {
+        "kode": "1.3",
+        "no": 3,
+        "unsur": "Mengelola hubungan antara madrasah dan masyarakat dalam rangka pencarian dukungan ide, sumber belajar, dan pembiayaan.",
+        "indikator": [
+          {
+            "no": 1,
+            "indikator": "Merencanakan kerjasama dengan lembaga pemerintah, swasta dan masyarakat",
+            "data": "Data kerjasama dengan lembaga pemerintah, swasta, dan masyarakat",
+            "bukti": "Melalui studi dokumen: (1) SK komite madasah; (2) AD/ART komite madrasah; (3) program kerja komite madrasah; (4) laporan kegiatan komite madrasah; dan (5) dokumen tertulis kerja sama (MUO)."
+          },
+          {
+            "no": 2,
+            "indikator": "Melakukan pendekatan-pendekatan dalam rangka mendapatkan dukungan dari lembaga pemerintah, swasta dan masyarakat",
+            "data": "Dokumen pragram kerjasama dengan pemerintah, swasta, dan masyarakat",
+            "bukti": "Melalui studi dokumen: (1) Program kegiatan kerja sama; (2) Foto kegiatan; (3) Jadwal Kegiatan; dan (4) Sk Penanggung Jawab program."
+          },
+          {
+            "no": 3,
+            "indikator": "Memanfaatkan dan memelihara hubungan kerjasama dengan lembaga pemerintah, swasta dan masyarakat",
+            "data": "Data hasil kerjasama dengan lembega pemerintah, swasta, dan masyarakat",
+            "bukti": "Melalui studi dokumen: Laporan kegiatan kerja sama"
+          }
+        ]
+      },
+      {
+        "kode": "1.4",
+        "no": 4,
+        "unsur": "Mengelola proses pencapaian 8 SNP sesuai dengan arah dan tujuan Pendidikan nasional",
+        "indikator": [
+          {
+            "no": 1,
+            "indikator": "Mengaplikasikan pengembangan kurikulum yang mengacu kepada standar isi",
+            "data": "Dokumen analisis 8 SNP dalam hal standar ini",
+            "bukti": "Melalui studi dokumen: (1) KTSP; (2) kalender pendidikan; (3) perangkat pembelajaran; (4) penilaian; (5) peraturan akademik; dan (6) Buku Kerja Guru."
+          },
+          {
+            "no": 2,
+            "indikator": "Mengaplikasikan pengembangan proses pembelajaran yang mengacu kepada standar proses",
+            "data": "Dokumen analisis 8 SNP dalam hal standar proses",
+            "bukti": "Melalui studi dokumen: (1) dokumen pengembangan silabus; (2) RPP; (2) RPE; (2) buku teks; (2) jurnal mengajar guru; dan (2) data siswa."
+          },
+          {
+            "no": 3,
+            "indikator": "Mengaplikasikan sistem penilaian pembelajaran yang mengacu kepada standar penilaian",
+            "data": "Dokumen analisis 8 SNP dalam hal standar penilaian",
+            "bukti": "Melalui studi dokumen: (1) instrumen penilaian; (2) kisi-kisi soal; (3) kumpulan nakah soal; (4) analisis butir soal; (5) dokumen analisis hasil belajar siswa; (6) laporan hasil belajar siswa; (7) tindak lanjut hasil penilaian; (8) dokumen pelaksanaan PAS; dan (9) dokumen pelaksanaan PAT."
+          },
+          {
+            "no": 4,
+            "indikator": "Melaksanakan penjaminan mutu pencapaian standar kompetensi lulusan",
+            "data": "Dokumen analisis 8 SNP dalam hal standar kompetensi lulusan",
+            "bukti": "Melalui studi dokumen: (1) dokumen program kegiatan kesiswaan; (2) laporan kegiatan kesiswaan; (3) dokumentasi kegiatan kesiswaan; (4) laporan kegiatan pembiasaan siswa; (5) dokumen kegiatan literasi; (6) data rata-rata hasil ujian 2 tahun terahir; (7) data prestasi akademik 2 tahun terahir; dan (8) data prestasi non akademik 2 tahun terahir."
+          }
+        ]
+      },
+      {
+        "kode": "1.5",
+        "no": 5,
+        "unsur": "Mengelola unit layanan khusus madrasah dalam mendukung kegiatan pembelajaran dan kegiatan peserta didik di madrasah.",
+        "indikator": [
+          {
+            "no": 1,
+            "indikator": "Mampu mengelola laboratorium madrasah agar dapat dimanfaatkan secara optimal untuk kepentingan pembelajaran peerta didik",
+            "data": "Adanya bukti pemanfaatan laboratorium dalam pembelajaran, jadwal, kegiatan, dll (Kosongkan jika RA)",
+            "bukti": "Observasi dan studi dokumen: (1) luas memenuhi sesuai standar; (2) sarana pendukung lab; (2) jurnal laboratorium; dan (2) Program Pengembangan Sarpras."
+          },
+          {
+            "no": 2,
+            "indikator": "Mampu mengelola perpustakaan madrasah dalam menyiiapkan sumber belajar yang diperlukan oleh peserta didik.",
+            "data": "Adanya bukti pemanfaatan lperpustakaan dalam pembelajaran, jadwal, kegiatan, dll",
+            "bukti": "Observasi dan studi dokumen: (1) luas memenuhi sesuai standar; (2) sarana pendukung; (2) daftar buku induk perpustakaan; dan (2) laporan/statistic pengelolaan perpustakaan."
+          },
+          {
+            "no": 3,
+            "indikator": "Mampu mengelola usaha madrasah untuk pembelajaran pesera didik dan pemasukan tambahan dana bagi madrasah.",
+            "data": "Adanya bukti kegiatan usaha madrasah dalam pembelajaran.",
+            "bukti": "Melalui studi dokumen:\r\ndata/laporan kegiatan usaha madrasah"
+          },
+          {
+            "no": 4,
+            "indikator": "Mampu mengelola koperasi madrasah baik sebagai media praktik maupun sebagai sumber belajar bagi peserta didik.",
+            "data": "Adanya bukti pemanfaatan koperasi dalam pembelajaran, jadwal, kegiatan, dll",
+            "bukti": "Observasi dan studi dokumen: (1) instrumen hasil praktek pembelajaran; dan (2) foto kegiatan praktik"
+          }
+        ]
+      },
+      {
+        "kode": "1.6",
+        "no": 6,
+        "unsur": "Mengelola sistem informasi madrasah dalam mendukung penyusunan program dan pengambilan keputusan.",
+        "indikator": [
+          {
+            "no": 1,
+            "indikator": "Memanfaatkan teknologi informasi dan komunikasi dalam manajemen madrasah",
+            "data": "Adanya bukti pemanfaatan teknologi indformasi dan komunikasi dalam manajemen madrasah",
+            "bukti": "Observasi, studi dokumen dan wawancara: (1) fasilitas teknologi dan informasi; dan (2) sumber daya informasi"
+          },
+          {
+            "no": 2,
+            "indikator": "Memanfaatkan teknologi informasi dan komunikasi dalam pembelajaran, baik sebagai sumber belajar maupun sebagai alat/media pembelajaran.",
+            "data": "Adanya bukti pemanfaatan teknologi indformasi dan komunikasi sebagai sumber belajar dan media pembelajaran",
+            "bukti": "Observasi lingkungan madrasah dan wawancara: (1) ketersediaan komputer; (2) jaringan internet; (3) website madrasah; (4) alamat email madrasah; dan (5) pemanfaatn TIK untuk pembelajaran."
+          },
+          {
+            "no": 3,
+            "indikator": "Memanfaatkan teknologi teknologi informasi dan komunikasi dalam menjalin kerjasama dengan pihak lain.",
+            "data": "Adanya bukti pemanfaatan teknologi informasi dan komunikasi dalam menjalin kerjasama dengan pihak lain",
+            "bukti": "Observasi lingkungan madrasah, wawancara dan studi dokumen: (1) pengelolaan SIM; (2) fasilitas SIM; (3) surat tugas pengelola SIM; dan (4) pelaporan data dan informasi."
+          },
+          {
+            "no": 4,
+            "indikator": "Memanfaatkan teknologi teknologi informasi dan komunikasi dalam promosi program madrasah dan prestasi yang telah dicapai.",
+            "data": "Adanya bukti pemanfaatan teknologi informasi dan komunikasi dalam promosi program madrasah dan prestasi yang dicapai",
+            "bukti": "Observasi lingkungan madrasah, wawancara dan studi dokumen: (1) pengelolaan SIM; (2) fasilitas SIM; (3) surat tugas pengelola SIM; dan (4) pelaporan data dan informasi."
+          }
+        ]
+      },
+      {
+        "kode": "1.7",
+        "no": 7,
+        "unsur": "Memanfaatkan kemajuan teknologi informasi bagi peningkatan pembelajaran dan manajemen madrasah",
+        "indikator": [
+          {
+            "no": 1,
+            "indikator": "Mampu mengembangkan sistem administrasi pengelolaan secara efektif dengan dukungan penerapan teknologi informasi dan komunikasi.",
+            "data": "Terdapat penerapan TIK (berbasis komputer, CD, jejaring intranet, internet) dalam pengelolaan administrasi administrasi persuratan, sarana prasarana, kepegawaian, kepeserta didikan, dan keuangan.",
+            "bukti": "Observasi lingkungan madrasah dan wawancara: (1) jumlah komputer dan LCD yang cukup; (2) memiliki jaringan internet; (3) memiliki web sekolah; (4) memiliki e-mail madrasah; dan (5) Memanfaatkan TIK untuk adminitrasi madrasah."
+          },
+          {
+            "no": 2,
+            "indikator": "Mengelola adminsistasi pembelajaran secara efektif dengan dukungan penerapan teknologi informasi dan komunikasi.",
+            "data": "Model penerapan TIK dalam pengelolaan adminsitrasi kurikulum dan pembelajaran, misalnya, pengelolaan kurikulum berbasis komputer, intranet, dan internet.",
+            "bukti": "Observasi lingkungan madrasah dan wawancara: (1) jumlah kompute dan LCD yang cukup; (2) memiliki jaringan internet; dan (3) memanfaatkan TIK untuk pembelajaran."
+          },
+          {
+            "no": 3,
+            "indikator": "Mampu  mengembangkan sistem pengelolaan perpustakaan secara efektif dengan dukungan penerapan teknologi informasi dan komunikasi.",
+            "data": "Model pemanfaatan TIK dalam sistem pengelolaan perpustakaan berbasis komputer, intranet, atau internet.",
+            "bukti": "Observasi dan studi dokumen: (1) katalog digital; (2) BSE; (3) akses internet; (4) komputer; dan (5) dokumen aplikasi layanan perpustakaan."
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "no": 2,
+    "code": "MJ",
+    "label": "Pelaksanaan Tugas Manajerial",
+    "aspek": [
+      {
+        "kode": "2.1",
+        "no": 1,
+        "unsur": "Menyusun perencanaan madrasah untuk berbagai tingkatan perencanaan.",
+        "indikator": [
+          {
+            "no": 1,
+            "indikator": "Mampu mengembangkan RKJM, RKT/RKAM dengan program lainnya berdasarkan data hasil evaluasi dalam pemenuhan 8 SNP",
+            "data": "Dokumen RKJM, RKT/RKAM yang  meliputi SNP",
+            "bukti": "Melalui studi dokumen: (1) Dokumen Evaluasi Diri Madrasah EDM); dan (2) Dokumen RKJM dan RKT berbasis EDM"
+          },
+          {
+            "no": 2,
+            "indikator": "Mampu merumuskan visi-misi sebagai arah pengembangan program RKJM, RKT/RKAS dan program lainnya.",
+            "data": "Visi-misi madrasah merupakan rumusan hasil keputusan bersama.",
+            "bukti": "Melalui studi dokumen: (1) visi, misi yang telah ditetapkan oleh Kamad; dan (2) berita acara dan daftar hadir kegiatan perumusan/ peninjauan kembali dan penetapan visi dan misi."
+          },
+          {
+            "no": 3,
+            "indikator": "Mampu menentukan strategi pencapaian tujuan madrasah, dilengkapi dengan indikator pencapaian yang terukur",
+            "data": "Dokumen program yang memuat strategi pencapaian tujuan madrasah",
+            "bukti": "Melalui studi dokumen: (1) program kerja; dan (2) RKJM dan RKTM"
+          },
+          {
+            "no": 4,
+            "indikator": "Mampu menyusun program dengan rencana evaluasi keterlaksanaan dan pencapaian program",
+            "data": "Dokumen rencana evaluasi keterlaksanaan dan pencapaian program.",
+            "bukti": "Melalui studi dokumen:\r\nRKJM dan RKTM"
+          }
+        ]
+      },
+      {
+        "kode": "2.2",
+        "no": 2,
+        "unsur": "Memimpin madrasah dalam rangka pendayagunaan sumber daya madrasah secara optimal.",
+        "indikator": [
+          {
+            "no": 1,
+            "indikator": "Mampu memberi contoh berdisiplin; hadir tepat waktu, disiplin menggunakan waktu, dan tepat waktu mengakhiri pekerjaan.",
+            "data": "Dokumen daftar hadir semua kegiatan madrasah",
+            "bukti": "Observasi, wawancara dan studi dokumen: (1) finggerprint kehadiran kamad; dan (2) daftar hadir pada kegiatan di madrasah"
+          },
+          {
+            "no": 2,
+            "indikator": "Mampu melaksanakan peraturan sesuai dengan ketentuan yang berlaku",
+            "data": "Menjadi contoh dan mengarahkan guru, staf administrasi, dan peserta didik melaksanakan kegiatan sesuai dengan peraturan",
+            "bukti": "Wawancara dengan warga madrasah"
+          },
+          {
+            "no": 3,
+            "indikator": "Mampu menunjukkan keteladanan dalam memanfaatkan sumber daya secara efektif dan efisien.",
+            "data": "Memecahkan masalah madrasah secara bersama-sama, merencankan pemanfaatan sumber belajar dan sumber informasi, memantau penggunaan sumber daya, dan menilai pemanfaatan sumber daya",
+            "bukti": "Wawancara dengan warga madrasah"
+          },
+          {
+            "no": 4,
+            "indikator": "Mampu  menunjukkan kedisiplinan sebagai insan pembelajar.",
+            "data": "Rajin membaca dan pendengar yang baik, mengekspresikan pikiran secara tertulis, mengkomunikasikan ilmu pengetahuan baru, dan menyediakan berbagai media untuk mengembangkan gagasan warga madrasah",
+            "bukti": "Wawancara, observasi: (1) koleksi buku refrefensi/ ilmu pengetahuan; dan (2) karya tulis yang diterbitkan atau tidak"
+          }
+        ]
+      },
+      {
+        "kode": "2.3",
+        "no": 3,
+        "unsur": "Menciptakan budaya dan iklim madrasah yang kondusif dan inovatif bagi pembelajaran peserta didik.",
+        "indikator": [
+          {
+            "no": 1,
+            "indikator": "Mampu menjadi contoh  dan berbudaya mutu yang kompetitif dalam mendorong peningkatan prestasi akademik dan nonakademik peserta didik",
+            "data": "Dokumen peningkatan KKM, target hasil ulangan, hasil UN dan target keunggulan nonakademik peserta didik yang terprogram, terlaksana, dan meningkat hasilnya",
+            "bukti": "Wawancara dan studi dokumen: (1) peningkatan KKM; (2) hasil UN; (3) program keunggulan dan inovasi baik akademik maupun non akademik; dan (4) data prestasi akademik dan non akademik."
+          },
+          {
+            "no": 2,
+            "indikator": "Mampu melengkapi sarana dan prasarana untuk menciptakan suasana belajar kondusif dan inovatif bagi peserta didik",
+            "data": "Suasana lingkungan madrasah yang asri, bersih, rindang, aman, dan menyenangkan peserta didik",
+            "bukti": "Observasi lingkungan madrasah:  suasana lingkungan yang asri, bersih, rindang, aman, dan menyenangkan peserta didik"
+          },
+          {
+            "no": 3,
+            "indikator": "Mampu memfasilitasi kegiatan-kegiatan untuk meningkatkan budaya baca dan budaya tulis peserta didik.",
+            "data": "Data kunjungan perpustakaan, peminjaman buku oleh peserta didik, pembaharuan buku dan bahan bacaan, ketersediaan sumber belajar berbasis TIK, dan sarana publikasi karya tulis, dan mengembangkan kompetisi karya tulis peserta didik tingkat madrasah.",
+            "bukti": "Observasi, wawancara dan studi dokumen: (1) rencana dan laporan pelaksanaan kegiatan literasi; (2) dokumen kegiatan pengembangan budaya baca; dan (3) dokumen/ pajangan hasil karya tulis siswa."
+          },
+          {
+            "no": 4,
+            "indikator": "Mampu memfasilitasi kegiatan-kegiatan lomba di bidang akademik dan nonakademik bagi peserta didik",
+            "data": "Dokumen penyelenggaran kegiatan kompetisi yang dimulai dari tingkat madrasah, perolehan piagam penghargaan, piala, trofi perlombaan bidang akademik dan nonakademik.",
+            "bukti": "Observasi dan studi dokumen: (1) dokumen penyelenggaran kegiatan kompetisi yang dimulai dari tingkat madrasah; dan (2) daftar perolehan piagam, penghargaan, piala, trofi perlombaan disemua jenjang."
+          }
+        ]
+      },
+      {
+        "kode": "2.4",
+        "no": 4,
+        "unsur": "Mengelola guru dan staf dalam rangka pendayagunaan sumber daya manusia secara optimal.",
+        "indikator": [
+          {
+            "no": 1,
+            "indikator": "Mampu menyusun perencanaan pengembangan pendidik dan tenaga kependidikan",
+            "data": "Dokumen program pembinaan pendidik dan tenaga kependidikan di madrasah",
+            "bukti": "Studi dokumen dan wawancara:\r\nprogram kerja kepala madrasah"
+          },
+          {
+            "no": 2,
+            "indikator": "Mampu melakukan pembinaan berkala untuk meningkatkan mutu SDM madrasah",
+            "data": "Dokumen pelaksanaan kegiatan pembinaan guru.",
+            "bukti": "Studi dokumen dan wawancara: (1) buku/catatan pembinaan guru dan tendik (notulen dan daftar hadir rapat pembinaan); dan (2) laporan kinerja kepala madrasah."
+          },
+          {
+            "no": 3,
+            "indikator": "Memfasilitasi guru dan staf administrasi untuk meningkatkan kegiatan pembinaan kompetensi",
+            "data": "Data dukungan Kepala Madrasah dalam memfasilitasi staf administrasi untuk meningkatkan mutu profesi.",
+            "bukti": "Studi dokumen dan wawancara: (1) buku/catatan pembinaan guru dan tendik (notulen dan daftar hadir rapat pembinaan); dan (2) laporan kinerja kepala madrasah."
+          },
+          {
+            "no": 4,
+            "indikator": "Memantau dan menilai penerapan hasil pelatihan dalam pekerjaan di madrasah",
+            "data": "Dokumen program evaluasi pelatihan atau pengembangan profesi pendidik dan tenaga kependidikan",
+            "bukti": "Observasi dan studi dokumen: (1) program pelatihan pengembangan profesi guru dan tendik; dan (2) laporan pelaksanaan pelatihan pengembangan profesi guru dan tendik"
+          }
+        ]
+      },
+      {
+        "kode": "2.5",
+        "no": 5,
+        "unsur": "Mengelola sarana dan prasarana madrasah dalam rangka pendayagunaan secara optimal",
+        "indikator": [
+          {
+            "no": 1,
+            "indikator": "Mampu mengelola fasilitas prasarana, perabot dan sarana madrasah (gedung, bangunan, dan lahan meja, kursi, lemari, peralatan kantor, dan alat kebersihan)",
+            "data": "Data fasilitas prasarana, perabot, dan sarana marasah dikelola dengan baik",
+            "bukti": "Observasi dan studi dokumen: (1) buku inventaris; dan (2) buku pemeliharaan sarana dan prasarana."
+          },
+          {
+            "no": 2,
+            "indikator": "Mampu mengelola perpustakaan madrasah",
+            "data": "Data perpustakaan dikelola dengan baik",
+            "bukti": "Observasi fisik dan studi dokumen: (1) buku induk perpustakaan; dan (2) buku/data/grafik layanan perpustakaan."
+          },
+          {
+            "no": 3,
+            "indikator": "Mampu mengelola laboratirium madrasah",
+            "data": "Data laboratorium dikelola dengan baik (Kosongkan jika RA)",
+            "bukti": "Observasi fisik dan studi dokumen: (1) daftar infentaris laboratorium; dan (2) buku/jurnal/ data/grafik layanan baboratorium"
+          },
+          {
+            "no": 4,
+            "indikator": "Mampu mengelola fasilitas penunjang madrasah lainnya (bengkel, toko, koperasi, kebun, dsb)",
+            "data": "Data fasilitas penunjang terkola dengan baik",
+            "bukti": "Observasi fisik,wawancara dan studi dokumen:\r\ndata fasilitas penunjang wirausaha yang dikelola oleh madrasah"
+          }
+        ]
+      },
+      {
+        "kode": "2.6",
+        "no": 6,
+        "unsur": "Mengelola peserta didik dalam rangka penerimaan peserta didik baru, dan penempatan dan pengembangan kapasitas peserta didik",
+        "indikator": [
+          {
+            "no": 1,
+            "indikator": "Menyusun perencanaan penerimaan, pengelolaan dan pengembangan kompetensi peserta didik.",
+            "data": "Dokumen program penerimaan peserta didik baru, kriteria penerimaan peserta didik, data hasil analisis bekal ajar peserta didik awal,",
+            "bukti": "Studi dokumen: (1) dokumen program penerimaan peserta didik baru; (2) brosur; dan (3) data hasil analisis kemampuan peserta didik baru"
+          },
+          {
+            "no": 2,
+            "indikator": "Memiliki program pengembangan potensi diri dan prestasi peserta didik.",
+            "data": "Dokumen program pengembangan potensi diri dan prestasi peserta didik.",
+            "bukti": "Observasi dan studi dokumen:\r\nprogram pengembangan diri peserta didik."
+          },
+          {
+            "no": 3,
+            "indikator": "Memfasilitasi kegiatan-kegiatan untuk meningkatkan pembiasaan melalui penanaman nilai-nilai.",
+            "data": "Data program kegiatan akademik dan nonakademik melalui penanaman nilai - nilai.",
+            "bukti": "Observasi lingkungan aktivitas siswa, wawancara dan studi dokumen: (1) program kegiatan akademik dan non akademik dan laporan pelaksanaannya; dan (2) dokumentasi kegiatan."
+          },
+          {
+            "no": 4,
+            "indikator": "Memfasilitasi kegiatan pengembangan diri bagi peserta didik, pendidik, dan tenaga kependidikan lainnya secara optimal",
+            "data": "Data keterlaksanaan program pengembangan diri peserta didik, pendidik, dan tenaga kependidikan",
+            "bukti": "Observasi lingkungan aktivitas siswa dan guru, wawancara dan studi dokumen: (1) program kegiatan pengembangan diri; (2) dokumentasi kegiatan; dan (3) data prestasi siswa, guru dan tendik."
+          }
+        ]
+      },
+      {
+        "kode": "2.7",
+        "no": 7,
+        "unsur": "Mengelola pengembangan kurikulum dan kegiatan pembelajaran sesuai dengan arah dan tujuan pendidikan nasional",
+        "indikator": [
+          {
+            "no": 1,
+            "indikator": "Mampu mengarahkan secara efektif dalam menerapkan prinsip-prinsip pengengembangan KTSP dalam kegiatan IHT, Workshop, Rapat Koordinasi, dan kegiatan MGMP/KKG.",
+            "data": "Dokumen hasil pengembangan kurikulum yang disusun melalui rapat kerja, IHT, Workshop, Rakor, atau kegiatan MGMP/KKG",
+            "bukti": "Studi dokumen: (1) dokumen kurikulum yang berlaku; (2) SK tim pengembang kurikulum; dan (3) dokumen penyusunan dokumen kurikulum (daftar hadir, berita acara, notulen)."
+          },
+          {
+            "no": 2,
+            "indikator": "Mampu mengendalikan pelaksanaan KTSP berlandaskan kalender pendidikan, menerbitkan surat keputusan pembagian tugas mengajar, dan menerapkan aturan akademik.",
+            "data": "Pelaksanaan kurikulum sesuai dengan kalender pendidikan tingkat madrasah, surat keputusan pembagian tugas mengajar, dan aturan akademik.",
+            "bukti": "Studi dokumen: (1) struktur kurikulum; (2) jadwal pelajaran; (3) daftar hadir guru; dan (4) peraturan akademik"
+          },
+          {
+            "no": 3,
+            "indikator": "Memfasilitasi efektivitas tim kerja guru dalam rangka meningkatkan mutu pembelajaran.",
+            "data": "Bukti pelaksanaan kerja sama guru pada tingkat satuan pendidikan, antar satuan pendidikan dalam meningkatkan mutu perencanaan, proses, pembelajaran",
+            "bukti": "Studi dokumen: (1) program KKG/MGMP di madrasah; dan (2) laporan pelaksanaan KKG/MGMP."
+          },
+          {
+            "no": 4,
+            "indikator": "Mampu mengembangkan pelayanan belajar yang inovatif melalui pengembangan perangkat dan sumber belajar yang terbarukan.",
+            "data": "Bukti penggunaan metode hasil pelatihan paling akhir, memanfaatkan teknologi informasi dan komunikasi, penggunaan alat peraga, teknik evaluasi baru yang menghasilkan produk belajar peserta didik yang dipublikasikan di lingkungan madrasah atau media lain",
+            "bukti": "Observasi kelas, studi dokumen wawancara dengan siswa dan guru:\r\nmenelaah ragam metode, media dan sumber belajar yang digunakan dalam RPP"
+          },
+          {
+            "no": 5,
+            "indikator": "Memfasilitasi peserta didik dalam mengembangkan kolaborasi dan kompetisi bidang akademik dan nonakademik",
+            "data": "Data kegiatan kolaborasi dan kompetisi peserta didik tingkat madrasah, baik akademik dan non akademik.",
+            "bukti": "Wawancara dan studi dokumen: (1) program, laporan dan dokumen kegiatan kesiswaan (kegiatan akademik maupun non akademik); dan (2) data prestasi akademik maupun nonakademik."
+          }
+        ]
+      },
+      {
+        "kode": "2.8",
+        "no": 8,
+        "unsur": "Mengelola keuangan madrasah sesuai dengan prinsip pengelolaan yang akuntabel, transparan, dan efisien",
+        "indikator": [
+          {
+            "no": 1,
+            "indikator": "Mampu merencanakan kebutuhan keuangan madrasah sesuai dengan rencana pengembangan madrasah, baik jangka pendek maupun jangka panjang",
+            "data": "Dokumen RKJM dan RKTM",
+            "bukti": "Studi dokumen: (1) RKJM dan RKTM; (2) laporan keuangan; dan (3) buku kas."
+          },
+          {
+            "no": 2,
+            "indikator": "Mampu mengupayaan sumber-sumber keuangan terutama dari luar madrasah dan dari unit usaha madrasah",
+            "data": "Dokumen RKJM dan RKTM",
+            "bukti": "Studi dokumen RKJM dan RKTM."
+          },
+          {
+            "no": 3,
+            "indikator": "Mampu mengkoordinasikan pembelajaran keuangan sesuai dengan peraturan dan perundang-undangan berdasarkan asas prioritas dan efisiensi.",
+            "data": "Dokumen RKJM dan RKTM",
+            "bukti": "Studi dokumen RKJM dan RKTM."
+          },
+          {
+            "no": 4,
+            "indikator": "Mampu membuat laporan dan evaluasi pengelolaan keuangan madrasah sesuai dengan prinsip efisien, tranparan, dan akuntabel.",
+            "data": "Dokumen RKJM dan RKTM",
+            "bukti": "Studi dokumen: (1) RKJM dan RKTM; (2) laporan keuangan; dan (3) buku kas."
+          }
+        ]
+      },
+      {
+        "kode": "2.9",
+        "no": 9,
+        "unsur": "Mengelola ketatausahaan madrasah dalam mendukung pencapaian tujuan madrasah",
+        "indikator": [
+          {
+            "no": 1,
+            "indikator": "Mampu mengelola administrasi surat masuk dan surat keluar sesuai dengan pedoman persuratan yang berlaku",
+            "data": "Adanya bukti dokumen surat masuk dan keluar",
+            "bukti": "Melalui studi dokumen:\r\nsurat masuk dan keluar"
+          },
+          {
+            "no": 2,
+            "indikator": "Mampu mengelola administrasi madrasah yang meliputi administrasi akademik, kesiswaan, sarana/prasarana, keuangan, dan hubungan madrasah dengan masyarakat",
+            "data": "Adanya bukti dokumen administrasi madrasah",
+            "bukti": "Melalui studi dokumen:\r\nadministrasi madrasah (akademik, kesiswaan, sarana/prasaran, keuangan, dan hubungan madrasah dengan masyarakat)"
+          },
+          {
+            "no": 3,
+            "indikator": "Mampu mengelola administrasi kearsipan madrasah baik arsip dinamis maupun arsip lainnya",
+            "data": "Adanya bukti dokumen administrasi madrasah",
+            "bukti": "Melalui studi Dokumen:\r\nAdministrasi madrasah"
+          },
+          {
+            "no": 4,
+            "indikator": "Mampu mengelola administrasi akreditasi madrasah sesuai dengan prinsip-prinsip tersedianya dokumen pendukung dan bukti fisik",
+            "data": "Adanya bukti dokumen administrasi madrasah",
+            "bukti": "Melalui studi Dokumen:\r\nAdministrasi pemenuhan 8 SNP madrasah"
+          }
+        ]
+      },
+      {
+        "kode": "2.10",
+        "no": 10,
+        "unsur": "Melakukan monitoring, evaluasi, dan pelaporan pelaksanaan program kegiatan madrasah dengan prosedur yang tepat, serta merencanakan tindak lanjutnya.",
+        "indikator": [
+          {
+            "no": 1,
+            "indikator": "Menyusun standar kinerja program pendidikan yang dapat diukur dan dinilai",
+            "data": "Dokumen SKP yang terukur",
+            "bukti": "Melalui studi dokumen:\r\nSKP yang terukur"
+          },
+          {
+            "no": 2,
+            "indikator": "Melakukan monitoring dan evaluasi kinerja program pendidikan dengan menggunakan teknik yang sesuai",
+            "data": "Dokumen pelaksanaan monitoring dan evaluasi  yang sesuai",
+            "bukti": "Melalui studi dokumen:\r\npelaksanaan monitoring dan evaluasi  yang sesuai"
+          },
+          {
+            "no": 3,
+            "indikator": "Menyusun laporan sesuai dengan standar pelaporan monitoring dan evaluasi",
+            "data": "Dokumen laporan pelaksanaan monitoring dan evaluasi",
+            "bukti": "Melalui studi dokumen:\r\nLaporan pelaksanaan monitoring dan evaluasi"
+          },
+          {
+            "no": 4,
+            "indikator": "Merumuskan program tindak lanjut berdasarkan hasil evaluasi pelaksanaan program sebelumnya",
+            "data": "Dokumen program tindak lanjut berdasarkan hasil  monitring dan evaluasi",
+            "bukti": "Melalui studi dokumen:\r\nProgram tindak lanjut berdasarkan hasil  monitring dan evaluasi"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "no": 3,
+    "code": "KW",
+    "label": "Pengembangan Kewirausahaan",
+    "aspek": [
+      {
+        "kode": "3.1",
+        "no": 1,
+        "unsur": "Menciptakan inovasi yang bermanfaat dan tepat bagi pengembangan madrasah",
+        "indikator": [
+          {
+            "no": 1,
+            "indikator": "Memahami dan menghayati arti dan tujuan perubahan (inovasi) madrasah",
+            "data": "Adanya bukti perubahan madrasah yang lebih baik dari tahun ke tahun",
+            "bukti": "Melalui studi dokumen:\r\nprogram pengembangan kewirausahaan"
+          },
+          {
+            "no": 2,
+            "indikator": "Menggunakan metode, teknik dan proses perubahan madrasah",
+            "data": "Adanya bukti strategi dalam perubahan madrasah yang lebih baik",
+            "bukti": "Melalui obsevasi: (1) pemanfaatan hasil inovasi dan kreatifitas; (2) membudayakan hasil inovasi dan kreatifitas; dan (3) pengembangan pembudayaan inovasi dan kreatifitas."
+          },
+          {
+            "no": 3,
+            "indikator": "Menumbuhkan iklim yang mendorong kebebasan berfikir untuk menciptakan kreativitas dan inovasi",
+            "data": "Adanya bukti iklim yang mendorong kebebasan berpikir kreatif dan inovatif",
+            "bukti": "Melalui observasi dan studi dokumen: (1) data Jenis usaha produktif yang dimiki; dan (2) program pengeloaan dan pendayagunaan hasil usaha."
+          },
+          {
+            "no": 4,
+            "indikator": "Mendorong warga madrasah untuk melakukan prakarsa/keberanian moral untuk melakukan hal-hal baru",
+            "data": "Adanya bukti warga madrasah yang memiliki keberanian utuk melakukan hal – hal baru",
+            "bukti": "Melalui observasi dan studi dokumen: (1) data Jenis usaha produktif yang dimiki; dan (2) program pengeloaan dan pendayagunaan hasil usaha."
+          }
+        ]
+      },
+      {
+        "kode": "3.2",
+        "no": 2,
+        "unsur": "Bekerja keras untuk mencapai keberhasilan madrasah sebagai organisasi pembelajaran yang efektif",
+        "indikator": [
+          {
+            "no": 1,
+            "indikator": "Mampu bertindak kratif dan inovatif dalam melaksanakan pekerjaan melalui cara berfikir dan cara bertindak",
+            "data": "Adanya bukti kegiatan yang kratif dan inovatif dalam melaksanakan pekerjaan melalui cara berfikir dan cara bertindak",
+            "bukti": "Melalui observasi dan studi dokumen: (1) RPP yang memuat rencana pembelajaran untuk menumbuhkan keterampilan berpikir dan bertindak kreatif, produktif, kritis, mandiri, kolaboratif, dan komunikatif; (2) hasil kerja dan karya siswa; dan (3) foto foto aktifitas pembelajaran siswa siswa."
+          },
+          {
+            "no": 2,
+            "indikator": "Mampu memberdayakan potensi madrasah secara optimal kedalam berbagai kegiatan-kegiatan produktif yang menguntungkan madrasah",
+            "data": "Adanya bukti kegiatan  pemberdayaanpotensi madrasah secara optimal kedalam berbagai kegiatan-kegiatan produktif yang menguntungkan madrasah",
+            "bukti": "Melalui observasi, wawancara, dan studi dokumen: (1) Rencana Pengembangan Madrasah (RPM) ; (2) dokumen penanganan permasalahan/ kasus; (3) dokumen hasil kegiatan sekolah; (4) dokumen hasil kegiatan; dan (5) pengembangan madrasah."
+          },
+          {
+            "no": 3,
+            "indikator": "Mampu menumbuhkan jiwa kewirausahaan (kreatif, inovatif dan produktif) di kalangan warga madrasah",
+            "data": "Adanya bukti kegiatan yang membubuhkan jiwa kewirausahaan (kreatif, inovatif dan produktif) di kalangan warga madrasah",
+            "bukti": "Melalui observasi, wawancara, dan studi dokumen: (1) Rencana Pengembangan Madrasah (RPM) ; (2) dokumen penanganan permasalahan/ kasus; (3) dokumen hasil kegiatan sekolah; (4) dokumen hasil kegiatan; dan (5) pengembangan madrasah."
+          },
+          {
+            "no": 4,
+            "indikator": "Mampu mencatat ide-ide baru, kemudian mengembangkannya",
+            "data": "Adanya bukti kegiatan mencatat ide-ide baru, kemudian mengembangkannya",
+            "bukti": "Melalui observasi, wawancara, dan studi dokumen:\r\nRencana Pengembangan Madrasah"
+          }
+        ]
+      },
+      {
+        "kode": "3.3",
+        "no": 3,
+        "unsur": "Memiliki motivasi yang kuat untuk sukses dalam melaksanakan tugas pokok dan fungsinya sebagai pemimpin madrasah",
+        "indikator": [
+          {
+            "no": 1,
+            "indikator": "Bersedia belajar dari orang lain",
+            "data": "Adanya bukti kemauan belajar dari orang lain",
+            "bukti": "Melalui observasi, wawancara, dan studi dokumen: (1) forum komunikasi dengan lembaga pendidikan lain dan  orang tua siswa per tingkat kelas/kelas/ angkatan; dan (2) foto foto kegiatan."
+          },
+          {
+            "no": 2,
+            "indikator": "Ingin selalu melakukan yang terbaik",
+            "data": "Adanya bukti keinginan selalu elakukan yang terbaik",
+            "bukti": "Melalui observasi, wawancara, dan studi dokumen: (1) dokumen/foto Pelaksanaan kegiatan; (2) keikut sertaan dalam lomba lomba pembelajaran/ pendidikan maupun manajmen; dan (3) prestasi dalam lomba guru, tenaga kependidikan dan kepala madrasah."
+          },
+          {
+            "no": 3,
+            "indikator": "Menciptakan perubahan yang kuat",
+            "data": "Adanya bukti keinginan untuk melakkukan perubahan yang kuat",
+            "bukti": "Melalui observasi, wawancara, dan studi dokumen: (1) program inovasi madrasah atau Rencana Pengenbanagan Madrasah (RPM); dan (2) laporan target yang sudah dicapai."
+          }
+        ]
+      },
+      {
+        "kode": "3.4",
+        "no": 4,
+        "unsur": "Pantang menyerah dan selalu mencari solusi terbaik dalam menghadapi kendala yang dihadapi madrasah",
+        "indikator": [
+          {
+            "no": 1,
+            "indikator": "Mampu melibatkan tokoh agama, masyarakat, dan pemerintah dalam memecahkan masalah kelembagaan",
+            "data": "Adanya bukti kegiatan yang melibatkan tokoh agama, masyarakat dan pemerintah dalam memecahkan masalah kelembagaan",
+            "bukti": "Melalui observasi, wawancara, dan studi dokumen: (1) MoU dengan pihak lain; (2) sister school; dan (3) kemitraan dengan sekolah lain"
+          },
+          {
+            "no": 2,
+            "indikator": "Mampu bersikap obyektif/tidak memihak dalam mengatasi konflik internal madrasah",
+            "data": "Adanya bukti kagiatan yang menunjukkan sikap obyektif/tidak memihak dalam mengatasi konflik internal madrasah",
+            "bukti": "Dokumen kegiatan dan foto"
+          },
+          {
+            "no": 3,
+            "indikator": "Mampu bersikap simpatik/tenggang rasa terhadap orang lain",
+            "data": "Adanya bukti sikap simpatik/ tenggang rasa terhadap orang lain",
+            "bukti": "Melalui studi dokumen kegiatan dan foto"
+          }
+        ]
+      },
+      {
+        "kode": "3.5",
+        "no": 5,
+        "unsur": "Memiliki naluri kewirausahaan dalam mengelola kegiatan produksi/jasa madrasah sebagai sumber pembelajaran peserta didik",
+        "indikator": [
+          {
+            "no": 1,
+            "indikator": "Mampu merencanakan kegiatan produksi /jasa sesuai dengan potensi madrasah",
+            "data": "Dokumen perencanaan kegiatan produksi sesuai potensi madrasah",
+            "bukti": "Melalui studi dokumen:\r\nlaporan yang memuat pelaksanaan dan hasil Program Pengembangan Unit Produksi Kewirausahaan"
+          },
+          {
+            "no": 2,
+            "indikator": "Mampu membina kegiatan produksi /jasa sesuai dengan prinsip-prinsip pengelolaan yang  rofessional dan akuntabel",
+            "data": "Adanya dokumen pembinaan kegiatan produksi /jasa sesuai dengan prinsip-prinsip pengelolaan yang  professional dan akuntabel",
+            "bukti": "Melalui studi dokumen:\r\nlaporan memuat pelaksanaan dan hasil Program Pengembangan Unit Produksi Kewirausahaan"
+          },
+          {
+            "no": 3,
+            "indikator": "Mampu melaksanakan pengawasan kegiatan produksi/jasa dan menyusun laporan",
+            "data": "Adanya dokumen pelaksanakan pengawasan kegiatan produksi/jasa dan menyusun laporan",
+            "bukti": "Melalui wawancara dan studi dokumen: (1) laporan hasil Evaluasi Program Pengembangan Kewirausahaan, yang memuat hasil evaluasi; (2) Program Pengembangan Jiwa Kewirausahaan; dan (3) Program Pengembangan Unit Produksi Kewirausahaan."
+          },
+          {
+            "no": 4,
+            "indikator": "Mampu mengembangkan kegiatan produksi/jasa dan pemasarannya",
+            "data": "Adanya dokumen  pengembangan kegiatan produksi/jasa dan pemasarannya",
+            "bukti": "Melalui wawancara dan studi dokumen: (1) laporan Hasil Evaluasi Program Pengembangan Kewirausahaan, yang memuat hasil evaluasi; (2) Program Pengembangan Jiwa Kewirausahaan; dan (3) Program Pengembangan Unit Produksi Kewirausahaan."
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "no": 4,
+    "code": "SP",
+    "label": "Supervisi Guru dan Tenaga Kependidikan",
+    "aspek": [
+      {
+        "kode": "4.1",
+        "no": 1,
+        "unsur": "Menyusun program supervisi akademik dalam rangka peningkatan profesionalisme guru",
+        "indikator": [
+          {
+            "no": 1,
+            "indikator": "Mengidentifikasi masalah yang guru hadapi dalam pelaksanaan pembelajaran.",
+            "data": "Terdapat  rumusan masalah yang Kepala Madrasah peroleh dari pemantauan perencanaan, pelaksanaan, dan penilaian pembelajaran.",
+            "bukti": "Melalui studi dokumen: (1) program pengawasan pembelajaran/ supervisi pembelajaran; (2) jadwal pelaksanaan supervisi; dan (3) SK tim supervisor."
+          },
+          {
+            "no": 2,
+            "indikator": "Mampu merumuskan tujuan yang dilengkapi dengan target pencapaian yang terukur.",
+            "data": "Terdapat rumusan tujuan supervisi yang dilengkapi dengan target pencapaian yang terukur.",
+            "bukti": "Melalui studi dokumen: (1) Program pengawasan pembelajaran/ supervisi pembelajaran; dan (2) jadwal pelaksanaan supervisi."
+          },
+          {
+            "no": 3,
+            "indikator": "Mampu mengembangkan instrumen supervisi.",
+            "data": "Instrumen yang digunakan relevan dengan target indikator pecapaian tujuan madrasah.",
+            "bukti": "Melalui studi dokumen:\r\ninstrumen supervisi pembelajaran"
+          }
+        ]
+      },
+      {
+        "kode": "4.2",
+        "no": 2,
+        "unsur": "Melaksanakan supervisi akademik terhadap guru dengan menggunakan pendekatan dan teknik supervisi yang tepat.",
+        "indikator": [
+          {
+            "no": 1,
+            "indikator": "Mengadakan pertemuan awal untuk menjaring data rencana pembelajaran dan menetapkan fokus kegiatan supervisi.",
+            "data": "Terdapat data hasil pertemuan awal seperti; masalah, tujuan, fokus utama supervisi, dan instrumen yang disepakati",
+            "bukti": "Melalui Wawancara dan studi dokumen:\r\nprogram pengawasan pembelajaran/ supervisi pembelajaran"
+          },
+          {
+            "no": 2,
+            "indikator": "Melaksanakan kegiatan pemantauan pembelajaran dan membuat catatan yang objektif dan selektif sebagai bahan pemecahan masalah supervisi.",
+            "data": "Dokumen  hasil observasi pembelajaran, lengkap, objektif dan selektif serta relevan dengan masalah yang menjadi fokus supervisi.",
+            "bukti": "Melalui Wawancara dan studi dokumen: (1) instrumen supervisi pembelajaran; dan (2) dokumen laporan hasil supervisi pembelajaran."
+          },
+          {
+            "no": 3,
+            "indikator": "Melakukan pertemuan refleksi, menganalisis catatan hasil observasi, dan menyimpulkan hasil observasi",
+            "data": "Dokumen catatan pelaksanaan kegiatan, melaksanakan refleksi, himpunan data hasil superivisi, analisis data, penafsiran, penilaian  keunggulan dan kelemahan, serta rekomendasi perbaikan.",
+            "bukti": "Melalui wawancara dan studi dokumen:\r\nanalisis hasil supervisi pembelajaran"
+          },
+          {
+            "no": 4,
+            "indikator": "Bersama guru menyusun rekomendasi tindaklanjut perbaikan dalam bentuk kegiatan analisis butir soal, remedial, dan pengayaan.",
+            "data": "Data tindak lanjut pelaksanaan supervisi penilaian, bukti analisis butir soal, kegiatan remedial dan pengayaan.",
+            "bukti": "Melalui wawancara dan studi dokumen: (1) dokumen hasil analisis dan tindak lanjut supervisi pembelajaran; dan (2) program kegiatan workshop/diklat untuk guru."
+          }
+        ]
+      },
+      {
+        "kode": "4.3",
+        "no": 3,
+        "unsur": "Menilai dan menindaklanjuti kegiatan supervisi akademik dalam rangka peningkatan profesionalisme guru.",
+        "indikator": [
+          {
+            "no": 1,
+            "indikator": "Memfasilitasi guru dalam merencanakan tindak lanjut perbaikan sistem penilaian hasil belajar.",
+            "data": "Terdapat bukti tindak lanjut perbaikan sistem penilaian hasil belajar",
+            "bukti": "Melalui Wawancara dan studi dokumen: (1) dokumen hasil analisis dan tindak lanjut supervisi pembelajaran; (2) hasil kegiatan workshop/diklat untuk guru; dan (3) data dan piagam hasil pelatihan guru."
+          },
+          {
+            "no": 2,
+            "indikator": "Mengecek ulang keterlaksanaan rekomendasi oleh guru",
+            "data": "dokumen rekomendasi perbaikan sistem penilaian hasil belajar secara berkala.",
+            "bukti": "Melalui wawancara dan studi dokumen:\r\nrekomendasi Hasil  perbaikan sistem penilaian hasil belajar"
+          },
+          {
+            "no": 3,
+            "indikator": "Melaksanakan pembinaan dan pengembangan guru sebagai tindak lanjut kegiatan supervisi.",
+            "data": "Terdapat bukti, berupa laporan tindak lanjut hasil supervisi sebagai dasar pelaksanaan pembinaan guru.",
+            "bukti": "Terdapat bukti, berupa:\r\nlaporan tindak lanjut hasil supervisi sebagai dasar pelaksanaan pembinaan guru."
+          },
+          {
+            "no": 4,
+            "indikator": "Menggunakan data hasil supervisi untuk pemetaan ketercapaian program sebagai dasar perbaikan siklus berikutnya.",
+            "data": "Hasil supervisi keterlaksanaan dan ketercapaian program sebagai bahan penilaian kinerja dan pemetaan profil madrasah sebagai dasar perencanaan siklus berikutnya.",
+            "bukti": "Hasil supervisi keterlaksanaan dan ketercapaian program sebagai bahan penilaian kinerja dan pemetaan profil madrasah sebagai dasar perencanaan siklus berikutnya."
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "no": 5,
+    "code": "HK",
+    "label": "Hasil Kinerja Kepala Madrasah",
+    "aspek": [
+      {
+        "kode": "5.1",
+        "no": 1,
+        "unsur": "Prestasi peserta didik",
+        "indikator": [
+          {
+            "no": 1,
+            "indikator": "Prestasi akademik peserta didik",
+            "data": "Terdapat  prestai akademik peserta didik pada berbagai tingkat",
+            "bukti": "Melalui studi piagam dan piala prestasi akademik"
+          },
+          {
+            "no": 2,
+            "indikator": "Prestasi non akademik peserta didik",
+            "data": "Terdapat  prestai non akademik peserta didik pada berbagai tingkat",
+            "bukti": "Melalui studi piagam dan piala prestasi non akademik"
+          }
+        ]
+      },
+      {
+        "kode": "5.2",
+        "no": 2,
+        "unsur": "Prestasi Pendidik dan Tenaga Kependidikan",
+        "indikator": [
+          {
+            "no": 1,
+            "indikator": "Prestasi akademik pendidik dan tenaga kependidikan",
+            "data": "Terdapat  prestai akademik pendidik dan tenaga kependidikan pada berbagai tingkat",
+            "bukti": "Melalui studi piagam dan piala prestasi akademik pendidik dan tenaga kependidikan"
+          },
+          {
+            "no": 2,
+            "indikator": "Prestasi non akademik  pendidik dan tenaga kependidikan",
+            "data": "Terdapat  prestai non akademik pendidik dan tenaga kependidikan pada berbagai tingkat",
+            "bukti": "Melalui studi piagam dan piala prestasi non akademik pendidik dan tenaga kependidikan"
+          }
+        ]
+      },
+      {
+        "kode": "5.3",
+        "no": 3,
+        "unsur": "Prestasi Madrasah",
+        "indikator": [
+          {
+            "no": 1,
+            "indikator": "Kelebihan prestasi akademik dari madrasah/sekolah lainnya",
+            "data": "Terdapat bukti keunggulam prestasi akademik madrasah",
+            "bukti": "Melalui studi piagam, piala, dan laporan kegiatan lomba akademik yang diikuti"
+          },
+          {
+            "no": 2,
+            "indikator": "Kelebihan prestasi non akademik dari madrasah/sekolah lainnya",
+            "data": "Terdapat bukti keunggulam prestasi non akademik madrasah",
+            "bukti": "Melalui studi piagam, piala, dan laporan kegiatan lomba non akademik yang diikuti"
+          }
+        ]
+      },
+      {
+        "kode": "5.4",
+        "no": 4,
+        "unsur": "Prestasi Kepala Madrasah",
+        "indikator": [
+          {
+            "no": 1,
+            "indikator": "Ijazah yang dimiliki kepala madrasah",
+            "data": "Terdapat bukti ijazah kepala madrasah",
+            "bukti": "Bukti dokumen ijazah kepala madrasah"
+          },
+          {
+            "no": 2,
+            "indikator": "Pendidikan dan pelatihan yang pernah diikuti oleh kepala madrasah",
+            "data": "Terdapat bukti keikutsertaan dalam diklat",
+            "bukti": "Bukti dokumen sertifikat diklat"
+          },
+          {
+            "no": 3,
+            "indikator": "Penguasaan ICT kepala madrasah",
+            "data": "Terdapat bukti penguasaan ICT",
+            "bukti": "Praktik penggunaan ICT"
+          },
+          {
+            "no": 4,
+            "indikator": "Prestasi yang diraih oleh kepala madrasah",
+            "data": "Terdapat bukti prestasi kepala madrasah",
+            "bukti": "Bukti piagam, medali, piala"
+          },
+          {
+            "no": 5,
+            "indikator": "Kegiatan penelitian kependidikan yang telah dilakukan oleh kepala madrasah",
+            "data": "Terdapat bukti karya penelitian kependidikan",
+            "bukti": "Bukti karya ilmiah hasil penelitian bidang pendidikan"
+          },
+          {
+            "no": 6,
+            "indikator": "Kegiatan pelibatan komite dalam mendukung program madrasah",
+            "data": "Terdapat bukti pelibatan komite madrasah dalam mendukung program madrasah",
+            "bukti": "Bukti dokumen program kegiatan, laporan rapat-rapat dengan komite madrasah"
+          },
+          {
+            "no": 7,
+            "indikator": "Kegiatan kemitraan dengan stakeholder pendidikan dalam meningkatkan kompetensi guru madrasah.",
+            "data": "Terdapat bukti kerjasama kemitraan untuk peningkatan kompetensi guru madrasah",
+            "bukti": "Bukti dokumen program kegiatan, perjanjian kerjasama kemitraan"
+          }
+        ]
+      }
+    ]
+  }
+];
+
+// Instrumen lengkap untuk role "gtk" (Guru/Tendik & Komite/KKM share instrumen sama)
+window.PKKM_INSTRUMEN_GTK = [
+  {
+    "no": 1,
+    "code": "PM",
+    "label": "Usaha Pengembangan Madrasah",
+    "aspek": [
+      {
+        "kode": "1.1",
+        "no": 1,
+        "unsur": "Mengembangkan madrasah sesuai dengan kebutuhan.",
+        "indikator": [
+          {
+            "no": 1,
+            "indikator": "Mampu menggembangkan struktur organisasi yang sesuai dengan kebutuhan program.",
+            "data": "Dokumen struktur madrasah",
+            "bukti": "Melalui observasi dan studi dokumen: (1) bagan/struktur organisasi; (2) notulen rapat yang berisi keputusan tentang penyusunan struktur organisasi; (3) dokumen sosialisasi; dan (4) Daftar Hadir"
+          },
+          {
+            "no": 2,
+            "indikator": "Mampu menempatkan personalia yang sesuai dengan kebutuhan",
+            "data": "Dokumen uraian tugas personalia di madrasah",
+            "bukti": "Melalui studi dokumen: (1) dokumen penetapan/pengesahan susunan organisasi madrsaha; (2) rincian tugas setiap personil pada struktur organisasi madrasah; (3) SOP Personalia; dan (4) Sertifikat"
+          },
+          {
+            "no": 3,
+            "indikator": "Mampu mengembangkan pedoman dan prosedur kerja organisasi madrasah",
+            "data": "Pedoman dan prosedur kerja organisasi madrasah",
+            "bukti": "Melalui obsevasi dokumen: \r\nSOP madrasah"
+          }
+        ]
+      },
+      {
+        "kode": "1.2",
+        "no": 2,
+        "unsur": "Mengelola perubahan dan pengembangan madrasah menuju organisasi pembelajar yang efektif.",
+        "indikator": [
+          {
+            "no": 1,
+            "indikator": "Mampu mengembangkan program baru untuk meningkatkan pencapaian target yang lebih tinggi.",
+            "data": "Program pengembangan madrasah mengandung target pencapaian pada indikator keunggulan khas satuan pendidikan, kerja sama tim, dan data realisasi target yang meningkat daripada pencapaian sebelumnya.",
+            "bukti": "Melalui studi dokumen: (1) visi dan Misi madrasah; (2) data prestasi madrasah; (3) data hasil UN 3 tahun terahir; (4) Data Alumni"
+          },
+          {
+            "no": 2,
+            "indikator": "Mampu dan terampil dalam membangun tim kerja yang efektif untuk mendapatkan produk kinerja yang lebih unggul.",
+            "data": "Terdapat struktur organisasi yang dilengkapi dengan distribusi dan deskripsi pembagian tugas",
+            "bukti": "Melalui observasi dan studi dokumen: (1) bagan/struktur organisasi; (2) SK; (3) tugas dan fungsi; (4) Terbentuknya KKG/MGMP; (5) Program KKG/MGMP; dan (6) Laporan kegiatan KKG/MGMP"
+          },
+          {
+            "no": 3,
+            "indikator": "Mampu menerapkan berbagai teknik pembaharuan dalam pengelolaan pembelajaran.",
+            "data": "Terdapat penerapan strategi pembaharuan dengan strategi yang terprogram",
+            "bukti": "Melalui studi dokumen: (1) KTSP; (2) kalender pendidikan; (3) perangkat pembelajaran; (4) penilaian; DAN (5) peraturan akademik"
+          },
+          {
+            "no": 4,
+            "indikator": "Mampu mengembangkan potensi dan meningkatkan prestasi madrasah",
+            "data": "Dokumen bukti perkembanganpotensi dan prestasi peserta didik, yang meningkat dari waktu ke waktu.",
+            "bukti": "Melalui studi dokumen: (1) data prestasi madrasah 1 tahun terahir; (2) data hasil UN 1 tahun terahir; (3)  Dokumen Akreditasi; dan (4) Program Ekstrakurikuler"
+          }
+        ]
+      },
+      {
+        "kode": "1.3",
+        "no": 3,
+        "unsur": "Mengelola hubungan antara madrasah dan masyarakat dalam rangka pencarian dukungan ide, sumber belajar, dan pembiayaan.",
+        "indikator": [
+          {
+            "no": 1,
+            "indikator": "Merencanakan kerjasama dengan lembaga pemerintah, swasta dan masyarakat",
+            "data": "Data kerjasama dengan lembaga pemerintah, swasta, dan masyarakat",
+            "bukti": "Melalui studi dokumen: (1) SK komite madasah; (2) AD/ART komite madrasah; (3) program kerja komite madrasah; (4) laporan kegiatan komite madrasah; dan (5) dokumen tertulis kerja sama (MUO)."
+          },
+          {
+            "no": 2,
+            "indikator": "Melakukan pendekatan-pendekatan dalam rangka mendapatkan dukungan dari lembaga pemerintah, swasta dan masyarakat",
+            "data": "Dokumen pragram kerjasama dengan pemerintah, swasta, dan masyarakat",
+            "bukti": "Melalui studi dokumen: (1) Program kegiatan kerja sama; (2) Foto kegiatan; (3) Jadwal Kegiatan; dan (4) Sk Penanggung Jawab program."
+          },
+          {
+            "no": 3,
+            "indikator": "Memanfaatkan dan memelihara hubungan kerjasama dengan lembaga pemerintah, swasta dan masyarakat",
+            "data": "Data hasil kerjasama dengan lembega pemerintah, swasta, dan masyarakat",
+            "bukti": "Melalui studi dokumen: Laporan kegiatan kerja sama"
+          }
+        ]
+      },
+      {
+        "kode": "1.4",
+        "no": 4,
+        "unsur": "Mengelola proses pencapaian 8 SNP sesuai dengan arah dan tujuan Pendidikan nasional",
+        "indikator": [
+          {
+            "no": 1,
+            "indikator": "Mengaplikasikan pengembangan kurikulum yang mengacu kepada standar isi",
+            "data": "Dokumen analisis 8 SNP dalam hal standar ini",
+            "bukti": "Melalui studi dokumen: (1) KTSP; (2) kalender pendidikan; (3) perangkat pembelajaran; (4) penilaian; (5) peraturan akademik; dan (6) Buku Kerja Guru."
+          },
+          {
+            "no": 2,
+            "indikator": "Mengaplikasikan pengembangan proses pembelajaran yang mengacu kepada standar proses",
+            "data": "Dokumen analisis 8 SNP dalam hal standar proses",
+            "bukti": "Melalui studi dokumen: (1) dokumen pengembangan silabus; (2) RPP; (2) RPE; (2) buku teks; (2) jurnal mengajar guru; dan (2) data siswa."
+          },
+          {
+            "no": 3,
+            "indikator": "Mengaplikasikan sistem penilaian pembelajaran yang mengacu kepada standar penilaian",
+            "data": "Dokumen analisis 8 SNP dalam hal standar penilaian",
+            "bukti": "Melalui studi dokumen: (1) instrumen penilaian; (2) kisi-kisi soal; (3) kumpulan nakah soal; (4) analisis butir soal; (5) dokumen analisis hasil belajar siswa; (6) laporan hasil belajar siswa; (7) tindak lanjut hasil penilaian; (8) dokumen pelaksanaan PAS; dan (9) dokumen pelaksanaan PAT."
+          },
+          {
+            "no": 4,
+            "indikator": "Melaksanakan penjaminan mutu pencapaian standar kompetensi lulusan",
+            "data": "Dokumen analisis 8 SNP dalam hal standar kompetensi lulusan",
+            "bukti": "Melalui studi dokumen: (1) dokumen program kegiatan kesiswaan; (2) laporan kegiatan kesiswaan; (3) dokumentasi kegiatan kesiswaan; (4) laporan kegiatan pembiasaan siswa; (5) dokumen kegiatan literasi; (6) data rata-rata hasil ujian 2 tahun terahir; (7) data prestasi akademik 2 tahun terahir; dan (8) data prestasi non akademik 2 tahun terahir."
+          }
+        ]
+      },
+      {
+        "kode": "1.5",
+        "no": 5,
+        "unsur": "Mengelola unit layanan khusus madrasah dalam mendukung kegiatan pembelajaran dan kegiatan peserta didik di madrasah.",
+        "indikator": [
+          {
+            "no": 1,
+            "indikator": "Mampu mengelola laboratorium madrasah agar dapat dimanfaatkan secara optimal untuk kepentingan pembelajaran peerta didik",
+            "data": "Adanya bukti pemanfaatan laboratorium dalam pembelajaran, jadwal, kegiatan, dll (Kosongkan jika RA)",
+            "bukti": "Observasi dan studi dokumen: (1) luas memenuhi sesuai standar; (2) sarana pendukung lab; (2) jurnal laboratorium; dan (2) Program Pengembangan Sarpras."
+          },
+          {
+            "no": 2,
+            "indikator": "Mampu mengelola perpustakaan madrasah dalam menyiiapkan sumber belajar yang diperlukan oleh peserta didik.",
+            "data": "Adanya bukti pemanfaatan lperpustakaan dalam pembelajaran, jadwal, kegiatan, dll",
+            "bukti": "Observasi dan studi dokumen: (1) luas memenuhi sesuai standar; (2) sarana pendukung; (2) daftar buku induk perpustakaan; dan (2) laporan/statistic pengelolaan perpustakaan."
+          },
+          {
+            "no": 3,
+            "indikator": "Mampu mengelola usaha madrasah untuk pembelajaran pesera didik dan pemasukan tambahan dana bagi madrasah.",
+            "data": "Adanya bukti kegiatan usaha madrasah dalam pembelajaran.",
+            "bukti": "Melalui studi dokumen:\r\ndata/laporan kegiatan usaha madrasah"
+          },
+          {
+            "no": 4,
+            "indikator": "Mampu mengelola koperasi madrasah baik sebagai media praktik maupun sebagai sumber belajar bagi peserta didik.",
+            "data": "Adanya bukti pemanfaatan koperasi dalam pembelajaran, jadwal, kegiatan, dll",
+            "bukti": "Observasi dan studi dokumen: (1) instrumen hasil praktek pembelajaran; dan (2) foto kegiatan praktik"
+          }
+        ]
+      },
+      {
+        "kode": "1.6",
+        "no": 6,
+        "unsur": "Mengelola sistem informasi madrasah dalam mendukung penyusunan program dan pengambilan keputusan.",
+        "indikator": [
+          {
+            "no": 1,
+            "indikator": "Memanfaatkan teknologi informasi dan komunikasi dalam manajemen madrasah",
+            "data": "Adanya bukti pemanfaatan teknologi indformasi dan komunikasi dalam manajemen madrasah",
+            "bukti": "Observasi, studi dokumen dan wawancara: (1) fasilitas teknologi dan informasi; dan (2) sumber daya informasi"
+          },
+          {
+            "no": 2,
+            "indikator": "Memanfaatkan teknologi informasi dan komunikasi dalam pembelajaran, baik sebagai sumber belajar maupun sebagai alat/media pembelajaran.",
+            "data": "Adanya bukti pemanfaatan teknologi indformasi dan komunikasi sebagai sumber belajar dan media pembelajaran",
+            "bukti": "Observasi lingkungan madrasah dan wawancara: (1) ketersediaan komputer; (2) jaringan internet; (3) website madrasah; (4) alamat email madrasah; dan (5) pemanfaatn TIK untuk pembelajaran."
+          },
+          {
+            "no": 3,
+            "indikator": "Memanfaatkan teknologi teknologi informasi dan komunikasi dalam menjalin kerjasama dengan pihak lain.",
+            "data": "Adanya bukti pemanfaatan teknologi informasi dan komunikasi dalam menjalin kerjasama dengan pihak lain",
+            "bukti": "Observasi lingkungan madrasah, wawancara dan studi dokumen: (1) pengelolaan SIM; (2) fasilitas SIM; (3) surat tugas pengelola SIM; dan (4) pelaporan data dan informasi."
+          },
+          {
+            "no": 4,
+            "indikator": "Memanfaatkan teknologi teknologi informasi dan komunikasi dalam promosi program madrasah dan prestasi yang telah dicapai.",
+            "data": "Adanya bukti pemanfaatan teknologi informasi dan komunikasi dalam promosi program madrasah dan prestasi yang dicapai",
+            "bukti": "Observasi lingkungan madrasah, wawancara dan studi dokumen: (1) pengelolaan SIM; (2) fasilitas SIM; (3) surat tugas pengelola SIM; dan (4) pelaporan data dan informasi."
+          }
+        ]
+      },
+      {
+        "kode": "1.7",
+        "no": 7,
+        "unsur": "Memanfaatkan kemajuan teknologi informasi bagi peningkatan pembelajaran dan manajemen madrasah",
+        "indikator": [
+          {
+            "no": 1,
+            "indikator": "Mampu mengembangkan sistem administrasi pengelolaan secara efektif dengan dukungan penerapan teknologi informasi dan komunikasi.",
+            "data": "Terdapat penerapan TIK (berbasis komputer, CD, jejaring intranet, internet) dalam pengelolaan administrasi administrasi persuratan, sarana prasarana, kepegawaian, kepeserta didikan, dan keuangan.",
+            "bukti": "Observasi lingkungan madrasah dan wawancara: (1) jumlah komputer dan LCD yang cukup; (2) memiliki jaringan internet; (3) memiliki web sekolah; (4) memiliki e-mail madrasah; dan (5) Memanfaatkan TIK untuk adminitrasi madrasah."
+          },
+          {
+            "no": 2,
+            "indikator": "Mengelola adminsistasi pembelajaran secara efektif dengan dukungan penerapan teknologi informasi dan komunikasi.",
+            "data": "Model penerapan TIK dalam pengelolaan adminsitrasi kurikulum dan pembelajaran, misalnya, pengelolaan kurikulum berbasis komputer, intranet, dan internet.",
+            "bukti": "Observasi lingkungan madrasah dan wawancara: (1) jumlah kompute dan LCD yang cukup; (2) memiliki jaringan internet; dan (3) memanfaatkan TIK untuk pembelajaran."
+          },
+          {
+            "no": 3,
+            "indikator": "Mampu  mengembangkan sistem pengelolaan perpustakaan secara efektif dengan dukungan penerapan teknologi informasi dan komunikasi.",
+            "data": "Model pemanfaatan TIK dalam sistem pengelolaan perpustakaan berbasis komputer, intranet, atau internet.",
+            "bukti": "Observasi dan studi dokumen: (1) katalog digital; (2) BSE; (3) akses internet; (4) komputer; dan (5) dokumen aplikasi layanan perpustakaan."
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "no": 2,
+    "code": "MJ",
+    "label": "Pelaksanaan Tugas Manajerial",
+    "aspek": [
+      {
+        "kode": "2.1",
+        "no": 1,
+        "unsur": "Menyusun perencanaan madrasah untuk berbagai tingkatan perencanaan.",
+        "indikator": [
+          {
+            "no": 1,
+            "indikator": "Mampu mengembangkan RKJM, RKT/RKAM dengan program lainnya berdasarkan data hasil evaluasi dalam pemenuhan 8 SNP",
+            "data": "Dokumen RKJM, RKT/RKAM yang  meliputi SNP",
+            "bukti": "Melalui studi dokumen: (1) Dokumen Evaluasi Diri Madrasah EDM); dan (2) Dokumen RKJM dan RKT berbasis EDM"
+          },
+          {
+            "no": 2,
+            "indikator": "Mampu merumuskan visi-misi sebagai arah pengembangan program RKJM, RKT/RKAS dan program lainnya.",
+            "data": "Visi-misi madrasah merupakan rumusan hasil keputusan bersama.",
+            "bukti": "Melalui studi dokumen: (1) visi, misi yang telah ditetapkan oleh Kamad; dan (2) berita acara dan daftar hadir kegiatan perumusan/ peninjauan kembali dan penetapan visi dan misi."
+          },
+          {
+            "no": 3,
+            "indikator": "Mampu menentukan strategi pencapaian tujuan madrasah, dilengkapi dengan indikator pencapaian yang terukur",
+            "data": "Dokumen program yang memuat strategi pencapaian tujuan madrasah",
+            "bukti": "Melalui studi dokumen: (1) program kerja; dan (2) RKJM dan RKTM"
+          },
+          {
+            "no": 4,
+            "indikator": "Mampu menyusun program dengan rencana evaluasi keterlaksanaan dan pencapaian program",
+            "data": "Dokumen rencana evaluasi keterlaksanaan dan pencapaian program.",
+            "bukti": "Melalui studi dokumen:\r\nRKJM dan RKTM"
+          }
+        ]
+      },
+      {
+        "kode": "2.2",
+        "no": 2,
+        "unsur": "Memimpin madrasah dalam rangka pendayagunaan sumber daya madrasah secara optimal.",
+        "indikator": [
+          {
+            "no": 1,
+            "indikator": "Mampu memberi contoh berdisiplin; hadir tepat waktu, disiplin menggunakan waktu, dan tepat waktu mengakhiri pekerjaan.",
+            "data": "Dokumen daftar hadir semua kegiatan madrasah",
+            "bukti": "Observasi, wawancara dan studi dokumen: (1) finggerprint kehadiran kamad; dan (2) daftar hadir pada kegiatan di madrasah"
+          },
+          {
+            "no": 2,
+            "indikator": "Mampu melaksanakan peraturan sesuai dengan ketentuan yang berlaku",
+            "data": "Menjadi contoh dan mengarahkan guru, staf administrasi, dan peserta didik melaksanakan kegiatan sesuai dengan peraturan",
+            "bukti": "Wawancara dengan warga madrasah"
+          },
+          {
+            "no": 3,
+            "indikator": "Mampu menunjukkan keteladanan dalam memanfaatkan sumber daya secara efektif dan efisien.",
+            "data": "Memecahkan masalah madrasah secara bersama-sama, merencankan pemanfaatan sumber belajar dan sumber informasi, memantau penggunaan sumber daya, dan menilai pemanfaatan sumber daya",
+            "bukti": "Wawancara dengan warga madrasah"
+          },
+          {
+            "no": 4,
+            "indikator": "Mampu  menunjukkan kedisiplinan sebagai insan pembelajar.",
+            "data": "Rajin membaca dan pendengar yang baik, mengekspresikan pikiran secara tertulis, mengkomunikasikan ilmu pengetahuan baru, dan menyediakan berbagai media untuk mengembangkan gagasan warga madrasah",
+            "bukti": "Wawancara, observasi: (1) koleksi buku refrefensi/ ilmu pengetahuan; dan (2) karya tulis yang diterbitkan atau tidak"
+          }
+        ]
+      },
+      {
+        "kode": "2.3",
+        "no": 3,
+        "unsur": "Menciptakan budaya dan iklim madrasah yang kondusif dan inovatif bagi pembelajaran peserta didik.",
+        "indikator": [
+          {
+            "no": 1,
+            "indikator": "Mampu menjadi contoh  dan berbudaya mutu yang kompetitif dalam mendorong peningkatan prestasi akademik dan nonakademik peserta didik",
+            "data": "Dokumen peningkatan KKM, target hasil ulangan, hasil UN dan target keunggulan nonakademik peserta didik yang terprogram, terlaksana, dan meningkat hasilnya",
+            "bukti": "Wawancara dan studi dokumen: (1) peningkatan KKM; (2) hasil UN; (3) program keunggulan dan inovasi baik akademik maupun non akademik; dan (4) data prestasi akademik dan non akademik."
+          },
+          {
+            "no": 2,
+            "indikator": "Mampu melengkapi sarana dan prasarana untuk menciptakan suasana belajar kondusif dan inovatif bagi peserta didik",
+            "data": "Suasana lingkungan madrasah yang asri, bersih, rindang, aman, dan menyenangkan peserta didik",
+            "bukti": "Observasi lingkungan madrasah:  suasana lingkungan yang asri, bersih, rindang, aman, dan menyenangkan peserta didik"
+          },
+          {
+            "no": 3,
+            "indikator": "Mampu memfasilitasi kegiatan-kegiatan untuk meningkatkan budaya baca dan budaya tulis peserta didik.",
+            "data": "Data kunjungan perpustakaan, peminjaman buku oleh peserta didik, pembaharuan buku dan bahan bacaan, ketersediaan sumber belajar berbasis TIK, dan sarana publikasi karya tulis, dan mengembangkan kompetisi karya tulis peserta didik tingkat madrasah.",
+            "bukti": "Observasi, wawancara dan studi dokumen: (1) rencana dan laporan pelaksanaan kegiatan literasi; (2) dokumen kegiatan pengembangan budaya baca; dan (3) dokumen/ pajangan hasil karya tulis siswa."
+          },
+          {
+            "no": 4,
+            "indikator": "Mampu memfasilitasi kegiatan-kegiatan lomba di bidang akademik dan nonakademik bagi peserta didik",
+            "data": "Dokumen penyelenggaran kegiatan kompetisi yang dimulai dari tingkat madrasah, perolehan piagam penghargaan, piala, trofi perlombaan bidang akademik dan nonakademik.",
+            "bukti": "Observasi dan studi dokumen: (1) dokumen penyelenggaran kegiatan kompetisi yang dimulai dari tingkat madrasah; dan (2) daftar perolehan piagam, penghargaan, piala, trofi perlombaan disemua jenjang."
+          }
+        ]
+      },
+      {
+        "kode": "2.4",
+        "no": 4,
+        "unsur": "Mengelola guru dan staf dalam rangka pendayagunaan sumber daya manusia secara optimal.",
+        "indikator": [
+          {
+            "no": 1,
+            "indikator": "Mampu menyusun perencanaan pengembangan pendidik dan tenaga kependidikan",
+            "data": "Dokumen program pembinaan pendidik dan tenaga kependidikan di madrasah",
+            "bukti": "Studi dokumen dan wawancara:\r\nprogram kerja kepala madrasah"
+          },
+          {
+            "no": 2,
+            "indikator": "Mampu melakukan pembinaan berkala untuk meningkatkan mutu SDM madrasah",
+            "data": "Dokumen pelaksanaan kegiatan pembinaan guru.",
+            "bukti": "Studi dokumen dan wawancara: (1) buku/catatan pembinaan guru dan tendik (notulen dan daftar hadir rapat pembinaan); dan (2) laporan kinerja kepala madrasah."
+          },
+          {
+            "no": 3,
+            "indikator": "Memfasilitasi guru dan staf administrasi untuk meningkatkan kegiatan pembinaan kompetensi",
+            "data": "Data dukungan Kepala Madrasah dalam memfasilitasi staf administrasi untuk meningkatkan mutu profesi.",
+            "bukti": "Studi dokumen dan wawancara: (1) buku/catatan pembinaan guru dan tendik (notulen dan daftar hadir rapat pembinaan); dan (2) laporan kinerja kepala madrasah."
+          },
+          {
+            "no": 4,
+            "indikator": "Memantau dan menilai penerapan hasil pelatihan dalam pekerjaan di madrasah",
+            "data": "Dokumen program evaluasi pelatihan atau pengembangan profesi pendidik dan tenaga kependidikan",
+            "bukti": "Observasi dan studi dokumen: (1) program pelatihan pengembangan profesi guru dan tendik; dan (2) laporan pelaksanaan pelatihan pengembangan profesi guru dan tendik"
+          }
+        ]
+      },
+      {
+        "kode": "2.5",
+        "no": 5,
+        "unsur": "Mengelola sarana dan prasarana madrasah dalam rangka pendayagunaan secara optimal",
+        "indikator": [
+          {
+            "no": 1,
+            "indikator": "Mampu mengelola fasilitas prasarana, perabot dan sarana madrasah (gedung, bangunan, dan lahan meja, kursi, lemari, peralatan kantor, dan alat kebersihan)",
+            "data": "Data fasilitas prasarana, perabot, dan sarana marasah dikelola dengan baik",
+            "bukti": "Observasi dan studi dokumen: (1) buku inventaris; dan (2) buku pemeliharaan sarana dan prasarana."
+          },
+          {
+            "no": 2,
+            "indikator": "Mampu mengelola perpustakaan madrasah",
+            "data": "Data perpustakaan dikelola dengan baik",
+            "bukti": "Observasi fisik dan studi dokumen: (1) buku induk perpustakaan; dan (2) buku/data/grafik layanan perpustakaan."
+          },
+          {
+            "no": 3,
+            "indikator": "Mampu mengelola laboratirium madrasah",
+            "data": "Data laboratorium dikelola dengan baik (Kosongkan jika RA)",
+            "bukti": "Observasi fisik dan studi dokumen: (1) daftar infentaris laboratorium; dan (2) buku/jurnal/ data/grafik layanan baboratorium"
+          },
+          {
+            "no": 4,
+            "indikator": "Mampu mengelola fasilitas penunjang madrasah lainnya (bengkel, toko, koperasi, kebun, dsb)",
+            "data": "Data fasilitas penunjang terkola dengan baik",
+            "bukti": "Observasi fisik,wawancara dan studi dokumen:\r\ndata fasilitas penunjang wirausaha yang dikelola oleh madrasah"
+          }
+        ]
+      },
+      {
+        "kode": "2.6",
+        "no": 6,
+        "unsur": "Mengelola peserta didik dalam rangka penerimaan peserta didik baru, dan penempatan dan pengembangan kapasitas peserta didik",
+        "indikator": [
+          {
+            "no": 1,
+            "indikator": "Menyusun perencanaan penerimaan, pengelolaan dan pengembangan kompetensi peserta didik.",
+            "data": "Dokumen program penerimaan peserta didik baru, kriteria penerimaan peserta didik, data hasil analisis bekal ajar peserta didik awal,",
+            "bukti": "Studi dokumen: (1) dokumen program penerimaan peserta didik baru; (2) brosur; dan (3) data hasil analisis kemampuan peserta didik baru"
+          },
+          {
+            "no": 2,
+            "indikator": "Memiliki program pengembangan potensi diri dan prestasi peserta didik.",
+            "data": "Dokumen program pengembangan potensi diri dan prestasi peserta didik.",
+            "bukti": "Observasi dan studi dokumen:\r\nprogram pengembangan diri peserta didik."
+          },
+          {
+            "no": 3,
+            "indikator": "Memfasilitasi kegiatan-kegiatan untuk meningkatkan pembiasaan melalui penanaman nilai-nilai.",
+            "data": "Data program kegiatan akademik dan nonakademik melalui penanaman nilai - nilai.",
+            "bukti": "Observasi lingkungan aktivitas siswa, wawancara dan studi dokumen: (1) program kegiatan akademik dan non akademik dan laporan pelaksanaannya; dan (2) dokumentasi kegiatan."
+          },
+          {
+            "no": 4,
+            "indikator": "Memfasilitasi kegiatan pengembangan diri bagi peserta didik, pendidik, dan tenaga kependidikan lainnya secara optimal",
+            "data": "Data keterlaksanaan program pengembangan diri peserta didik, pendidik, dan tenaga kependidikan",
+            "bukti": "Observasi lingkungan aktivitas siswa dan guru, wawancara dan studi dokumen: (1) program kegiatan pengembangan diri; (2) dokumentasi kegiatan; dan (3) data prestasi siswa, guru dan tendik."
+          }
+        ]
+      },
+      {
+        "kode": "2.7",
+        "no": 7,
+        "unsur": "Mengelola pengembangan kurikulum dan kegiatan pembelajaran sesuai dengan arah dan tujuan pendidikan nasional",
+        "indikator": [
+          {
+            "no": 1,
+            "indikator": "Mampu mengarahkan secara efektif dalam menerapkan prinsip-prinsip pengengembangan KTSP dalam kegiatan IHT, Workshop, Rapat Koordinasi, dan kegiatan MGMP/KKG.",
+            "data": "Dokumen hasil pengembangan kurikulum yang disusun melalui rapat kerja, IHT, Workshop, Rakor, atau kegiatan MGMP/KKG",
+            "bukti": "Studi dokumen: (1) dokumen kurikulum yang berlaku; (2) SK tim pengembang kurikulum; dan (3) dokumen penyusunan dokumen kurikulum (daftar hadir, berita acara, notulen)."
+          },
+          {
+            "no": 2,
+            "indikator": "Mampu mengendalikan pelaksanaan KTSP berlandaskan kalender pendidikan, menerbitkan surat keputusan pembagian tugas mengajar, dan menerapkan aturan akademik.",
+            "data": "Pelaksanaan kurikulum sesuai dengan kalender pendidikan tingkat madrasah, surat keputusan pembagian tugas mengajar, dan aturan akademik.",
+            "bukti": "Studi dokumen: (1) struktur kurikulum; (2) jadwal pelajaran; (3) daftar hadir guru; dan (4) peraturan akademik"
+          },
+          {
+            "no": 3,
+            "indikator": "Memfasilitasi efektivitas tim kerja guru dalam rangka meningkatkan mutu pembelajaran.",
+            "data": "Bukti pelaksanaan kerja sama guru pada tingkat satuan pendidikan, antar satuan pendidikan dalam meningkatkan mutu perencanaan, proses, pembelajaran",
+            "bukti": "Studi dokumen: (1) program KKG/MGMP di madrasah; dan (2) laporan pelaksanaan KKG/MGMP."
+          },
+          {
+            "no": 4,
+            "indikator": "Mampu mengembangkan pelayanan belajar yang inovatif melalui pengembangan perangkat dan sumber belajar yang terbarukan.",
+            "data": "Bukti penggunaan metode hasil pelatihan paling akhir, memanfaatkan teknologi informasi dan komunikasi, penggunaan alat peraga, teknik evaluasi baru yang menghasilkan produk belajar peserta didik yang dipublikasikan di lingkungan madrasah atau media lain",
+            "bukti": "Observasi kelas, studi dokumen wawancara dengan siswa dan guru:\r\nmenelaah ragam metode, media dan sumber belajar yang digunakan dalam RPP"
+          },
+          {
+            "no": 5,
+            "indikator": "Memfasilitasi peserta didik dalam mengembangkan kolaborasi dan kompetisi bidang akademik dan nonakademik",
+            "data": "Data kegiatan kolaborasi dan kompetisi peserta didik tingkat madrasah, baik akademik dan non akademik.",
+            "bukti": "Wawancara dan studi dokumen: (1) program, laporan dan dokumen kegiatan kesiswaan (kegiatan akademik maupun non akademik); dan (2) data prestasi akademik maupun nonakademik."
+          }
+        ]
+      },
+      {
+        "kode": "2.8",
+        "no": 8,
+        "unsur": "Mengelola keuangan madrasah sesuai dengan prinsip pengelolaan yang akuntabel, transparan, dan efisien",
+        "indikator": [
+          {
+            "no": 1,
+            "indikator": "Mampu merencanakan kebutuhan keuangan madrasah sesuai dengan rencana pengembangan madrasah, baik jangka pendek maupun jangka panjang",
+            "data": "Dokumen RKJM dan RKTM",
+            "bukti": "Studi dokumen: (1) RKJM dan RKTM; (2) laporan keuangan; dan (3) buku kas."
+          },
+          {
+            "no": 2,
+            "indikator": "Mampu mengupayaan sumber-sumber keuangan terutama dari luar madrasah dan dari unit usaha madrasah",
+            "data": "Dokumen RKJM dan RKTM",
+            "bukti": "Studi dokumen RKJM dan RKTM."
+          },
+          {
+            "no": 3,
+            "indikator": "Mampu mengkoordinasikan pembelajaran keuangan sesuai dengan peraturan dan perundang-undangan berdasarkan asas prioritas dan efisiensi.",
+            "data": "Dokumen RKJM dan RKTM",
+            "bukti": "Studi dokumen RKJM dan RKTM."
+          },
+          {
+            "no": 4,
+            "indikator": "Mampu membuat laporan dan evaluasi pengelolaan keuangan madrasah sesuai dengan prinsip efisien, tranparan, dan akuntabel.",
+            "data": "Dokumen RKJM dan RKTM",
+            "bukti": "Studi dokumen: (1) RKJM dan RKTM; (2) laporan keuangan; dan (3) buku kas."
+          }
+        ]
+      },
+      {
+        "kode": "2.9",
+        "no": 9,
+        "unsur": "Mengelola ketatausahaan madrasah dalam mendukung pencapaian tujuan madrasah",
+        "indikator": [
+          {
+            "no": 1,
+            "indikator": "Mampu mengelola administrasi surat masuk dan surat keluar sesuai dengan pedoman persuratan yang berlaku",
+            "data": "Adanya bukti dokumen surat masuk dan keluar",
+            "bukti": "Melalui studi dokumen:\r\nsurat masuk dan keluar"
+          },
+          {
+            "no": 2,
+            "indikator": "Mampu mengelola administrasi madrasah yang meliputi administrasi akademik, kesiswaan, sarana/prasarana, keuangan, dan hubungan madrasah dengan masyarakat",
+            "data": "Adanya bukti dokumen administrasi madrasah",
+            "bukti": "Melalui studi dokumen:\r\nadministrasi madrasah (akademik, kesiswaan, sarana/prasaran, keuangan, dan hubungan madrasah dengan masyarakat)"
+          },
+          {
+            "no": 3,
+            "indikator": "Mampu mengelola administrasi kearsipan madrasah baik arsip dinamis maupun arsip lainnya",
+            "data": "Adanya bukti dokumen administrasi madrasah",
+            "bukti": "Melalui studi Dokumen:\r\nAdministrasi madrasah"
+          },
+          {
+            "no": 4,
+            "indikator": "Mampu mengelola administrasi akreditasi madrasah sesuai dengan prinsip-prinsip tersedianya dokumen pendukung dan bukti fisik",
+            "data": "Adanya bukti dokumen administrasi madrasah",
+            "bukti": "Melalui studi Dokumen:\r\nAdministrasi pemenuhan 8 SNP madrasah"
+          }
+        ]
+      },
+      {
+        "kode": "2.10",
+        "no": 10,
+        "unsur": "Melakukan monitoring, evaluasi, dan pelaporan pelaksanaan program kegiatan madrasah dengan prosedur yang tepat, serta merencanakan tindak lanjutnya.",
+        "indikator": [
+          {
+            "no": 1,
+            "indikator": "Menyusun standar kinerja program pendidikan yang dapat diukur dan dinilai",
+            "data": "Dokumen SKP yang terukur",
+            "bukti": "Melalui studi dokumen:\r\nSKP yang terukur"
+          },
+          {
+            "no": 2,
+            "indikator": "Melakukan monitoring dan evaluasi kinerja program pendidikan dengan menggunakan teknik yang sesuai",
+            "data": "Dokumen pelaksanaan monitoring dan evaluasi  yang sesuai",
+            "bukti": "Melalui studi dokumen:\r\npelaksanaan monitoring dan evaluasi  yang sesuai"
+          },
+          {
+            "no": 3,
+            "indikator": "Menyusun laporan sesuai dengan standar pelaporan monitoring dan evaluasi",
+            "data": "Dokumen laporan pelaksanaan monitoring dan evaluasi",
+            "bukti": "Melalui studi dokumen:\r\nLaporan pelaksanaan monitoring dan evaluasi"
+          },
+          {
+            "no": 4,
+            "indikator": "Merumuskan program tindak lanjut berdasarkan hasil evaluasi pelaksanaan program sebelumnya",
+            "data": "Dokumen program tindak lanjut berdasarkan hasil  monitring dan evaluasi",
+            "bukti": "Melalui studi dokumen:\r\nProgram tindak lanjut berdasarkan hasil  monitring dan evaluasi"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "no": 3,
+    "code": "KW",
+    "label": "Pengembangan Kewirausahaan",
+    "aspek": [
+      {
+        "kode": "3.1",
+        "no": 1,
+        "unsur": "Menciptakan inovasi yang bermanfaat dan tepat bagi pengembangan madrasah",
+        "indikator": [
+          {
+            "no": 1,
+            "indikator": "Memahami dan menghayati arti dan tujuan perubahan (inovasi) madrasah",
+            "data": "Adanya bukti perubahan madrasah yang lebih baik dari tahun ke tahun",
+            "bukti": "Melalui studi dokumen:\r\nprogram pengembangan kewirausahaan"
+          },
+          {
+            "no": 2,
+            "indikator": "Menggunakan metode, teknik dan proses perubahan madrasah",
+            "data": "Adanya bukti strategi dalam perubahan madrasah yang lebih baik",
+            "bukti": "Melalui obsevasi: (1) pemanfaatan hasil inovasi dan kreatifitas; (2) membudayakan hasil inovasi dan kreatifitas; dan (3) pengembangan pembudayaan inovasi dan kreatifitas."
+          },
+          {
+            "no": 3,
+            "indikator": "Menumbuhkan iklim yang mendorong kebebasan berfikir untuk menciptakan kreativitas dan inovasi",
+            "data": "Adanya bukti iklim yang mendorong kebebasan berpikir kreatif dan inovatif",
+            "bukti": "Melalui observasi dan studi dokumen: (1) data Jenis usaha produktif yang dimiki; dan (2) program pengeloaan dan pendayagunaan hasil usaha."
+          },
+          {
+            "no": 4,
+            "indikator": "Mendorong warga madrasah untuk melakukan prakarsa/keberanian moral untuk melakukan hal-hal baru",
+            "data": "Adanya bukti warga madrasah yang memiliki keberanian utuk melakukan hal – hal baru",
+            "bukti": "Melalui observasi dan studi dokumen: (1) data Jenis usaha produktif yang dimiki; dan (2) program pengeloaan dan pendayagunaan hasil usaha."
+          }
+        ]
+      },
+      {
+        "kode": "3.2",
+        "no": 2,
+        "unsur": "Bekerja keras untuk mencapai keberhasilan madrasah sebagai organisasi pembelajaran yang efektif",
+        "indikator": [
+          {
+            "no": 1,
+            "indikator": "Mampu bertindak kratif dan inovatif dalam melaksanakan pekerjaan melalui cara berfikir dan cara bertindak",
+            "data": "Adanya bukti kegiatan yang kratif dan inovatif dalam melaksanakan pekerjaan melalui cara berfikir dan cara bertindak",
+            "bukti": "Melalui observasi dan studi dokumen: (1) RPP yang memuat rencana pembelajaran untuk menumbuhkan keterampilan berpikir dan bertindak kreatif, produktif, kritis, mandiri, kolaboratif, dan komunikatif; (2) hasil kerja dan karya siswa; dan (3) foto foto aktifitas pembelajaran siswa siswa."
+          },
+          {
+            "no": 2,
+            "indikator": "Mampu memberdayakan potensi madrasah secara optimal kedalam berbagai kegiatan-kegiatan produktif yang menguntungkan madrasah",
+            "data": "Adanya bukti kegiatan  pemberdayaanpotensi madrasah secara optimal kedalam berbagai kegiatan-kegiatan produktif yang menguntungkan madrasah",
+            "bukti": "Melalui observasi, wawancara, dan studi dokumen: (1) Rencana Pengembangan Madrasah (RPM) ; (2) dokumen penanganan permasalahan/ kasus; (3) dokumen hasil kegiatan sekolah; (4) dokumen hasil kegiatan; dan (5) pengembangan madrasah."
+          },
+          {
+            "no": 3,
+            "indikator": "Mampu menumbuhkan jiwa kewirausahaan (kreatif, inovatif dan produktif) di kalangan warga madrasah",
+            "data": "Adanya bukti kegiatan yang membubuhkan jiwa kewirausahaan (kreatif, inovatif dan produktif) di kalangan warga madrasah",
+            "bukti": "Melalui observasi, wawancara, dan studi dokumen: (1) Rencana Pengembangan Madrasah (RPM) ; (2) dokumen penanganan permasalahan/ kasus; (3) dokumen hasil kegiatan sekolah; (4) dokumen hasil kegiatan; dan (5) pengembangan madrasah."
+          },
+          {
+            "no": 4,
+            "indikator": "Mampu mencatat ide-ide baru, kemudian mengembangkannya",
+            "data": "Adanya bukti kegiatan mencatat ide-ide baru, kemudian mengembangkannya",
+            "bukti": "Melalui observasi, wawancara, dan studi dokumen:\r\nRencana Pengembangan Madrasah"
+          }
+        ]
+      },
+      {
+        "kode": "3.3",
+        "no": 3,
+        "unsur": "Memiliki motivasi yang kuat untuk sukses dalam melaksanakan tugas pokok dan fungsinya sebagai pemimpin madrasah",
+        "indikator": [
+          {
+            "no": 1,
+            "indikator": "Bersedia belajar dari orang lain",
+            "data": "Adanya bukti kemauan belajar dari orang lain",
+            "bukti": "Melalui observasi, wawancara, dan studi dokumen: (1) forum komunikasi dengan lembaga pendidikan lain dan  orang tua siswa per tingkat kelas/kelas/ angkatan; dan (2) foto foto kegiatan."
+          },
+          {
+            "no": 2,
+            "indikator": "Ingin selalu melakukan yang terbaik",
+            "data": "Adanya bukti keinginan selalu elakukan yang terbaik",
+            "bukti": "Melalui observasi, wawancara, dan studi dokumen: (1) dokumen/foto Pelaksanaan kegiatan; (2) keikut sertaan dalam lomba lomba pembelajaran/ pendidikan maupun manajmen; dan (3) prestasi dalam lomba guru, tenaga kependidikan dan kepala madrasah."
+          },
+          {
+            "no": 3,
+            "indikator": "Menciptakan perubahan yang kuat",
+            "data": "Adanya bukti keinginan untuk melakkukan perubahan yang kuat",
+            "bukti": "Melalui observasi, wawancara, dan studi dokumen: (1) program inovasi madrasah atau Rencana Pengenbanagan Madrasah (RPM); dan (2) laporan target yang sudah dicapai."
+          }
+        ]
+      },
+      {
+        "kode": "3.4",
+        "no": 4,
+        "unsur": "Pantang menyerah dan selalu mencari solusi terbaik dalam menghadapi kendala yang dihadapi madrasah",
+        "indikator": [
+          {
+            "no": 1,
+            "indikator": "Mampu melibatkan tokoh agama, masyarakat, dan pemerintah dalam memecahkan masalah kelembagaan",
+            "data": "Adanya bukti kegiatan yang melibatkan tokoh agama, masyarakat dan pemerintah dalam memecahkan masalah kelembagaan",
+            "bukti": "Melalui observasi, wawancara, dan studi dokumen: (1) MoU dengan pihak lain; (2) sister school; dan (3) kemitraan dengan sekolah lain"
+          },
+          {
+            "no": 2,
+            "indikator": "Mampu bersikap obyektif/tidak memihak dalam mengatasi konflik internal madrasah",
+            "data": "Adanya bukti kagiatan yang menunjukkan sikap obyektif/tidak memihak dalam mengatasi konflik internal madrasah",
+            "bukti": "Dokumen kegiatan dan foto"
+          },
+          {
+            "no": 3,
+            "indikator": "Mampu bersikap simpatik/tenggang rasa terhadap orang lain",
+            "data": "Adanya bukti sikap simpatik/ tenggang rasa terhadap orang lain",
+            "bukti": "Melalui studi dokumen kegiatan dan foto"
+          }
+        ]
+      },
+      {
+        "kode": "3.5",
+        "no": 5,
+        "unsur": "Memiliki naluri kewirausahaan dalam mengelola kegiatan produksi/jasa madrasah sebagai sumber pembelajaran peserta didik",
+        "indikator": [
+          {
+            "no": 1,
+            "indikator": "Mampu merencanakan kegiatan produksi /jasa sesuai dengan potensi madrasah",
+            "data": "Dokumen perencanaan kegiatan produksi sesuai potensi madrasah",
+            "bukti": "Melalui studi dokumen:\r\nlaporan yang memuat pelaksanaan dan hasil Program Pengembangan Unit Produksi Kewirausahaan"
+          },
+          {
+            "no": 2,
+            "indikator": "Mampu membina kegiatan produksi /jasa sesuai dengan prinsip-prinsip pengelolaan yang  rofessional dan akuntabel",
+            "data": "Adanya dokumen pembinaan kegiatan produksi /jasa sesuai dengan prinsip-prinsip pengelolaan yang  professional dan akuntabel",
+            "bukti": "Melalui studi dokumen:\r\nlaporan memuat pelaksanaan dan hasil Program Pengembangan Unit Produksi Kewirausahaan"
+          },
+          {
+            "no": 3,
+            "indikator": "Mampu melaksanakan pengawasan kegiatan produksi/jasa dan menyusun laporan",
+            "data": "Adanya dokumen pelaksanakan pengawasan kegiatan produksi/jasa dan menyusun laporan",
+            "bukti": "Melalui wawancara dan studi dokumen: (1) laporan hasil Evaluasi Program Pengembangan Kewirausahaan, yang memuat hasil evaluasi; (2) Program Pengembangan Jiwa Kewirausahaan; dan (3) Program Pengembangan Unit Produksi Kewirausahaan."
+          },
+          {
+            "no": 4,
+            "indikator": "Mampu mengembangkan kegiatan produksi/jasa dan pemasarannya",
+            "data": "Adanya dokumen  pengembangan kegiatan produksi/jasa dan pemasarannya",
+            "bukti": "Melalui wawancara dan studi dokumen: (1) laporan Hasil Evaluasi Program Pengembangan Kewirausahaan, yang memuat hasil evaluasi; (2) Program Pengembangan Jiwa Kewirausahaan; dan (3) Program Pengembangan Unit Produksi Kewirausahaan."
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "no": 4,
+    "code": "SP",
+    "label": "Supervisi Guru dan Tenaga Kependidikan",
+    "aspek": [
+      {
+        "kode": "4.1",
+        "no": 1,
+        "unsur": "Menyusun program supervisi akademik dalam rangka peningkatan profesionalisme guru",
+        "indikator": [
+          {
+            "no": 1,
+            "indikator": "Mengidentifikasi masalah yang guru hadapi dalam pelaksanaan pembelajaran.",
+            "data": "Terdapat  rumusan masalah yang Kepala Madrasah peroleh dari pemantauan perencanaan, pelaksanaan, dan penilaian pembelajaran.",
+            "bukti": "Melalui studi dokumen: (1) program pengawasan pembelajaran/ supervisi pembelajaran; (2) jadwal pelaksanaan supervisi; dan (3) SK tim supervisor."
+          },
+          {
+            "no": 2,
+            "indikator": "Mampu merumuskan tujuan yang dilengkapi dengan target pencapaian yang terukur.",
+            "data": "Terdapat rumusan tujuan supervisi yang dilengkapi dengan target pencapaian yang terukur.",
+            "bukti": "Melalui studi dokumen: (1) Program pengawasan pembelajaran/ supervisi pembelajaran; dan (2) jadwal pelaksanaan supervisi."
+          },
+          {
+            "no": 3,
+            "indikator": "Mampu mengembangkan instrumen supervisi.",
+            "data": "Instrumen yang digunakan relevan dengan target indikator pecapaian tujuan madrasah.",
+            "bukti": "Melalui studi dokumen:\r\ninstrumen supervisi pembelajaran"
+          }
+        ]
+      },
+      {
+        "kode": "4.2",
+        "no": 2,
+        "unsur": "Melaksanakan supervisi akademik terhadap guru dengan menggunakan pendekatan dan teknik supervisi yang tepat.",
+        "indikator": [
+          {
+            "no": 1,
+            "indikator": "Mengadakan pertemuan awal untuk menjaring data rencana pembelajaran dan menetapkan fokus kegiatan supervisi.",
+            "data": "Terdapat data hasil pertemuan awal seperti; masalah, tujuan, fokus utama supervisi, dan instrumen yang disepakati",
+            "bukti": "Melalui Wawancara dan studi dokumen:\r\nprogram pengawasan pembelajaran/ supervisi pembelajaran"
+          },
+          {
+            "no": 2,
+            "indikator": "Melaksanakan kegiatan pemantauan pembelajaran dan membuat catatan yang objektif dan selektif sebagai bahan pemecahan masalah supervisi.",
+            "data": "Dokumen  hasil observasi pembelajaran, lengkap, objektif dan selektif serta relevan dengan masalah yang menjadi fokus supervisi.",
+            "bukti": "Melalui Wawancara dan studi dokumen: (1) instrumen supervisi pembelajaran; dan (2) dokumen laporan hasil supervisi pembelajaran."
+          },
+          {
+            "no": 3,
+            "indikator": "Melakukan pertemuan refleksi, menganalisis catatan hasil observasi, dan menyimpulkan hasil observasi",
+            "data": "Dokumen catatan pelaksanaan kegiatan, melaksanakan refleksi, himpunan data hasil superivisi, analisis data, penafsiran, penilaian  keunggulan dan kelemahan, serta rekomendasi perbaikan.",
+            "bukti": "Melalui wawancara dan studi dokumen:\r\nanalisis hasil supervisi pembelajaran"
+          },
+          {
+            "no": 4,
+            "indikator": "Bersama guru menyusun rekomendasi tindaklanjut perbaikan dalam bentuk kegiatan analisis butir soal, remedial, dan pengayaan.",
+            "data": "Data tindak lanjut pelaksanaan supervisi penilaian, bukti analisis butir soal, kegiatan remedial dan pengayaan.",
+            "bukti": "Melalui wawancara dan studi dokumen: (1) dokumen hasil analisis dan tindak lanjut supervisi pembelajaran; dan (2) program kegiatan workshop/diklat untuk guru."
+          }
+        ]
+      },
+      {
+        "kode": "4.3",
+        "no": 3,
+        "unsur": "Menilai dan menindaklanjuti kegiatan supervisi akademik dalam rangka peningkatan profesionalisme guru.",
+        "indikator": [
+          {
+            "no": 1,
+            "indikator": "Memfasilitasi guru dalam merencanakan tindak lanjut perbaikan sistem penilaian hasil belajar.",
+            "data": "Terdapat bukti tindak lanjut perbaikan sistem penilaian hasil belajar",
+            "bukti": "Melalui Wawancara dan studi dokumen: (1) dokumen hasil analisis dan tindak lanjut supervisi pembelajaran; (2) hasil kegiatan workshop/diklat untuk guru; dan (3) data dan piagam hasil pelatihan guru."
+          },
+          {
+            "no": 2,
+            "indikator": "Mengecek ulang keterlaksanaan rekomendasi oleh guru",
+            "data": "dokumen rekomendasi perbaikan sistem penilaian hasil belajar secara berkala.",
+            "bukti": "Melalui wawancara dan studi dokumen:\r\nrekomendasi Hasil  perbaikan sistem penilaian hasil belajar"
+          },
+          {
+            "no": 3,
+            "indikator": "Melaksanakan pembinaan dan pengembangan guru sebagai tindak lanjut kegiatan supervisi.",
+            "data": "Terdapat bukti, berupa laporan tindak lanjut hasil supervisi sebagai dasar pelaksanaan pembinaan guru.",
+            "bukti": "Terdapat bukti, berupa:\r\nlaporan tindak lanjut hasil supervisi sebagai dasar pelaksanaan pembinaan guru."
+          },
+          {
+            "no": 4,
+            "indikator": "Menggunakan data hasil supervisi untuk pemetaan ketercapaian program sebagai dasar perbaikan siklus berikutnya.",
+            "data": "Hasil supervisi keterlaksanaan dan ketercapaian program sebagai bahan penilaian kinerja dan pemetaan profil madrasah sebagai dasar perencanaan siklus berikutnya.",
+            "bukti": "Hasil supervisi keterlaksanaan dan ketercapaian program sebagai bahan penilaian kinerja dan pemetaan profil madrasah sebagai dasar perencanaan siklus berikutnya."
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "no": 5,
+    "code": "HK",
+    "label": "Hasil Kinerja Kepala Madrasah",
+    "aspek": [
+      {
+        "kode": "5.1",
+        "no": 1,
+        "unsur": "Prestasi peserta didik",
+        "indikator": [
+          {
+            "no": 1,
+            "indikator": "Prestasi akademik peserta didik",
+            "data": "Terdapat  prestai akademik peserta didik pada berbagai tingkat",
+            "bukti": "Melalui studi piagam dan piala prestasi akademik"
+          },
+          {
+            "no": 2,
+            "indikator": "Prestasi non akademik peserta didik",
+            "data": "Terdapat  prestai non akademik peserta didik pada berbagai tingkat",
+            "bukti": "Melalui studi piagam dan piala prestasi non akademik"
+          }
+        ]
+      },
+      {
+        "kode": "5.2",
+        "no": 2,
+        "unsur": "Prestasi Pendidik dan Tenaga Kependidikan",
+        "indikator": [
+          {
+            "no": 1,
+            "indikator": "Prestasi akademik pendidik dan tenaga kependidikan",
+            "data": "Terdapat  prestai akademik pendidik dan tenaga kependidikan pada berbagai tingkat",
+            "bukti": "Melalui studi piagam dan piala prestasi akademik pendidik dan tenaga kependidikan"
+          },
+          {
+            "no": 2,
+            "indikator": "Prestasi non akademik  pendidik dan tenaga kependidikan",
+            "data": "Terdapat  prestai non akademik pendidik dan tenaga kependidikan pada berbagai tingkat",
+            "bukti": "Melalui studi piagam dan piala prestasi non akademik pendidik dan tenaga kependidikan"
+          }
+        ]
+      },
+      {
+        "kode": "5.3",
+        "no": 3,
+        "unsur": "Prestasi Madrasah",
+        "indikator": [
+          {
+            "no": 1,
+            "indikator": "Kelebihan prestasi akademik dari madrasah/sekolah lainnya",
+            "data": "Terdapat bukti keunggulam prestasi akademik madrasah",
+            "bukti": "Melalui studi piagam, piala, dan laporan kegiatan lomba akademik yang diikuti"
+          },
+          {
+            "no": 2,
+            "indikator": "Kelebihan prestasi non akademik dari madrasah/sekolah lainnya",
+            "data": "Terdapat bukti keunggulam prestasi non akademik madrasah",
+            "bukti": "Melalui studi piagam, piala, dan laporan kegiatan lomba non akademik yang diikuti"
+          }
+        ]
+      },
+      {
+        "kode": "5.4",
+        "no": 4,
+        "unsur": "Prestasi Kepala Madrasah",
+        "indikator": [
+          {
+            "no": 1,
+            "indikator": "Ijazah yang dimiliki kepala madrasah",
+            "data": "Terdapat bukti ijazah kepala madrasah",
+            "bukti": "Bukti dokumen ijazah kepala madrasah"
+          },
+          {
+            "no": 2,
+            "indikator": "Pendidikan dan pelatihan yang pernah diikuti oleh kepala madrasah",
+            "data": "Terdapat bukti keikutsertaan dalam diklat",
+            "bukti": "Bukti dokumen sertifikat diklat"
+          },
+          {
+            "no": 3,
+            "indikator": "Penguasaan ICT kepala madrasah",
+            "data": "Terdapat bukti penguasaan ICT",
+            "bukti": "Praktik penggunaan ICT"
+          },
+          {
+            "no": 4,
+            "indikator": "Prestasi yang diraih oleh kepala madrasah",
+            "data": "Terdapat bukti prestasi kepala madrasah",
+            "bukti": "Bukti piagam, medali, piala"
+          },
+          {
+            "no": 5,
+            "indikator": "Kegiatan penelitian kependidikan yang telah dilakukan oleh kepala madrasah",
+            "data": "Terdapat bukti karya penelitian kependidikan",
+            "bukti": "Bukti karya ilmiah hasil penelitian bidang pendidikan"
+          },
+          {
+            "no": 6,
+            "indikator": "Kegiatan pelibatan komite dalam mendukung program madrasah",
+            "data": "Terdapat bukti pelibatan komite madrasah dalam mendukung program madrasah",
+            "bukti": "Bukti dokumen program kegiatan, laporan rapat-rapat dengan komite madrasah"
+          },
+          {
+            "no": 7,
+            "indikator": "Kegiatan kemitraan dengan stakeholder pendidikan dalam meningkatkan kompetensi guru madrasah.",
+            "data": "Terdapat bukti kerjasama kemitraan untuk peningkatan kompetensi guru madrasah",
+            "bukti": "Bukti dokumen program kegiatan, perjanjian kerjasama kemitraan"
+          }
+        ]
+      }
+    ]
+  }
+];
+
+// Default role aktif untuk SPA (pengawas)
+window.PKKM_KOMPONEN = window.PKKM_INSTRUMEN_PENGAWAS;
+
+// Helper: switch role
+window.setInstrumenRole = function(role) {
+  if (role === 'gtk') window.PKKM_KOMPONEN = window.PKKM_INSTRUMEN_GTK;
+  else window.PKKM_KOMPONEN = window.PKKM_INSTRUMEN_PENGAWAS;
+  window.PKKM_TOTAL_INDIKATOR = window.PKKM_KOMPONEN.reduce(
+    (s,k) => s + k.aspek.reduce((s2,a) => s2 + a.indikator.length, 0), 0
+  );
+};
+
+// Sebutan / kategori berdasarkan nilai akhir 0-100
 window.PKKM_SEBUTAN = [
   { min: 90.01, max: 100,   label: 'Amat Baik', cssClass: 'sebutan-amat-baik' },
   { min: 75.01, max: 90,    label: 'Baik',      cssClass: 'sebutan-baik' },
@@ -101,559 +1827,61 @@ window.getPKKMSebutan = function(nilai) {
   return null;
 };
 
-// Helper: total aspek di seluruh komponen (untuk hitung progress)
-window.PKKM_TOTAL_ASPEK = window.PKKM_KOMPONEN.reduce((a, k) => a + k.aspek.length, 0);
-
-// Helper: build flat list of all aspek with composite id
-window.flattenAspek = function() {
+// Build flat list of all indikator with composite id "PM_1.1_1" (komponen.aspek.indikator)
+window.flattenIndikator = function() {
   const out = [];
   for (const k of window.PKKM_KOMPONEN) {
     for (const a of k.aspek) {
-      out.push({
-        id: `${k.code}_${a.no}`,
-        komponen_code: k.code,
-        komponen_no: k.no,
-        komponen_label: k.label,
-        aspek_no: a.no,
-        aspek_judul: a.judul,
-        aspek_deskripsi: a.deskripsi,
-      });
+      for (const ind of a.indikator) {
+        out.push({
+          id: `${k.code}_${a.kode}_${ind.no}`,
+          komponen_code: k.code, komponen_no: k.no, komponen_label: k.label,
+          aspek_kode: a.kode, aspek_no: a.no, aspek_unsur: a.unsur,
+          ind_no: ind.no, indikator: ind.indikator, data: ind.data, bukti: ind.bukti,
+        });
+      }
     }
   }
   return out;
 };
 
+// Lookup by composite id
+window.getIndikatorById = function(id) {
+  if (!id) return null;
+  // id format: "PM_1.1_1"
+  const parts = String(id).split('_');
+  if (parts.length < 3) return null;
+  const code = parts[0], aspek_kode = parts[1], ind_no = parseInt(parts[2], 10);
+  const k = window.PKKM_KOMPONEN.find(x => x.code === code);
+  if (!k) return null;
+  const a = k.aspek.find(x => x.kode === aspek_kode);
+  if (!a) return null;
+  const ind = a.indikator.find(x => x.no === ind_no);
+  if (!ind) return null;
+  return { komponen: k, aspek: a, indikator: ind };
+};
+
+// Initialize total
+window.PKKM_TOTAL_INDIKATOR = window.PKKM_KOMPONEN.reduce(
+  (s,k) => s + k.aspek.reduce((s2,a) => s2 + a.indikator.length, 0), 0
+);
+
 window.PKKM_JENJANG = ['MI', 'MTs', 'MA', 'RA'];
 
 window.PKKM_PERIODE_TYPES = [
+  { code: 'tahun_1', label: 'Tahun Pertama' },
+  { code: 'tahun_2', label: 'Tahun Kedua' },
+  { code: 'tahun_3', label: 'Tahun Ketiga' },
+  { code: 'tahun_4', label: 'Tahun Keempat' },
   { code: 'formatif', label: 'Formatif (Awal Tahun)' },
   { code: 'sumatif',  label: 'Sumatif (Akhir Tahun)' },
 ];
 
-// =================================================================
-// Catatan Penggalian Data per indikator (aspek)
-// =================================================================
-// Panduan praktis untuk pengawas saat menilai tiap aspek:
-//   - dokumen   : bukti tertulis yang diminta
-//   - observasi : hal yang diamati langsung di lapangan
-//   - wawancara : narasumber & pertanyaan kunci
-// Bisa di-edit operator/pokjawas; kalau aspek belum punya entri,
-// modal popup akan menampilkan pesan default.
-// -----------------------------------------------------------------
-window.PKKM_PENGGALIAN = {
-  // ----- PM: Pengembangan Madrasah -----
-  'PM_1': {
-    dokumen: [
-      'Dokumen Visi, Misi, Tujuan Madrasah (cetakan, banner, papan)',
-      'SK Tim Perumusan Visi-Misi & notulen penyusunannya',
-      'Bukti sosialisasi: notulen rapat, foto, postingan website/medsos',
-      'Konsistensi visi-misi pada KOSP/KTSP, RKM, dan profil madrasah',
-    ],
-    observasi: [
-      'Banner/papan visi-misi terpasang di lokasi strategis (lobby, kantor, kelas)',
-      'Konsistensi tagline & branding madrasah dengan visi-misi',
-    ],
-    wawancara: [
-      'Kepala madrasah: proses penyusunan, pelibatan stakeholder, mekanisme review',
-      'Guru/tendik: pemahaman & penghayatan visi-misi',
-      'Komite/wali (sampling): tahu visi-misi dan arah madrasah',
-    ],
-  },
-  'PM_2': {
-    dokumen: [
-      'RKJM 4 tahunan yang masih berlaku (dijilid, disahkan)',
-      'RKT/RKAM tahun berjalan',
-      'Hasil EDM / Rapor Pendidikan sebagai dasar penyusunan',
-      'Notulen rapat penyusunan & berita acara komite',
-      'SK Tim Penyusun RKM',
-    ],
-    observasi: [
-      'Periode RKJM masih aktif (tidak kedaluwarsa)',
-      'Tanda tangan kepala, ketua komite, dan pengawas pada dokumen',
-    ],
-    wawancara: [
-      'Kepala/wakil: tahapan penyusunan & sumber data yang digunakan',
-      'Komite: keterlibatan dalam pembahasan & persetujuan',
-    ],
-  },
-  'PM_3': {
-    dokumen: [
-      'Dokumen program kerja tahunan',
-      'Time-schedule / kalender kegiatan (bulanan/triwulanan)',
-      'Laporan pelaksanaan program (triwulan / semester)',
-    ],
-    observasi: [
-      'Relevansi program tahunan dengan RKM',
-      'Bukti pelaksanaan kegiatan (foto, daftar hadir, laporan)',
-    ],
-    wawancara: [
-      'Wakil kepala: progres pelaksanaan & kendala',
-      'Bendahara: dukungan anggaran untuk program',
-    ],
-  },
-  'PM_4': {
-    dokumen: [
-      'Instrumen EDM yang sudah diisi (mengacu 8 SNP)',
-      'Laporan EDM tahunan + lampiran bukti',
-      'SK Tim EDM',
-      'Rapor Pendidikan terbaru dari Kemendikbud/Kemenag',
-    ],
-    observasi: [
-      'Periodisitas pengisian (minimal 1x setahun)',
-      'Kelengkapan bukti dukung tiap indikator EDM',
-    ],
-    wawancara: [
-      'Tim EDM: metode pengumpulan data & validasi',
-      'Kepala: pemanfaatan hasil EDM dalam perencanaan',
-    ],
-  },
-  'PM_5': {
-    dokumen: [
-      'Matriks rekomendasi → tindakan (action plan)',
-      'Laporan akreditasi terakhir + tindak lanjutnya',
-      'Hasil audit BOS/internal beserta respons',
-      'Bukti perbaikan: foto, dokumen, laporan kegiatan',
-    ],
-    observasi: [
-      'Konsistensi tindak lanjut dengan rekomendasi tertulis',
-      'Prioritas tindak lanjut tercermin di program kerja',
-    ],
-    wawancara: [
-      'Kepala: prioritas tindak lanjut & dasar pemilihannya',
-      'Wakil/guru: rekomendasi yang ditindaklanjuti & dampaknya',
-    ],
-  },
-  'PM_6': {
-    dokumen: [
-      'Tata tertib madrasah (siswa, guru, tendik)',
-      'Jadwal kegiatan religius (sholat dhuha, tadarus, kultum)',
-      'Program 5S / budaya disiplin',
-      'Dokumentasi PHBI, peringatan hari besar, kegiatan kebersamaan',
-    ],
-    observasi: [
-      'Pelaksanaan sholat berjamaah / tadarus harian',
-      'Kerapian, kebersihan, dan disiplin warga madrasah',
-      'Interaksi guru-siswa berbasis cinta (tidak otoriter, ramah anak)',
-    ],
-    wawancara: [
-      'Siswa: budaya yang paling terasa di madrasah',
-      'Guru: contoh / keteladanan kepala dalam membentuk budaya',
-    ],
-  },
-
-  // ----- MJ: Pelaksanaan Tugas Manajerial -----
-  'MJ_1': {
-    dokumen: [
-      'Notulen rapat KKG/MGMP/KKMI yang dipimpin/diinisiasi kepala',
-      'Jurnal coaching/pendampingan guru',
-      'Program peningkatan mutu pembelajaran',
-      'Hasil supervisi pembelajaran sebagai dasar pembinaan',
-    ],
-    observasi: [
-      'Keterlibatan kepala dalam kegiatan akademik (rapat, lesson study)',
-      'Suasana akademik (diskusi pedagogis, budaya riset)',
-    ],
-    wawancara: [
-      'Guru: bentuk dukungan kepala dalam pembelajaran',
-      'Wakil kurikulum: arah pengembangan mutu pembelajaran',
-    ],
-  },
-  'MJ_2': {
-    dokumen: [
-      'KOSP/KTSP yang berlaku & disahkan',
-      'SK Tim Pengembang Kurikulum (TPK)',
-      'Analisis CP/KD/ATP per mapel',
-      'Modul ajar / RPP guru',
-      'Kalender akademik tahun berjalan',
-    ],
-    observasi: [
-      'Implementasi Kurikulum Merdeka (atau K13) sesuai jenjang',
-      'Penyesuaian kurikulum dengan konteks madrasah (muatan keagamaan)',
-    ],
-    wawancara: [
-      'Wakil kurikulum: tantangan implementasi & strategi',
-      'Guru: dukungan pengembangan modul ajar & asesmen',
-    ],
-  },
-  'MJ_3': {
-    dokumen: [
-      'SK pembagian tugas mengajar / tugas tendik',
-      'Daftar PKB guru tahunan',
-      'Buku pembinaan guru/tendik',
-      'Daftar guru bersertifikat & non-sertifikasi',
-      'Program pengembangan kompetensi (workshop, MGMP, diklat)',
-    ],
-    observasi: [
-      'Rasio guru-siswa & linieritas mapel',
-      'Kehadiran & disiplin guru/tendik',
-    ],
-    wawancara: [
-      'Guru: kesempatan pengembangan profesi yang difasilitasi kepala',
-      'TU: pembinaan & pengembangan tendik dari kepala',
-    ],
-  },
-  'MJ_4': {
-    dokumen: [
-      'Laporan PPDB tahunan',
-      'Program pembinaan kesiswaan (OSIS/IPNU-IPPNU)',
-      'Jadwal & laporan ekstrakurikuler',
-      'Layanan BK (catatan kasus, konseling, home visit)',
-      'Buku tata tertib siswa & buku poin',
-    ],
-    observasi: [
-      'Kegiatan ekstrakurikuler aktif berjalan',
-      'Suasana kelas & lingkungan ramah anak',
-    ],
-    wawancara: [
-      'Wakil kesiswaan: program unggulan kesiswaan',
-      'Siswa: layanan BK & pembinaan minat-bakat',
-    ],
-  },
-  'MJ_5': {
-    dokumen: [
-      'Inventaris/aset BMN atau aset yayasan',
-      'SOP pemeliharaan sarpras',
-      'Laporan kerusakan & perbaikan',
-      'Rencana pengadaan tahunan',
-      'Sertifikat tanah / IMB (untuk swasta)',
-    ],
-    observasi: [
-      'Kondisi ruang kelas, lab, perpustakaan, MCK, mushola',
-      'Kelayakan & kebersihan sarpras',
-      'Pemanfaatan sarpras sesuai fungsi',
-    ],
-    wawancara: [
-      'Wakil sarpras: skala prioritas pemenuhan',
-      'Guru: kelayakan sarpras pendukung pembelajaran',
-    ],
-  },
-  'MJ_6': {
-    dokumen: [
-      'RKAM/RAPBM tahun berjalan',
-      'Laporan BOS triwulanan',
-      'Buku kas umum & buku bantu',
-      'Bukti transparansi: papan informasi, notulen rapat komite',
-      'Laporan audit internal/eksternal',
-    ],
-    observasi: [
-      'Papan transparansi keuangan terpasang & terkini',
-      'Pemisahan rekening BOS dan non-BOS',
-    ],
-    wawancara: [
-      'Bendahara: alur pencairan & pelaporan',
-      'Komite: keterlibatan dalam pengawasan keuangan',
-    ],
-  },
-  'MJ_7': {
-    dokumen: [
-      'Notulen rapat komite & wali murid',
-      'MoU dengan mitra (DUDI, kampus, instansi)',
-      'Buku tamu kunjungan stakeholder',
-      'Konten media sosial / website madrasah',
-      'Program parenting / edukasi orang tua',
-    ],
-    observasi: [
-      'Aktivitas humas (papan pengumuman, banner, medsos aktif)',
-      'Hubungan dengan komite (rapat reguler & responsif)',
-    ],
-    wawancara: [
-      'Komite: keterbukaan komunikasi kepala',
-      'Mitra eksternal: kontinuitas kerja sama',
-    ],
-  },
-  'MJ_8': {
-    dokumen: [
-      'Status sinkronisasi EMIS (cek tanggal terakhir)',
-      'Penggunaan RDM / Rapor Digital',
-      'Aplikasi internal: presensi, penilaian, keuangan',
-      'SOP pengelolaan data madrasah',
-    ],
-    observasi: [
-      'Operator EMIS aktif & terlatih',
-      'Pemanfaatan teknologi dalam KBM (LMS, papan digital, proyektor)',
-    ],
-    wawancara: [
-      'Operator: kendala sinkronisasi data',
-      'Guru: literasi digital & dukungan kepala',
-    ],
-  },
-
-  // ----- KW: Pengembangan Kewirausahaan -----
-  'KW_1': {
-    dokumen: [
-      'Daftar program/layanan inovatif (kelas riset, tahfidz, kelas digital, dsb)',
-      'SK program inovasi',
-      'Dokumentasi pelaksanaan inovasi',
-      'Liputan media (jika ada)',
-    ],
-    observasi: [
-      'Program inovasi berjalan rutin (tidak hanya di atas kertas)',
-      'Daya tarik inovasi bagi calon peserta didik',
-    ],
-    wawancara: [
-      'Kepala: latar belakang & target inovasi',
-      'Guru/siswa: dampak inovasi terhadap pembelajaran',
-    ],
-  },
-  'KW_2': {
-    dokumen: [
-      'MoU/PKS dengan mitra (DUDI, kampus, lembaga sosial)',
-      'Laporan kegiatan kerja sama',
-      'Daftar narasumber eksternal',
-      'Bukti penyaluran lulusan / kerja sama dunia kerja (untuk MA)',
-    ],
-    observasi: [
-      'Frekuensi kegiatan bersama mitra',
-      'Variasi mitra (pendidikan, sosial, ekonomi, pemerintah)',
-    ],
-    wawancara: [
-      'Kepala/humas: strategi membangun jejaring',
-      'Mitra: pengalaman & kontinuitas kerja sama',
-    ],
-  },
-  'KW_3': {
-    dokumen: [
-      'Profil unit usaha (koperasi, kantin sehat, BLUD, agrobisnis, dsb)',
-      'Laporan keuangan unit usaha',
-      'SK pengelola unit usaha',
-      'Bukti kontribusi unit usaha terhadap pembiayaan madrasah',
-    ],
-    observasi: [
-      'Operasional unit usaha berjalan',
-      'Kebersihan & kelayakan kantin/koperasi',
-    ],
-    wawancara: [
-      'Pengelola: omset, kendala, & rencana pengembangan',
-      'Kepala: arah strategis unit usaha',
-    ],
-  },
-  'KW_4': {
-    dokumen: [
-      'Daftar hadir / absensi kepala madrasah',
-      'Capaian target program tahunan',
-      'Penghargaan / apresiasi kepala (jika ada)',
-    ],
-    observasi: [
-      'Kehadiran kepala di madrasah',
-      'Konsistensi waktu kerja & kepemimpinan teladan',
-      'Respon kepala terhadap masalah / krisis',
-    ],
-    wawancara: [
-      'Guru/tendik: konsistensi & teladan kepala',
-      'Komite: persepsi etos kerja kepala',
-    ],
-  },
-  'KW_5': {
-    dokumen: [
-      'Bukti partisipasi program pemerintah (BOS Afirmasi, MEQR, hibah)',
-      'Daftar lomba diikuti (madrasah & siswa)',
-      'Bukti pengajuan / penerimaan beasiswa',
-      'Inisiatif kemitraan baru',
-    ],
-    observasi: [
-      'Diversifikasi sumber pembiayaan & peluang',
-      'Update kepala terhadap info Kemenag/Kemendikbud',
-    ],
-    wawancara: [
-      'Kepala: cara memantau peluang',
-      'Wakil/operator: dukungan administrasi pengajuan peluang',
-    ],
-  },
-
-  // ----- SP: Supervisi Guru & Tendik -----
-  'SP_1': {
-    dokumen: [
-      'Program supervisi tahunan',
-      'Jadwal supervisi guru & tendik',
-      'Instrumen supervisi (akademik & manajerial)',
-      'SK Tim Supervisi (jika dibantu wakil/senior)',
-    ],
-    observasi: [
-      'Sosialisasi jadwal supervisi kepada guru',
-      'Cakupan supervisi (semua guru tersupervisi minimal 1x setahun)',
-    ],
-    wawancara: [
-      'Wakil kurikulum: keterlibatan dalam perencanaan',
-      'Guru: tahu jadwal & kriteria supervisi',
-    ],
-  },
-  'SP_2': {
-    dokumen: [
-      'Jurnal/buku supervisi kunjungan kelas',
-      'Lembar observasi terisi',
-      'Catatan supervisi klinis (pra-observasi, observasi, pasca)',
-      'Foto/video supervisi (opsional)',
-    ],
-    observasi: [
-      'Konsistensi pelaksanaan supervisi sesuai jadwal',
-      'Kualitas catatan: deskriptif dan reflektif, bukan formalitas',
-    ],
-    wawancara: [
-      'Guru yang disupervisi: pengalaman & manfaat',
-      'Kepala: pendekatan supervisi yang digunakan (klinis/akademik/artistik)',
-    ],
-  },
-  'SP_3': {
-    dokumen: [
-      'Jurnal supervisi TU, Pustakawan, Laboran, dan tendik lain',
-      'Lembar observasi tendik',
-      'Rekomendasi pembinaan tendik',
-    ],
-    observasi: [
-      'Tertib administrasi TU',
-      'Aktivitas perpustakaan & laboratorium',
-    ],
-    wawancara: [
-      'Tendik: bentuk supervisi yang diterima',
-      'Kepala: indikator mutu layanan tendik',
-    ],
-  },
-  'SP_4': {
-    dokumen: [
-      'Rekap hasil supervisi per guru / tendik',
-      'Analisis kebutuhan pengembangan',
-      'Laporan supervisi tahunan',
-      'Kategorisasi guru berdasarkan hasil supervisi',
-    ],
-    observasi: [
-      'Pemanfaatan hasil supervisi dalam rapat dewan guru',
-    ],
-    wawancara: [
-      'Kepala: temuan utama dari hasil supervisi',
-      'Guru: feedback yang diterima pasca supervisi',
-    ],
-  },
-  'SP_5': {
-    dokumen: [
-      'Program pembinaan / pelatihan pasca supervisi',
-      'Bukti mentoring / coaching',
-      'Bukti partisipasi guru di workshop / diklat',
-      'Catatan perubahan kinerja guru pasca pembinaan',
-    ],
-    observasi: [
-      'Perubahan praktik mengajar guru sasaran',
-      'Kontinuitas pendampingan (bukan one-shot)',
-    ],
-    wawancara: [
-      'Guru sasaran: bentuk pembinaan yang diterima',
-      'Kepala: rencana pengembangan profesi berkelanjutan',
-    ],
-  },
-
-  // ----- HK: Hasil Kinerja Kepala Madrasah -----
-  'HK_1': {
-    dokumen: [
-      'SK akreditasi terbaru dari BAN-S/M',
-      'Sertifikat akreditasi',
-      'Rencana persiapan reakreditasi',
-      'Tindak lanjut rekomendasi akreditasi',
-    ],
-    observasi: [
-      'Kelengkapan & kerapian dokumen akreditasi',
-      'Komitmen tim akreditasi internal',
-    ],
-    wawancara: [
-      'Kepala: strategi peningkatan peringkat akreditasi',
-      'Wakil/tim: progres persiapan reakreditasi',
-    ],
-  },
-  'HK_2': {
-    dokumen: [
-      'Rekap nilai PKG guru terbaru (lihat saran skor di samping)',
-      'Hasil AKMI / Asesmen Madrasah siswa',
-      'Rapor Pendidikan / Rapor Mutu Madrasah',
-      'Tren capaian 3 tahun terakhir',
-    ],
-    observasi: [
-      'Konsistensi mutu pembelajaran lintas kelas/mapel',
-      'Pemanfaatan hasil PKG/AKMI untuk perbaikan pembelajaran',
-    ],
-    wawancara: [
-      'Wakil kurikulum: analisis capaian',
-      'Guru: rencana tindak lanjut hasil AKMI',
-    ],
-  },
-  'HK_3': {
-    dokumen: [
-      'Daftar prestasi siswa & guru (3 tahun terakhir)',
-      'Piagam, piala, sertifikat',
-      'Dokumentasi lomba (foto, surat tugas, undangan)',
-      'Bukti publikasi atau karya inovatif guru',
-    ],
-    observasi: [
-      'Display prestasi (etalase, papan)',
-      'Aktivitas pembinaan menuju lomba',
-    ],
-    wawancara: [
-      'Pembina ekstrakurikuler: jadwal & target lomba',
-      'Siswa berprestasi: dukungan dari madrasah',
-    ],
-  },
-  'HK_4': {
-    dokumen: [
-      'Hasil survei kepuasan (guru, siswa, ortu, komite)',
-      'Kuesioner & instrumen survei yang digunakan',
-      'Notulen rapat komite & wali murid',
-      'Buku saran / kotak keluhan',
-    ],
-    observasi: [
-      'Mekanisme pengumpulan suara stakeholder berjalan',
-      'Tindak lanjut atas saran/keluhan stakeholder',
-    ],
-    wawancara: [
-      'Komite: persepsi terhadap kepala madrasah',
-      'Wali murid: kepuasan layanan madrasah',
-      'Siswa: keterbukaan & responsivitas kepala',
-    ],
-  },
-  'HK_5': {
-    dokumen: [
-      'Data PPDB 3 tahun terakhir',
-      'Tren retensi & angka putus sekolah',
-      'Strategi promosi madrasah (brosur, medsos, kunjungan SD/MI)',
-      'Data siswa pindahan masuk-keluar',
-    ],
-    observasi: [
-      'Aktivitas promosi/PPDB',
-      'Daya tarik madrasah (program unggulan, fasilitas, prestasi)',
-    ],
-    wawancara: [
-      'Wakil kesiswaan/humas: strategi PPDB',
-      'Komite: dukungan promosi & rekrutmen',
-    ],
-  },
-  'HK_6': {
-    dokumen: [
-      'SK tugas tambahan (Ketua KKM, Fasprov, Pengurus Pokja, dsb)',
-      'Laporan pelaksanaan tugas tambahan',
-      'Bukti kontribusi (notulen rapat KKM, laporan diklat, narasumber)',
-      'Surat tugas / undangan dari instansi terkait',
-    ],
-    observasi: [
-      'Tugas tambahan tidak mengganggu tupoksi utama',
-      'Kepala tetap hadir & memimpin di madrasah',
-    ],
-    wawancara: [
-      'Kepala: pembagian waktu & prioritas',
-      'Tim madrasah: dampak tugas tambahan terhadap kinerja',
-    ],
-  },
-};
-
-// Cari aspek + komponen + penggalian dari aspek_id (mis. "PM_3").
-window.getAspekById = function(id) {
-  if (!id) return null;
-  const parts = String(id).split('_');
-  if (parts.length < 2) return null;
-  const code = parts[0];
-  const no = parts[1];
-  const k = window.PKKM_KOMPONEN.find(x => x.code === code);
-  if (!k) return null;
-  const a = k.aspek.find(x => String(x.no) === String(no));
-  if (!a) return null;
-  return {
-    komponen: k,
-    aspek: a,
-    penggalian: (window.PKKM_PENGGALIAN && window.PKKM_PENGGALIAN[id]) || null,
-  };
-};
+// Role assessor
+window.PKKM_ROLES = [
+  { code: 'pengawas_1', label: 'Pengawas Madrasah I',  instrumen: 'pengawas' },
+  { code: 'pengawas_2', label: 'Pengawas Madrasah II', instrumen: 'pengawas' },
+  { code: 'guru_1',     label: 'Guru/Tendik I',        instrumen: 'gtk' },
+  { code: 'guru_2',     label: 'Guru/Tendik II',       instrumen: 'gtk' },
+  { code: 'komite',     label: 'Komite/KKM',           instrumen: 'gtk' },
+];

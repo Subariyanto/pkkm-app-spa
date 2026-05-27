@@ -1,10 +1,11 @@
-// db.js - localStorage data layer for PKKM SPA
+// db.js - localStorage data layer for PKKM SPA (v2.0 - per-indikator)
 // Schema:
 //   kamad:     { id, nama, nip, jabatan, jenjang, nsm, nama_madrasah, alamat, masa_jabatan_mulai, telp, email, foto, created_at }
-//   periode:   { id, tahun, semester ('1'|'2'), label, type ('formatif'|'sumatif'), tanggal_penilaian }
-//   penilaian: { id, kamad_id, periode_id, status ('draft'|'final'), tanggal, catatan_umum, rekomendasi }
-//   skor:      { penilaian_id, aspek_id, skor (1-4), catatan, bukti: [ { name, mime, dataUrl } ] }
-//   meta:      { next_kamad, next_periode, next_penilaian, bobot_overrides: { code: persen }, identitas_pengawas, identitas_ketua_pokjawas, app_settings }
+//   periode:   { id, tahun, tahun_ke (1|2|3|4), label, type, tanggal_penilaian }
+//   penilaian: { id, kamad_id, periode_id, role ('pengawas_1'|'pengawas_2'|'guru_1'|'guru_2'|'komite'), status, tanggal, catatan_umum, rekomendasi }
+//   skor:      { penilaian_id, indikator_id ('PM_1.1_1'), skor (1-4), catatan, bukti: [...] }
+//                Legacy aspek_id (v1) entries di-migrasi otomatis (tidak di-load).
+//   meta:      { next_kamad, next_periode, next_penilaian, bobot_overrides, identitas_pengawas, identitas_ketua_pokjawas, app_settings }
 
 const PKKM_KEYS = {
   kamad: 'pkkm_v1_kamad',
@@ -166,6 +167,7 @@ const Penilaian = {
       id: pNextId('penilaian'),
       kamad_id,
       periode_id,
+      role: 'pengawas_1',
       status: 'draft',
       tanggal: nowLocal().slice(0,10),
       catatan_umum: '',
@@ -189,19 +191,24 @@ const Penilaian = {
   },
 };
 
-// === Skor (per aspek) ==========================================
+// === Skor (per indikator) ======================================
+// indikator_id format: "PM_1.1_1" (komponen_code + aspek_kode + ind_no)
 const Skor = {
   forPenilaian(penilaian_id) {
     return pLoad(PKKM_KEYS.skor, []).filter(s => s.penilaian_id === penilaian_id);
   },
-  set(penilaian_id, aspek_id, fields) {
+  set(penilaian_id, indikator_id, fields) {
     const all = pLoad(PKKM_KEYS.skor, []);
-    const i = all.findIndex(s => s.penilaian_id === penilaian_id && s.aspek_id === aspek_id);
-    if (i >= 0) all[i] = { ...all[i], ...fields, penilaian_id, aspek_id };
-    else all.push({ penilaian_id, aspek_id, skor: null, catatan: '', bukti: [], ...fields });
+    const i = all.findIndex(s => s.penilaian_id === penilaian_id && s.indikator_id === indikator_id);
+    if (i >= 0) all[i] = { ...all[i], ...fields, penilaian_id, indikator_id };
+    else all.push({ penilaian_id, indikator_id, skor: null, catatan: '', bukti: [], ...fields });
     pSave(PKKM_KEYS.skor, all);
   },
-  get(penilaian_id, aspek_id) {
+  get(penilaian_id, indikator_id) {
+    return pLoad(PKKM_KEYS.skor, []).find(s => s.penilaian_id === penilaian_id && s.indikator_id === indikator_id) || null;
+  },
+  // Legacy compat: lookup by aspek_id (skor lama v1)
+  getLegacyByAspek(penilaian_id, aspek_id) {
     return pLoad(PKKM_KEYS.skor, []).find(s => s.penilaian_id === penilaian_id && s.aspek_id === aspek_id) || null;
   },
 };
@@ -218,33 +225,59 @@ const Meta = {
   bobot() {
     const overrides = this.get('bobot_overrides', {});
     const out = {};
-    for (const k of window.PKKM_KOMPONEN) {
-      out[k.code] = (overrides[k.code] != null) ? Number(overrides[k.code]) : k.bobot_default;
+    const meta = window.PKKM_KOMPONEN_META || window.PKKM_KOMPONEN;
+    for (const k of meta) {
+      out[k.code] = (overrides[k.code] != null) ? Number(overrides[k.code]) : (k.bobot_default ?? 20);
     }
     return out;
   },
   setBobot(map) { this.set('bobot_overrides', map); },
 };
 
-// === Hitung Nilai ==============================================
-function hitungNilaiKomponen(penilaian_id, komponenCode) {
+// === Hitung Nilai (per sub-aspek dari indikator, lalu rata komponen) ===
+function hitungNilaiAspek(penilaian_id, komponenCode, aspekKode) {
   const k = window.PKKM_KOMPONEN.find(x => x.code === komponenCode);
-  if (!k) return { nilai: 0, totalAspek: 0, terisi: 0 };
+  if (!k) return { nilai: 0, total: 0, terisi: 0, sumSkor: 0 };
+  const a = k.aspek.find(x => x.kode === aspekKode);
+  if (!a) return { nilai: 0, total: 0, terisi: 0, sumSkor: 0 };
   const skorRows = Skor.forPenilaian(penilaian_id);
-  let sumSkor = 0;
-  let terisi = 0;
-  for (const a of k.aspek) {
-    const id = `${k.code}_${a.no}`;
-    const row = skorRows.find(s => s.aspek_id === id);
+  let sum = 0, terisi = 0;
+  for (const ind of a.indikator) {
+    const id = `${k.code}_${a.kode}_${ind.no}`;
+    const row = skorRows.find(s => s.indikator_id === id);
     if (row && typeof row.skor === 'number' && row.skor > 0) {
-      sumSkor += row.skor;
+      sum += row.skor;
       terisi++;
     }
   }
-  // Skor max per aspek = 4. Nilai komponen = (sumSkor / (jumlahAspek*4)) * 100
-  const max = k.aspek.length * 4;
-  const nilai = max > 0 ? (sumSkor / max) * 100 : 0;
-  return { nilai, totalAspek: k.aspek.length, terisi, sumSkor, max };
+  const max = a.indikator.length * 4;
+  const nilai = max > 0 ? (sum / max) * 100 : 0;
+  return { nilai, total: a.indikator.length, terisi, sumSkor: sum, max };
+}
+
+function hitungNilaiKomponen(penilaian_id, komponenCode) {
+  const k = window.PKKM_KOMPONEN.find(x => x.code === komponenCode);
+  if (!k) return { nilai: 0, totalAspek: 0, aspekTerisi: 0, totalIndikator: 0, terisi: 0 };
+  let sumNilaiAspek = 0;
+  let aspekTerisi = 0;
+  let totalIndikator = 0;
+  let indTerisi = 0;
+  for (const a of k.aspek) {
+    const h = hitungNilaiAspek(penilaian_id, komponenCode, a.kode);
+    sumNilaiAspek += h.nilai;
+    if (h.terisi > 0) aspekTerisi++;
+    totalIndikator += h.total;
+    indTerisi += h.terisi;
+  }
+  // Nilai komponen = rata-rata nilai sub-aspek (Excel pakai pola yang sama)
+  const nilai = k.aspek.length > 0 ? (sumNilaiAspek / k.aspek.length) : 0;
+  return {
+    nilai,
+    totalAspek: k.aspek.length,
+    aspekTerisi,
+    totalIndikator,
+    terisi: indTerisi,
+  };
 }
 
 function hitungNilaiAkhir(penilaian_id) {
@@ -266,8 +299,8 @@ function hitungNilaiAkhir(penilaian_id) {
 
 function progressPenilaian(penilaian_id) {
   const skorRows = Skor.forPenilaian(penilaian_id);
-  const total = window.PKKM_TOTAL_ASPEK;
-  const terisi = skorRows.filter(s => typeof s.skor === 'number' && s.skor > 0).length;
+  const total = window.PKKM_TOTAL_INDIKATOR || 0;
+  const terisi = skorRows.filter(s => s.indikator_id && typeof s.skor === 'number' && s.skor > 0).length;
   return { terisi, total, persen: total > 0 ? (terisi/total)*100 : 0 };
 }
 
@@ -318,6 +351,7 @@ window.Periode = Periode;
 window.Penilaian = Penilaian;
 window.Skor = Skor;
 window.Meta = Meta;
+window.hitungNilaiAspek = hitungNilaiAspek;
 window.hitungNilaiKomponen = hitungNilaiKomponen;
 window.hitungNilaiAkhir = hitungNilaiAkhir;
 window.progressPenilaian = progressPenilaian;
