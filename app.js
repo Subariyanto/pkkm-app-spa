@@ -262,6 +262,7 @@ route('#/', (root) => {
             <a href="#/import" class="btn btn-outline-primary"><i class="bi bi-file-earmark-arrow-up"></i> Import Excel + Integrasi PKG</a>
             <a href="#/penilaian" class="btn btn-outline-primary"><i class="bi bi-clipboard-data"></i> Mulai / Lanjutkan Penilaian</a>
             <a href="#/rekap" class="btn btn-outline-primary"><i class="bi bi-bar-chart"></i> Lihat Rekap Nilai</a>
+            <a href="#/rekap-kkma" class="btn btn-outline-primary"><i class="bi bi-diagram-3"></i> Rekap per KKMA</a>
             <a href="#/cetak" class="btn btn-outline-primary"><i class="bi bi-printer"></i> Cetak Laporan</a>
             <a href="#/backup" class="btn btn-outline-secondary"><i class="bi bi-cloud-arrow-down"></i> Backup / Restore</a>
           </div>
@@ -328,7 +329,8 @@ route('#/kamad', (root) => {
                     </td>
                     <td><span class="badge bg-secondary">${escapeHTML(k.jenjang || '-')}</span></td>
                     <td>
-                      <a href="#/kamad/${k.id}" class="btn btn-sm btn-outline-primary"><i class="bi bi-pencil"></i></a>
+                      <a href="#/kamad/${k.id}" class="btn btn-sm btn-outline-primary" title="Edit"><i class="bi bi-pencil"></i></a>
+                      <a href="#/riwayat/${k.id}" class="btn btn-sm btn-outline-secondary" title="Riwayat"><i class="bi bi-clock-history"></i></a>
                       <button class="btn btn-sm btn-outline-danger" data-action="del-kamad" data-id="${k.id}"><i class="bi bi-trash"></i></button>
                     </td>
                   </tr>`).join('')}
@@ -391,6 +393,10 @@ route('#/kamad/:id', (root, params) => {
           <div class="col-md-4">
             <label class="form-label">NSM</label>
             <input class="form-control" name="nsm" value="${escapeHTML(k.nsm||'')}">
+          </div>
+          <div class="col-md-6">
+            <label class="form-label">KKMA / Wilayah Binaan</label>
+            <input class="form-control" name="kkma" value="${escapeHTML(k.kkma||'')}" placeholder="contoh: KKMA 04 Sukowono">
           </div>
           <div class="col-12">
             <label class="form-label">Alamat Madrasah</label>
@@ -1337,6 +1343,272 @@ route('#/cetak/:id', (root, params) => {
       </div>
     </div>
   `;
+});
+
+// --- Riwayat Penilaian per Kamad (multi-periode) --------------
+route('#/riwayat/:kamadId', (root, params) => {
+  const kamad = Kamad.get(Number(params.kamadId));
+  if (!kamad) { root.innerHTML = `<div class="alert alert-warning">Kepala madrasah tidak ditemukan.</div>`; return; }
+  const periodeAll = Periode.list();
+  const penList = Penilaian.forKamad(kamad.id);
+  const rows = penList.map(p => {
+    const periode = periodeAll.find(x => x.id === p.periode_id);
+    const akhir = hitungNilaiAkhir(p.id);
+    const sebutan = window.getPKKMSebutan(akhir.nilaiAkhir);
+    const prog = progressPenilaian(p.id);
+    return { p, periode, akhir, sebutan, prog };
+  }).sort((a,b) => {
+    const at = a.periode?.tahun || 0, bt = b.periode?.tahun || 0;
+    if (bt !== at) return bt - at;
+    return (b.periode?.semester||'').localeCompare(a.periode?.semester||'');
+  });
+
+  // Tren per komponen (untuk grafik sederhana)
+  const tren = window.PKKM_KOMPONEN.map(k => ({
+    code: k.code,
+    label: k.label,
+    series: rows.slice().reverse().map(r => {
+      const d = r.akhir.detail.find(x => x.code === k.code);
+      return { period: r.periode?.label || '?', nilai: d?.nilai ?? null };
+    }),
+  }));
+
+  root.innerHTML = `
+    <div class="d-flex justify-content-between align-items-center mb-3">
+      <div>
+        <h5 class="mb-0"><i class="bi bi-clock-history"></i> Riwayat Penilaian</h5>
+        <div class="text-tiny text-muted">${escapeHTML(kamad.nama)} — ${escapeHTML(kamad.nama_madrasah||'-')} (${escapeHTML(kamad.jenjang||'-')})${kamad.kkma ? ' · ' + escapeHTML(kamad.kkma) : ''}</div>
+      </div>
+      <div class="btn-group">
+        <a href="#/kamad/${kamad.id}" class="btn btn-sm btn-outline-secondary"><i class="bi bi-pencil"></i> Edit</a>
+        <a href="#/kamad" class="btn btn-sm btn-outline-secondary"><i class="bi bi-arrow-left"></i> Daftar</a>
+      </div>
+    </div>
+
+    <div class="card mb-3">
+      <div class="card-header"><i class="bi bi-list-ul"></i> Daftar Penilaian (${rows.length})</div>
+      <div class="card-body p-0">
+        ${rows.length === 0
+          ? `<div class="text-center text-muted py-4">Belum ada riwayat. <a href="#/penilaian">Mulai penilaian</a>.</div>`
+          : `<div class="table-responsive"><table class="table table-hover mb-0 align-middle">
+              <thead class="table-light">
+                <tr>
+                  <th>Periode</th>
+                  <th class="text-center">Tanggal</th>
+                  <th class="text-center">Progres</th>
+                  ${window.PKKM_KOMPONEN.map(k => `<th class="text-center text-tiny" title="${escapeHTML(k.label)}">${k.code}</th>`).join('')}
+                  <th class="text-center">Nilai</th>
+                  <th class="text-center">Sebutan</th>
+                  <th class="text-center">Status</th>
+                  <th class="text-center" width="110">Aksi</th>
+                </tr>
+              </thead>
+              <tbody>
+                ${rows.map(r => `
+                  <tr>
+                    <td>${escapeHTML(r.periode?.label||'?')}<div class="text-tiny text-muted">${escapeHTML(r.periode?.type||'-')}</div></td>
+                    <td class="text-center text-tiny">${escapeHTML(r.p.tanggal||'-')}</td>
+                    <td class="text-center text-tiny">${r.prog.terisi}/${r.prog.total}</td>
+                    ${window.PKKM_KOMPONEN.map(k => {
+                      const d = r.akhir.detail.find(x => x.code === k.code);
+                      return `<td class="text-center">${d ? fmtNilai(d.nilai) : '-'}</td>`;
+                    }).join('')}
+                    <td class="text-center fw-bold">${fmtNilai(r.akhir.nilaiAkhir)}</td>
+                    <td class="text-center">${r.sebutan ? `<span class="${r.sebutan.cssClass}">${r.sebutan.label}</span>` : '-'}</td>
+                    <td class="text-center">${r.p.status === 'final' ? '<span class="badge bg-success">FINAL</span>' : '<span class="badge bg-secondary">Draft</span>'}</td>
+                    <td class="text-center">
+                      <a href="#/penilaian/${kamad.id}/${r.periode?.id}" class="btn btn-sm btn-outline-primary" title="Buka"><i class="bi bi-pencil-square"></i></a>
+                      <a href="#/cetak/${r.p.id}" class="btn btn-sm btn-outline-secondary" title="Cetak"><i class="bi bi-printer"></i></a>
+                    </td>
+                  </tr>`).join('')}
+              </tbody>
+            </table></div>`}
+      </div>
+    </div>
+
+    ${rows.length >= 2 ? `
+      <div class="card">
+        <div class="card-header"><i class="bi bi-graph-up-arrow"></i> Tren Nilai per Komponen (kronologis)</div>
+        <div class="card-body p-0">
+          <div class="table-responsive"><table class="table table-sm mb-0">
+            <thead class="table-light">
+              <tr><th>Komponen</th>${rows.slice().reverse().map(r => `<th class="text-center text-tiny">${escapeHTML(r.periode?.label||'?')}</th>`).join('')}</tr>
+            </thead>
+            <tbody>
+              ${tren.map(t => `
+                <tr>
+                  <td><span class="text-tiny">${escapeHTML(t.label)}</span></td>
+                  ${t.series.map(s => `<td class="text-center">${s.nilai!=null?fmtNilai(s.nilai):'-'}</td>`).join('')}
+                </tr>`).join('')}
+              <tr class="table-light fw-bold">
+                <td>Nilai Akhir</td>
+                ${rows.slice().reverse().map(r => `<td class="text-center">${fmtNilai(r.akhir.nilaiAkhir)}</td>`).join('')}
+              </tr>
+            </tbody>
+          </table></div>
+        </div>
+      </div>
+    ` : ''}
+  `;
+});
+
+// --- Rekap KKMA -------------------------------------------------
+route('#/rekap-kkma', (root) => {
+  const periodeList = Periode.list();
+  if (periodeList.length === 0) {
+    root.innerHTML = `<div class="alert alert-info">Belum ada periode. <a href="#/penilaian">Buat periode dulu</a>.</div>`;
+    return;
+  }
+  const selPid = Number(location.hash.match(/[?&]p=(\d+)/)?.[1]) || periodeList[0].id;
+  const periode = Periode.get(selPid);
+  const kamadList = Kamad.list();
+
+  // group by kkma
+  const groups = {};
+  for (const k of kamadList) {
+    const key = (k.kkma || '(Tanpa KKMA)').trim();
+    if (!groups[key]) groups[key] = { kkma: key, kamad: [] };
+    const pen = Penilaian.byKamadPeriode(k.id, selPid);
+    let akhir = null, sebutan = null;
+    if (pen) {
+      const a = hitungNilaiAkhir(pen.id);
+      akhir = a.nilaiAkhir;
+      sebutan = window.getPKKMSebutan(akhir);
+    }
+    groups[key].kamad.push({ k, pen, akhir, sebutan });
+  }
+  const groupRows = Object.values(groups).map(g => {
+    const dinilai = g.kamad.filter(x => x.akhir != null).map(x => x.akhir);
+    const rata = dinilai.length ? dinilai.reduce((a,b)=>a+b,0)/dinilai.length : null;
+    const tertinggi = dinilai.length ? Math.max(...dinilai) : null;
+    const terendah = dinilai.length ? Math.min(...dinilai) : null;
+    return { ...g, rata, tertinggi, terendah, dinilai: dinilai.length };
+  }).sort((a,b) => a.kkma.localeCompare(b.kkma));
+
+  root.innerHTML = `
+    <div class="d-flex justify-content-between align-items-center mb-3 flex-wrap gap-2">
+      <h5 class="mb-0"><i class="bi bi-diagram-3"></i> Rekap KKMA</h5>
+      <div class="d-flex gap-2 align-items-center">
+        <label class="text-tiny text-muted mb-0">Periode:</label>
+        <select class="form-select form-select-sm" id="periodeSelectKkma" style="min-width: 220px;">
+          ${periodeList.map(p => `<option value="${p.id}" ${p.id===selPid?'selected':''}>${escapeHTML(p.label)}</option>`).join('')}
+        </select>
+        <button class="btn btn-sm btn-outline-primary" id="btnExportKkma"><i class="bi bi-file-earmark-excel"></i> Export Excel</button>
+      </div>
+    </div>
+
+    <div class="card mb-3">
+      <div class="card-header"><i class="bi bi-collection"></i> Ringkasan per KKMA — ${escapeHTML(periode.label)}</div>
+      <div class="card-body p-0">
+        <div class="table-responsive"><table class="table table-hover mb-0 align-middle">
+          <thead class="table-light">
+            <tr>
+              <th>KKMA / Wilayah</th>
+              <th class="text-end">Jumlah Kamad</th>
+              <th class="text-end">Sudah Dinilai</th>
+              <th class="text-end">Rata-rata</th>
+              <th class="text-end">Tertinggi</th>
+              <th class="text-end">Terendah</th>
+              <th class="text-center">Sebutan Rata</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${groupRows.map(g => {
+              const sb = g.rata != null ? window.getPKKMSebutan(g.rata) : null;
+              return `<tr>
+                <td><strong>${escapeHTML(g.kkma)}</strong></td>
+                <td class="text-end">${g.kamad.length}</td>
+                <td class="text-end">${g.dinilai}</td>
+                <td class="text-end fw-bold">${g.rata!=null?fmtNilai(g.rata):'-'}</td>
+                <td class="text-end">${g.tertinggi!=null?fmtNilai(g.tertinggi):'-'}</td>
+                <td class="text-end">${g.terendah!=null?fmtNilai(g.terendah):'-'}</td>
+                <td class="text-center">${sb?`<span class="${sb.cssClass}">${sb.label}</span>`:'-'}</td>
+              </tr>`;
+            }).join('')}
+          </tbody>
+        </table></div>
+      </div>
+    </div>
+
+    ${groupRows.map(g => `
+      <div class="card mb-3">
+        <div class="card-header bg-primary text-white">
+          <i class="bi bi-folder2-open"></i> ${escapeHTML(g.kkma)}
+          <span class="badge bg-light text-dark ms-2">${g.kamad.length} kamad</span>
+          ${g.rata!=null?`<span class="badge bg-warning text-dark ms-1">Rata: ${fmtNilai(g.rata)}</span>`:''}
+        </div>
+        <div class="card-body p-0">
+          <div class="table-responsive"><table class="table table-sm table-hover mb-0 align-middle">
+            <thead class="table-light">
+              <tr>
+                <th width="40">#</th>
+                <th>Kepala Madrasah</th>
+                <th>Madrasah</th>
+                <th class="text-center">Jenjang</th>
+                <th class="text-end">Nilai</th>
+                <th class="text-center">Sebutan</th>
+                <th class="text-center" width="110">Aksi</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${g.kamad.map((row, i) => `
+                <tr>
+                  <td>${i+1}</td>
+                  <td>${escapeHTML(row.k.nama)}<div class="text-tiny text-muted">${escapeHTML(row.k.nip||'-')}</div></td>
+                  <td>${escapeHTML(row.k.nama_madrasah||'-')}</td>
+                  <td class="text-center"><span class="badge bg-secondary">${escapeHTML(row.k.jenjang||'-')}</span></td>
+                  <td class="text-end fw-bold">${row.akhir!=null?fmtNilai(row.akhir):'-'}</td>
+                  <td class="text-center">${row.sebutan?`<span class="${row.sebutan.cssClass}">${row.sebutan.label}</span>`:'-'}</td>
+                  <td class="text-center">
+                    <a href="#/penilaian/${row.k.id}/${selPid}" class="btn btn-sm btn-outline-primary"><i class="bi bi-pencil"></i></a>
+                    <a href="#/riwayat/${row.k.id}" class="btn btn-sm btn-outline-secondary"><i class="bi bi-clock-history"></i></a>
+                  </td>
+                </tr>`).join('')}
+            </tbody>
+          </table></div>
+        </div>
+      </div>
+    `).join('')}
+  `;
+
+  $('#periodeSelectKkma').addEventListener('change', e => {
+    location.hash = `#/rekap-kkma?p=${e.target.value}`;
+  });
+
+  $('#btnExportKkma').addEventListener('click', async () => {
+    if (typeof ExcelJS === 'undefined') { toast('ExcelJS belum siap.', 'error'); return; }
+    const wb = new ExcelJS.Workbook();
+    const ws = wb.addWorksheet('Rekap KKMA');
+    ws.addRow(['Rekap PKKM per KKMA']).font = { bold: true, size: 14 };
+    ws.addRow([periode.label]);
+    ws.addRow([]);
+    const hdr = ws.addRow(['KKMA','Jumlah Kamad','Dinilai','Rata-rata','Tertinggi','Terendah']);
+    hdr.eachCell(c => { c.font = { bold: true, color: { argb: 'FFFFFFFF' } }; c.fill = { type:'pattern', pattern:'solid', fgColor:{ argb:'FF047A3A' } }; });
+    groupRows.forEach(g => ws.addRow([
+      g.kkma, g.kamad.length, g.dinilai,
+      g.rata!=null?Number(g.rata.toFixed(2)):'',
+      g.tertinggi!=null?Number(g.tertinggi.toFixed(2)):'',
+      g.terendah!=null?Number(g.terendah.toFixed(2)):'',
+    ]));
+    ws.addRow([]);
+    ws.addRow(['Detail per Kamad']).font = { bold: true };
+    const hdr2 = ws.addRow(['KKMA','Nama','NIP','Madrasah','Jenjang','Nilai Akhir','Sebutan','Status']);
+    hdr2.eachCell(c => { c.font = { bold: true, color: { argb: 'FFFFFFFF' } }; c.fill = { type:'pattern', pattern:'solid', fgColor:{ argb:'FF047A3A' } }; });
+    groupRows.forEach(g => g.kamad.forEach(row => ws.addRow([
+      g.kkma, row.k.nama, row.k.nip||'', row.k.nama_madrasah||'', row.k.jenjang||'',
+      row.akhir!=null?Number(row.akhir.toFixed(2)):'',
+      row.sebutan?row.sebutan.label:'',
+      row.pen?row.pen.status:'belum',
+    ])));
+    ws.columns.forEach(c => c.width = 18);
+    const buf = await wb.xlsx.writeBuffer();
+    const blob = new Blob([buf], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a'); a.href = url; a.download = `Rekap_KKMA_${periode.label.replace(/\s+/g,'_')}.xlsx`;
+    document.body.appendChild(a); a.click(); a.remove();
+    setTimeout(() => URL.revokeObjectURL(url), 1000);
+    toast('Rekap KKMA diunduh.');
+  });
 });
 
 // --- Instrumen viewer ------------------------------------------

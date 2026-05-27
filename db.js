@@ -68,6 +68,7 @@ const Kamad = {
       nip: data.nip || '',
       jabatan: data.jabatan || 'Kepala Madrasah',
       jenjang: data.jenjang || 'MA',
+      kkma: data.kkma || '',
       nsm: data.nsm || '',
       nama_madrasah: data.nama_madrasah || '',
       alamat: data.alamat || '',

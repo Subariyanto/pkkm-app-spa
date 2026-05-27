@@ -8,8 +8,8 @@
     if (typeof ExcelJS === 'undefined') { alert('ExcelJS belum siap.'); return; }
     const wb = new ExcelJS.Workbook();
     const ws = wb.addWorksheet('Kepala Madrasah');
-    const headers = ['nama','nip','jabatan','jenjang','nsm','nama_madrasah','alamat','masa_jabatan_mulai','telp','email'];
-    const headerLabels = ['Nama Lengkap (dengan gelar)','NIP','Jabatan','Jenjang (MI/MTs/MA/RA)','NSM','Nama Madrasah','Alamat','Masa Jabatan Mulai (YYYY-MM-DD)','Telp/HP','Email'];
+    const headers = ['nama','nip','jabatan','jenjang','kkma','nsm','nama_madrasah','alamat','masa_jabatan_mulai','telp','email'];
+    const headerLabels = ['Nama Lengkap (dengan gelar)','NIP','Jabatan','Jenjang (MI/MTs/MA/RA)','KKMA / Wilayah','NSM','Nama Madrasah','Alamat','Masa Jabatan Mulai (YYYY-MM-DD)','Telp/HP','Email'];
 
     ws.addRow(['Template Import Kepala Madrasah - PKKM App']).font = { bold: true, size: 14 };
     ws.addRow(['Petunjuk: Jangan ubah baris header (baris 4). Mulai isi data dari baris 5.']);
@@ -27,6 +27,7 @@
       '197002122005011004',
       'Kepala Madrasah',
       'MA',
+      'KKMA 04 Sukowono',
       '131135090001',
       'MA Contoh Sukowono',
       'Jl. Contoh No. 1, Sukowono, Jember',
@@ -83,6 +84,9 @@
       'nip': 'nip',
       'jabatan': 'jabatan',
       'jenjang': 'jenjang',
+      'kkma': 'kkma',
+      'wilayah': 'kkma',
+      'wilayah binaan': 'kkma',
       'nsm': 'nsm',
       'nama madrasah': 'nama_madrasah',
       'madrasah': 'nama_madrasah',
