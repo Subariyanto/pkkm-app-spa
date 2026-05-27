@@ -1444,9 +1444,11 @@ route('#/cetak', (root) => {
                 ${allPen.map(p => {
                   const k = kamadById[p.kamad_id];
                   const per = periodeById[p.periode_id];
+                  const roleInfo = (window.PKKM_ROLES || []).find(r => r.code === (p.role || 'pengawas_1'));
+                  const roleBadge = roleInfo ? `<span class="badge bg-light text-dark border ms-1">${escapeHTML(roleInfo.label)}</span>` : '';
                   return `<tr>
                     <td>${escapeHTML(k?.nama||'?')}<div class="text-tiny text-muted">${escapeHTML(k?.nama_madrasah||'')}</div></td>
-                    <td>${escapeHTML(per?.label||'?')}</td>
+                    <td>${escapeHTML(per?.label||'?')} ${roleBadge}</td>
                     <td>${p.status === 'final' ? '<span class="badge bg-success">FINAL</span>' : '<span class="badge bg-secondary">Draft</span>'}</td>
                     <td><a class="btn btn-sm btn-primary" href="#/cetak/${p.id}"><i class="bi bi-eye"></i> Lihat</a></td>
                   </tr>`;
