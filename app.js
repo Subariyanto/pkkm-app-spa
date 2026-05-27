@@ -907,7 +907,11 @@ function openPeriodeModal() {
     const fd = new FormData(ev.target);
     const data = Object.fromEntries(fd.entries());
     data.tahun = Number(data.tahun);
-    if (!data.label) data.label = `${data.type === 'formatif' ? 'Formatif' : 'Sumatif'} ${data.tahun} Sem ${data.semester}`;
+    if (!data.label) {
+      const t = window.PKKM_PERIODE_TYPES.find(x => x.code === data.type);
+      const tlabel = t ? t.label : data.type;
+      data.label = `${tlabel} ${data.tahun} Sem ${data.semester}`;
+    }
     Periode.create(data);
     m.hide();
     toast('Periode dibuat.');
@@ -2019,6 +2023,402 @@ route('#/instrumen', (root) => {
   root.addEventListener('click', (ev) => {
     const b = ev.target.closest('[data-action="open-penggalian"]');
     if (b) { ev.preventDefault(); openPenggalianModal(b.dataset.indikatorId || b.dataset.aspekId); }
+  });
+});
+
+// --- Analisis PKB (Pengembangan Keprofesian Berkelanjutan) ----
+const PKB_UNSUR = [
+  { code: 'pengembangan_diri', label: 'Pengembangan Diri', jenis: ['Diklat', 'Good Practice', 'Pengembangan Madrasah', 'Kegiatan Kolektif', 'Kajian dan Penelitian Tindakan', 'Pembelajaran Mandiri', 'Pembimbingan/Mentoring'] },
+  { code: 'publikasi_ilmiah',  label: 'Publikasi Ilmiah',  jenis: ['Karya Ilmiah', 'Karya Populer', 'Pemakalah/Narasumber'] },
+  { code: 'karya_inovatif',    label: 'Karya Inovatif',    jenis: ['Buku, Bahan Diklat, dan Pedoman KM', 'Standar MSDM (buku pedoman/modul)', 'Metode atau Teknologi Kepemimpinan/Manajemen'] },
+];
+
+function openPilihKamadPKB() {
+  const kamadList = Kamad.list();
+  const periodeList = Periode.list();
+  if (!kamadList.length || !periodeList.length) { toast('Tambahkan kepala madrasah dan periode dulu.', 'error'); return; }
+  const html = `
+    <div class="modal fade" id="pilihPkbModal" tabindex="-1">
+      <div class="modal-dialog">
+        <div class="modal-content">
+          <form id="pilihPkbForm">
+            <div class="modal-header">
+              <h5 class="modal-title"><i class="bi bi-mortarboard"></i> Buka Analisis PKB</h5>
+              <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+              <div class="mb-2">
+                <label class="form-label text-tiny">Kepala Madrasah</label>
+                <select class="form-select" name="kamad_id" required>
+                  ${kamadList.map(k => `<option value="${k.id}">${escapeHTML(k.nama)} · ${escapeHTML(k.nama_madrasah||'-')}</option>`).join('')}
+                </select>
+              </div>
+              <div class="mb-2">
+                <label class="form-label text-tiny">Periode</label>
+                <select class="form-select" name="periode_id" required>
+                  ${periodeList.map(p => `<option value="${p.id}">${escapeHTML(p.label)}</option>`).join('')}
+                </select>
+              </div>
+            </div>
+            <div class="modal-footer">
+              <button type="button" class="btn btn-light" data-bs-dismiss="modal">Batal</button>
+              <button type="submit" class="btn btn-primary">Lanjut</button>
+            </div>
+          </form>
+        </div>
+      </div>
+    </div>`;
+  let host = document.getElementById('pilihPkbModalHost');
+  if (!host) { host = document.createElement('div'); host.id = 'pilihPkbModalHost'; document.body.appendChild(host); }
+  host.innerHTML = html;
+  const m = new bootstrap.Modal(document.getElementById('pilihPkbModal'));
+  m.show();
+  document.getElementById('pilihPkbForm').addEventListener('submit', (ev) => {
+    ev.preventDefault();
+    const fd = new FormData(ev.target);
+    m.hide();
+    navigate(`#/pkb/${fd.get('kamad_id')}/${fd.get('periode_id')}`);
+  });
+}
+
+route('#/pkb', (root) => {
+  root.innerHTML = `
+    <div class="d-flex justify-content-between align-items-center mb-3">
+      <h5 class="mb-0"><i class="bi bi-mortarboard"></i> Analisis PKB</h5>
+      <button class="btn btn-sm btn-outline-primary" id="btnPilihPkb"><i class="bi bi-search"></i> Pilih Kamad / Periode</button>
+    </div>
+    <div class="alert alert-info py-2 text-tiny">
+      <i class="bi bi-info-circle"></i> Halaman ini menetapkan Pengembangan Keprofesian Berkelanjutan berdasarkan 5 sub-aspek dengan nilai terendah dari hasil penilaian kinerja. Pilih kepala madrasah + periode yang sudah punya penilaian.
+    </div>
+    <h6 class="mt-3">PKB yang sudah ditetapkan</h6>
+    <div id="pkbList"></div>
+  `;
+  document.getElementById('btnPilihPkb').addEventListener('click', openPilihKamadPKB);
+  // List existing PKB groups
+  const list = window.PKB.list();
+  const groups = {};
+  for (const p of list) {
+    const key = `${p.kamad_id}_${p.periode_id}`;
+    if (!groups[key]) groups[key] = { kamad_id: p.kamad_id, periode_id: p.periode_id, items: [] };
+    groups[key].items.push(p);
+  }
+  const grpHtml = Object.values(groups).map(g => {
+    const k = Kamad.get(g.kamad_id);
+    const p = Periode.get(g.periode_id);
+    return `
+      <div class="card mb-2">
+        <div class="card-body py-2 d-flex justify-content-between align-items-center">
+          <div>
+            <div class="fw-semibold">${escapeHTML(k?.nama||'-')} · ${escapeHTML(p?.label||'-')}</div>
+            <div class="text-tiny text-muted">${g.items.length} prioritas PKB · ${escapeHTML(k?.nama_madrasah||'-')}</div>
+          </div>
+          <a href="#/pkb/${g.kamad_id}/${g.periode_id}" class="btn btn-sm btn-outline-primary"><i class="bi bi-pencil-square"></i> Buka</a>
+        </div>
+      </div>`;
+  }).join('') || '<div class="text-muted text-tiny">Belum ada PKB tersimpan.</div>';
+  document.getElementById('pkbList').innerHTML = grpHtml;
+});
+
+route('#/pkb/:kamadId/:periodeId', (root, params) => {
+  const kamad = Kamad.get(Number(params.kamadId));
+  const periode = Periode.get(Number(params.periodeId));
+  if (!kamad || !periode) {
+    root.innerHTML = `<div class="alert alert-warning">Data tidak ditemukan. <a href="#/pkb">Kembali</a></div>`;
+    return;
+  }
+  // Auto-detect prioritas (5 sub-aspek terendah) kalau belum ada
+  const existing = window.PKB.forKamadPeriode(kamad.id, periode.id);
+  if (!existing.length) {
+    const auto = window.identifikasiPrioritasPKB(kamad.id, periode.id, 5);
+    if (!auto.length) {
+      root.innerHTML = `
+        <h5 class="mb-3"><i class="bi bi-mortarboard"></i> Analisis PKB</h5>
+        <div class="text-tiny text-muted">${escapeHTML(kamad.nama)} · ${escapeHTML(periode.label)}</div>
+        <div class="alert alert-warning mt-3">Belum ada penilaian terisi untuk kamad ini di periode ini.
+          <a href="#/penilaian" class="btn btn-sm btn-primary ms-2">Mulai Penilaian</a>
+        </div>`;
+      return;
+    }
+    // Save auto-detected priorities
+    auto.forEach(sa => {
+      window.PKB.upsert(kamad.id, periode.id, sa.sub_aspek_kode, {
+        prioritas: sa.prioritas,
+        komponen_code: sa.komponen_code,
+        komponen_label: sa.komponen_label,
+        sub_aspek_unsur: sa.sub_aspek_unsur,
+        nilai: sa.nilai,
+        unsur_pkb: '',
+        jenis_pkb: '',
+        kegiatan_pkb: '',
+        catatan: '',
+      });
+    });
+  }
+  renderPKBForm();
+
+  function renderPKBForm() {
+    const items = window.PKB.forKamadPeriode(kamad.id, periode.id);
+    root.innerHTML = `
+      <div class="d-flex justify-content-between align-items-center mb-3">
+        <div>
+          <h5 class="mb-0"><i class="bi bi-mortarboard"></i> Analisis PKB</h5>
+          <div class="text-tiny text-muted">${escapeHTML(kamad.nama)} · ${escapeHTML(kamad.nama_madrasah||'-')} · ${escapeHTML(periode.label)}</div>
+        </div>
+        <div class="btn-group">
+          <a href="#/pkb" class="btn btn-sm btn-outline-secondary"><i class="bi bi-arrow-left"></i></a>
+          <button class="btn btn-sm btn-warning" id="btnRefreshPkb" title="Hitung ulang prioritas dari nilai terkini"><i class="bi bi-arrow-clockwise"></i> Refresh Prioritas</button>
+          <a href="#/agregat/${kamad.id}/${periode.id}" class="btn btn-sm btn-outline-primary"><i class="bi bi-graph-up"></i> Lihat Nilai</a>
+        </div>
+      </div>
+
+      <div class="alert alert-success py-2 text-tiny mb-3">
+        <i class="bi bi-info-circle"></i> Daftar di bawah adalah <strong>5 sub-aspek dengan nilai terendah</strong> yang menjadi prioritas pengembangan profesi. Tetapkan unsur PKB dan kegiatan rekomendasi.
+      </div>
+
+      <div class="row g-3">
+        ${items.map(p => {
+          const sebutan = window.getPKKMSebutan(p.nilai);
+          return `
+            <div class="col-12">
+              <div class="card pkb-card">
+                <div class="card-body">
+                  <div class="d-flex justify-content-between align-items-start mb-2">
+                    <div>
+                      <span class="badge bg-danger me-2">Prioritas ${p.prioritas}</span>
+                      <strong>${escapeHTML(p.sub_aspek_kode)}</strong> · ${escapeHTML(p.sub_aspek_unsur||'-')}
+                      <div class="text-tiny text-muted">${escapeHTML(p.komponen_label||'-')}</div>
+                    </div>
+                    <div class="text-end">
+                      <div class="text-tiny text-muted">Nilai</div>
+                      <div class="h5 mb-0 fw-bold">${fmtNilai(p.nilai)}</div>
+                      ${sebutan ? `<span class="text-tiny ${sebutan.cssClass}">${sebutan.label}</span>` : ''}
+                    </div>
+                  </div>
+                  <form data-pkb-id="${p.id}" data-sub-aspek="${p.sub_aspek_kode}">
+                    <div class="row g-2">
+                      <div class="col-md-4">
+                        <label class="form-label text-tiny mb-1">Unsur PKB</label>
+                        <select class="form-select form-select-sm" name="unsur_pkb">
+                          <option value="">-- Pilih --</option>
+                          ${PKB_UNSUR.map(u => `<option value="${u.code}" ${p.unsur_pkb===u.code?'selected':''}>${escapeHTML(u.label)}</option>`).join('')}
+                        </select>
+                      </div>
+                      <div class="col-md-4">
+                        <label class="form-label text-tiny mb-1">Jenis PKB</label>
+                        <select class="form-select form-select-sm" name="jenis_pkb" data-jenis-for="${p.id}">
+                          <option value="">-- Pilih unsur dulu --</option>
+                          ${(() => {
+                            const u = PKB_UNSUR.find(x => x.code === p.unsur_pkb);
+                            return u ? u.jenis.map(j => `<option value="${escapeHTML(j)}" ${p.jenis_pkb===j?'selected':''}>${escapeHTML(j)}</option>`).join('') : '';
+                          })()}
+                        </select>
+                      </div>
+                      <div class="col-md-4">
+                        <label class="form-label text-tiny mb-1">Kegiatan PKB</label>
+                        <input class="form-control form-control-sm" name="kegiatan_pkb" value="${escapeHTML(p.kegiatan_pkb||'')}" placeholder="Contoh: Diklat Kepemimpinan Madrasah">
+                      </div>
+                      <div class="col-12">
+                        <label class="form-label text-tiny mb-1">Catatan / Target</label>
+                        <textarea class="form-control form-control-sm" name="catatan" rows="2" placeholder="Target capaian, jadwal, dsb">${escapeHTML(p.catatan||'')}</textarea>
+                      </div>
+                    </div>
+                  </form>
+                </div>
+              </div>
+            </div>`;
+        }).join('')}
+      </div>
+    `;
+
+    // Auto-save handler
+    root.querySelectorAll('form[data-pkb-id]').forEach(form => {
+      const subKode = form.dataset.subAspek;
+      let t;
+      const save = () => {
+        clearTimeout(t);
+        t = setTimeout(() => {
+          const fd = new FormData(form);
+          window.PKB.upsert(kamad.id, periode.id, subKode, {
+            unsur_pkb: fd.get('unsur_pkb') || '',
+            jenis_pkb: fd.get('jenis_pkb') || '',
+            kegiatan_pkb: fd.get('kegiatan_pkb') || '',
+            catatan: fd.get('catatan') || '',
+          });
+        }, 350);
+      };
+      form.querySelectorAll('input, textarea, select').forEach(el => {
+        el.addEventListener('input', save);
+        el.addEventListener('change', save);
+      });
+      // Update jenis options when unsur changes
+      const sUnsur = form.querySelector('[name="unsur_pkb"]');
+      const sJenis = form.querySelector('[name="jenis_pkb"]');
+      sUnsur.addEventListener('change', () => {
+        const u = PKB_UNSUR.find(x => x.code === sUnsur.value);
+        sJenis.innerHTML = '<option value="">-- Pilih jenis --</option>' + (u ? u.jenis.map(j => `<option value="${escapeHTML(j)}">${escapeHTML(j)}</option>`).join('') : '');
+      });
+    });
+
+    document.getElementById('btnRefreshPkb').addEventListener('click', () => {
+      if (!confirmAction('Hitung ulang prioritas PKB? Data unsur/kegiatan akan dipertahankan untuk sub-aspek yang tetap masuk top 5.')) return;
+      const auto = window.identifikasiPrioritasPKB(kamad.id, periode.id, 5);
+      if (!auto.length) { toast('Belum ada nilai untuk dianalisis.', 'error'); return; }
+      // Save existing user input first
+      const old = window.PKB.forKamadPeriode(kamad.id, periode.id);
+      const oldMap = {};
+      for (const o of old) oldMap[o.sub_aspek_kode] = o;
+      // Remove all then re-add with merged user input
+      window.PKB.removeAll(kamad.id, periode.id);
+      auto.forEach(sa => {
+        const prev = oldMap[sa.sub_aspek_kode] || {};
+        window.PKB.upsert(kamad.id, periode.id, sa.sub_aspek_kode, {
+          prioritas: sa.prioritas,
+          komponen_code: sa.komponen_code,
+          komponen_label: sa.komponen_label,
+          sub_aspek_unsur: sa.sub_aspek_unsur,
+          nilai: sa.nilai,
+          unsur_pkb: prev.unsur_pkb || '',
+          jenis_pkb: prev.jenis_pkb || '',
+          kegiatan_pkb: prev.kegiatan_pkb || '',
+          catatan: prev.catatan || '',
+        });
+      });
+      toast('Prioritas PKB di-refresh.');
+      renderPKBForm();
+    });
+  }
+});
+
+// --- Rekap 4 Tahunan (per kamad) -------------------------------
+route('#/rekap-tahunan', (root) => {
+  const kamadList = Kamad.list();
+  if (!kamadList.length) {
+    root.innerHTML = `<div class="alert alert-info">Belum ada kepala madrasah. <a href="#/kamad">Tambah dulu</a>.</div>`;
+    return;
+  }
+  const selKid = Number(location.hash.match(/[?&]k=(\d+)/)?.[1]) || kamadList[0].id;
+  const kamad = Kamad.get(selKid);
+  if (!kamad) { root.innerHTML = '<div class="alert alert-warning">Kamad tidak ditemukan.</div>'; return; }
+
+  // Cari periode tahun_1..tahun_4 yang punya penilaian utk kamad ini
+  const allPeriode = Periode.list();
+  const tahunData = ['tahun_1', 'tahun_2', 'tahun_3', 'tahun_4'].map(tcode => {
+    const periodes = allPeriode.filter(p => p.type === tcode);
+    let nilai = null, periode = null, agg = null;
+    for (const p of periodes) {
+      const sessions = Penilaian.forKamadPeriode(kamad.id, p.id);
+      if (!sessions.length) continue;
+      // Pakai periode terbaru kalau ada >1 untuk tahun yg sama
+      if (sessions.length > 1) {
+        agg = hitungNilaiAgregat(kamad.id, p.id);
+        nilai = agg.nilaiAgregat;
+      } else {
+        nilai = hitungNilaiAkhir(sessions[0].id).nilaiAkhir;
+      }
+      periode = p;
+      break;
+    }
+    return { code: tcode, label: window.PKKM_PERIODE_TYPES.find(x => x.code === tcode)?.label || tcode, nilai, periode, agg };
+  });
+
+  const validNilai = tahunData.filter(t => t.nilai != null).map(t => t.nilai);
+  const rataAgregat = validNilai.length ? validNilai.reduce((a,b) => a+b, 0) / validNilai.length : null;
+  const sebutanFinal = rataAgregat != null ? window.getPKKMSebutan(rataAgregat) : null;
+
+  root.innerHTML = `
+    <div class="d-flex justify-content-between align-items-center mb-3 flex-wrap gap-2">
+      <h5 class="mb-0"><i class="bi bi-calendar3-range"></i> Rekap 4 Tahunan</h5>
+      <select class="form-select form-select-sm" id="kamadSelect" style="min-width: 280px;">
+        ${kamadList.map(k => `<option value="${k.id}" ${k.id===selKid?'selected':''}>${escapeHTML(k.nama)} · ${escapeHTML(k.nama_madrasah||'-')}</option>`).join('')}
+      </select>
+    </div>
+
+    <div class="card mb-3">
+      <div class="card-body">
+        <div class="row g-3 align-items-center">
+          <div class="col-md-4">
+            <div class="text-tiny text-muted">Kepala Madrasah</div>
+            <div class="fw-semibold">${escapeHTML(kamad.nama)}</div>
+            <div class="text-tiny text-muted">NIP: ${escapeHTML(kamad.nip||'-')} · ${escapeHTML(kamad.nama_madrasah||'-')}</div>
+          </div>
+          <div class="col-md-4 text-center">
+            <div class="text-tiny text-muted">Tahun terisi</div>
+            <div class="h4 fw-bold mb-0">${validNilai.length} <span class="text-tiny text-muted">/ 4</span></div>
+          </div>
+          <div class="col-md-4 text-center">
+            <div class="text-tiny text-muted">Nilai Rata-Rata 4 Tahun</div>
+            <div class="h2 fw-bold mb-0 text-primary">${rataAgregat != null ? fmtNilai(rataAgregat) : '-'}</div>
+            ${sebutanFinal ? `<span class="${sebutanFinal.cssClass}">${sebutanFinal.label}</span>` : ''}
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="row g-3">
+      ${tahunData.map(t => {
+        const sb = t.nilai != null ? window.getPKKMSebutan(t.nilai) : null;
+        return `
+          <div class="col-md-3 col-sm-6">
+            <div class="card h-100 ${t.nilai==null ? 'border-light' : ''}">
+              <div class="card-body text-center">
+                <div class="text-tiny text-muted">${escapeHTML(t.label)}</div>
+                ${t.nilai != null
+                  ? `<div class="display-6 fw-bold mb-1">${fmtNilai(t.nilai)}</div>
+                     <div class="${sb.cssClass} mb-2">${sb.label}</div>
+                     <div class="text-tiny text-muted">${escapeHTML(t.periode.label)}</div>
+                     <a href="#/agregat/${kamad.id}/${t.periode.id}" class="btn btn-sm btn-outline-primary mt-2"><i class="bi bi-eye"></i> Detail</a>`
+                  : `<div class="display-6 fw-bold mb-1 text-muted">-</div>
+                     <div class="text-tiny text-muted mb-2">Belum dinilai</div>
+                     <a href="#/penilaian" class="btn btn-sm btn-outline-secondary mt-2"><i class="bi bi-plus"></i> Mulai</a>`
+                }
+              </div>
+            </div>
+          </div>`;
+      }).join('')}
+    </div>
+
+    <div class="card mt-3">
+      <div class="card-header"><i class="bi bi-bar-chart"></i> Tren Komponen 4 Tahun</div>
+      <div class="card-body p-0">
+        <div class="table-responsive">
+          <table class="table mb-0 align-middle">
+            <thead class="table-light">
+              <tr>
+                <th>Komponen</th>
+                ${tahunData.map(t => `<th class="text-center text-tiny">${escapeHTML(t.label)}</th>`).join('')}
+                <th class="text-center">Rata-rata</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${(window.PKKM_KOMPONEN_META || window.PKKM_KOMPONEN).map(km => {
+                const vals = tahunData.map(t => {
+                  if (!t.periode) return null;
+                  const sessions = Penilaian.forKamadPeriode(kamad.id, t.periode.id);
+                  if (!sessions.length) return null;
+                  if (sessions.length > 1) {
+                    const v = sessions.map(s => hitungNilaiKomponen(s.id, km.code).nilai);
+                    return v.reduce((a,b)=>a+b,0)/v.length;
+                  }
+                  return hitungNilaiKomponen(sessions[0].id, km.code).nilai;
+                });
+                const filled = vals.filter(v => v != null);
+                const rata = filled.length ? filled.reduce((a,b)=>a+b,0)/filled.length : null;
+                return `
+                  <tr>
+                    <td><strong>${km.no}.</strong> ${escapeHTML(km.label)}</td>
+                    ${vals.map(v => `<td class="text-center">${v != null ? fmtNilai(v) : '<span class="text-muted">-</span>'}</td>`).join('')}
+                    <td class="text-center"><strong>${rata != null ? fmtNilai(rata) : '-'}</strong></td>
+                  </tr>`;
+              }).join('')}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  `;
+
+  $('#kamadSelect').addEventListener('change', e => {
+    location.hash = `#/rekap-tahunan?k=${e.target.value}`;
   });
 });
 

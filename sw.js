@@ -1,6 +1,6 @@
 // sw.js - Service worker for PKKM SPA
 // Strategy: network-first for app code, cache-first for static assets.
-const CACHE_VERSION = 'pkkm-v2-2026-05-28-r2';
+const CACHE_VERSION = 'pkkm-v2-2026-05-28-r3';
 
 const NETWORK_FIRST = [
   'index.html',

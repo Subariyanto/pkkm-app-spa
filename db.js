@@ -14,6 +14,7 @@ const PKKM_KEYS = {
   skor: 'pkkm_v1_skor',
   meta: 'pkkm_v1_meta',
   instrumen_overrides: 'pkkm_v1_instrumen_overrides',
+  pkb: 'pkkm_v2_pkb',
 };
 
 function pLoad(key, def) {
@@ -416,6 +417,70 @@ function wipeAll() {
 }
 
 // === Expose ====================================================
+// === PKB (Pengembangan Keprofesian Berkelanjutan) =============
+// Schema: { id, kamad_id, periode_id, sub_aspek_kode, prioritas (1-5),
+//           unsur_pkb, jenis_pkb, kegiatan_pkb, catatan }
+const PKB = {
+  list() { return pLoad(PKKM_KEYS.pkb, []); },
+  forKamadPeriode(kamad_id, periode_id) {
+    return this.list().filter(p => p.kamad_id === kamad_id && p.periode_id === periode_id)
+      .sort((a,b) => (a.prioritas||99) - (b.prioritas||99));
+  },
+  upsert(kamad_id, periode_id, sub_aspek_kode, fields) {
+    const all = this.list();
+    const i = all.findIndex(p => p.kamad_id === kamad_id && p.periode_id === periode_id && p.sub_aspek_kode === sub_aspek_kode);
+    if (i >= 0) {
+      all[i] = { ...all[i], ...fields, kamad_id, periode_id, sub_aspek_kode };
+    } else {
+      all.push({ id: pNextId('pkb'), kamad_id, periode_id, sub_aspek_kode, ...fields });
+    }
+    pSave(PKKM_KEYS.pkb, all);
+  },
+  remove(id) {
+    pSave(PKKM_KEYS.pkb, this.list().filter(p => p.id !== id));
+  },
+  removeAll(kamad_id, periode_id) {
+    pSave(PKKM_KEYS.pkb, this.list().filter(p => !(p.kamad_id === kamad_id && p.periode_id === periode_id)));
+  },
+};
+
+// Identifikasi 5 sub-aspek dengan nilai terendah untuk dijadikan prioritas PKB
+// Kalau ada >1 penilaian assessor (multi-role), pakai rata-rata komponen agregat
+function identifikasiPrioritasPKB(kamad_id, periode_id, topN) {
+  topN = topN || 5;
+  const sessions = Penilaian.forKamadPeriode(kamad_id, periode_id);
+  if (!sessions.length) return [];
+
+  // Build daftar sub-aspek dari instrumen aktif (komponen × aspek)
+  const subAspeks = [];
+  for (const k of (window.PKKM_INSTRUMEN_PENGAWAS || window.PKKM_KOMPONEN || [])) {
+    for (const a of k.aspek) {
+      // Hitung nilai rata-rata sub-aspek dari semua sessions
+      const vals = sessions.map(s => hitungNilaiAspek(s.id, k.code, a.kode));
+      const filled = vals.filter(v => v.terisi > 0);
+      if (!filled.length) continue;
+      const avgNilai = filled.reduce((acc,v) => acc + v.nilai, 0) / filled.length;
+      subAspeks.push({
+        komponen_code: k.code,
+        komponen_label: k.label,
+        komponen_no: k.no,
+        sub_aspek_kode: a.kode,
+        sub_aspek_unsur: a.unsur,
+        nilai: avgNilai,
+        jumlahPenilaian: filled.length,
+      });
+    }
+  }
+
+  // Sort ascending by nilai (terendah dulu) dan ambil topN
+  subAspeks.sort((a,b) => a.nilai - b.nilai);
+  return subAspeks.slice(0, topN).map((sa, i) => ({ ...sa, prioritas: i+1 }));
+}
+
+window.PKB = PKB;
+window.identifikasiPrioritasPKB = identifikasiPrioritasPKB;
+
+
 window.PKKM_KEYS = PKKM_KEYS;
 window.Kamad = Kamad;
 window.Periode = Periode;
