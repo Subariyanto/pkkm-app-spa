@@ -223,26 +223,28 @@
   }
 
   function buildSheetHasil(wb, kamad, dataPerTahun, group, tahunCode) {
-    // group: 'komite' | 'guru' | 'pengawas'
-    // Buat 1 sheet untuk pasangan I & II
+    // group: 'km_kb_ks' | 'gtk' | 'pengawas'
     const titleMap = {
-      komite: 'HASIL KM KB KS',
-      guru: 'HASIL GTK',
+      km_kb_ks: 'HASIL KM KB KS',
+      gtk: 'HASIL GTK',
       pengawas: 'HASIL PENGAWAS',
     };
     const labelMap = {
-      komite: 'Komite/KKM',
-      guru: 'Guru/Tendik',
+      km_kb_ks: 'Komite/Kasi-Yayasan/Kabid',
+      gtk: 'Guru/Tendik',
       pengawas: 'Pengawas Madrasah',
     };
+    // Build code list dynamically dari PKKM_ROLES sesuai group
     const codeMap = {
-      komite: ['komite'],            // hanya 1 komite di multi-assessor kita
-      guru: ['guru_1', 'guru_2'],
       pengawas: ['pengawas_1', 'pengawas_2'],
+      gtk: ['guru_1', 'guru_2', 'tendik_1', 'tendik_2'],
+      km_kb_ks: ['komite_1', 'komite_2', 'kasi_yayasan', 'kabid'],
     };
+    const ROLES_DICT = {};
+    for (const r of (window.PKKM_ROLES || [])) ROLES_DICT[r.code] = r;
     const tahunLabel = window.PKKM_PERIODE_TYPES.find(x => x.code === tahunCode)?.label || tahunCode;
     const data = dataPerTahun[tahunCode];
-    if (!data) return; // skip kalau tahun belum ada data
+    if (!data) return;
     const ws = wb.addWorksheet(titleMap[group], { views: [{ showGridLines: false }] });
     ws.columns = [
       { width: 5 }, { width: 6 }, { width: 30 }, { width: 30 }, { width: 30 }, { width: 12 },
@@ -252,11 +254,10 @@
     for (const roleCode of codeMap[group]) {
       const session = data.sessionsByRole?.[roleCode];
       if (!session) continue;
-      const labelI = codeMap[group].length > 1
-        ? (roleCode.endsWith('_1') ? 'I' : 'II')
-        : '';
+      const roleInfo = ROLES_DICT[roleCode];
+      const rolelabel = roleInfo?.label || roleCode;
       ws.mergeCells(`B${r}:F${r}`);
-      ws.getCell(`B${r}`).value = `HASIL PKKM ${tahunLabel.toUpperCase()} - PENILAI ${labelMap[group].toUpperCase()} ${labelI}`;
+      ws.getCell(`B${r}`).value = `HASIL PKKM ${tahunLabel.toUpperCase()} - PENILAI ${rolelabel.toUpperCase()}`;
       ws.getCell(`B${r}`).style = STYLE_TITLE;
       r += 2;
       ws.getCell(`B${r}`).value = 'Yang bertanda tangan di bawah ini:';
@@ -550,8 +551,8 @@
     // HASIL per group untuk tahun terakhir
     if (lastData) {
       buildSheetHasil(wb, kamad, dataPerTahun, 'pengawas', lastTahun);
-      buildSheetHasil(wb, kamad, dataPerTahun, 'guru', lastTahun);
-      buildSheetHasil(wb, kamad, dataPerTahun, 'komite', lastTahun);
+      buildSheetHasil(wb, kamad, dataPerTahun, 'gtk', lastTahun);
+      buildSheetHasil(wb, kamad, dataPerTahun, 'km_kb_ks', lastTahun);
     }
 
     buildSheetPKB(wb, kamad, dataPerTahun);

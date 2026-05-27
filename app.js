@@ -781,17 +781,20 @@ function openPilihRoleModal(kamad_id, periode_id) {
   const sessions = Penilaian.forKamadPeriode(kamad_id, periode_id);
   const sessByRole = {};
   for (const s of sessions) sessByRole[s.role || 'pengawas_1'] = s;
-  const roles = window.PKKM_ROLES || [
-    { code: 'pengawas_1', label: 'Pengawas Madrasah I',  instrumen: 'pengawas' },
-    { code: 'pengawas_2', label: 'Pengawas Madrasah II', instrumen: 'pengawas' },
-    { code: 'guru_1',     label: 'Guru/Tendik I',        instrumen: 'gtk' },
-    { code: 'guru_2',     label: 'Guru/Tendik II',       instrumen: 'gtk' },
-    { code: 'komite',     label: 'Komite/KKM',           instrumen: 'gtk' },
-  ];
+  const roles = (window.getRolesForPeriode ? window.getRolesForPeriode(periode.type) : (window.PKKM_ROLES || []));
+  const isFourYear = periode.type === 'tahun_4';
+  const groupTitle = { pengawas: 'Pengawas Madrasah', gtk: 'Guru &amp; Tendik', km_kb_ks: 'Komite, Kasi/Yayasan, Kabid' };
+  const grouped = {};
+  for (const r of roles) {
+    const g = r.group || 'pengawas';
+    if (!grouped[g]) grouped[g] = [];
+    grouped[g].push(r);
+  }
+  const groupOrder = ['pengawas', 'gtk', 'km_kb_ks'].filter(g => grouped[g] && grouped[g].length);
 
   const html = `
     <div class="modal fade" id="pilihRoleModal" tabindex="-1">
-      <div class="modal-dialog modal-lg modal-dialog-centered">
+      <div class="modal-dialog modal-lg modal-dialog-centered modal-dialog-scrollable">
         <div class="modal-content">
           <div class="modal-header bg-light">
             <div>
@@ -801,29 +804,34 @@ function openPilihRoleModal(kamad_id, periode_id) {
             <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
           </div>
           <div class="modal-body">
-            <div class="alert alert-info py-2 text-tiny mb-3">
-              <i class="bi bi-info-circle"></i> 1 kamad bisa dinilai oleh beberapa penilai. Hasil akan diagregat di rekap (Pengawas 50% · Guru/Tendik 30% · Komite 20%; bisa diubah di Pengaturan).
+            <div class="alert ${isFourYear ? 'alert-warning' : 'alert-info'} py-2 text-tiny mb-3">
+              <i class="bi bi-info-circle"></i>
+              ${isFourYear
+                ? '<strong>Penilaian 4 Tahunan</strong> — melibatkan 10 penilai (Pengawas I/II, Guru I/II, Tendik I/II, Komite I/II, Kasi/Yayasan, Kabid). Hasil akan diagregat berdasarkan kelompok dengan bobot Pengawas 50% · GTK 30% · Komite/KKKS 20%.'
+                : '<strong>Penilaian Tahunan</strong> — hanya Pengawas I &amp; II yang menilai. Untuk 4 Tahunan (Tahun 4), buat periode dengan jenis “Tahun Keempat” agar 10 penilai aktif.'}
             </div>
-            <div class="list-group">
-              ${roles.map(r => {
-                const s = sessByRole[r.code];
-                const prog = s ? progressPenilaian(s.id) : null;
-                const sbCls = !s ? 'badge-status-belum' : (prog.persen >= 100 ? 'badge-status-selesai' : (prog.persen > 0 ? 'badge-status-sebagian' : 'badge-status-belum'));
-                const sbTxt = !s ? 'Belum dimulai' : (prog.persen >= 100 ? 'Selesai' : (prog.persen > 0 ? `${Math.round(prog.persen)}%` : 'Belum dimulai'));
-                const finalTag = s && s.status === 'final' ? ' <span class="badge bg-success ms-1">FINAL</span>' : '';
-                return `
-                  <button type="button" class="list-group-item list-group-item-action d-flex justify-content-between align-items-center" data-role="${r.code}">
-                    <div>
-                      <div class="fw-semibold">${escapeHTML(r.label)}</div>
-                      <div class="text-tiny text-muted">Instrumen: ${r.instrumen === 'gtk' ? 'Guru/Tendik &amp; Komite' : 'Pengawas'}</div>
-                    </div>
-                    <div class="text-end">
-                      <span class="badge ${sbCls}">${sbTxt}</span>${finalTag}
-                      <i class="bi bi-chevron-right ms-2"></i>
-                    </div>
-                  </button>`;
-              }).join('')}
-            </div>
+            ${groupOrder.map(g => `
+              <h6 class="text-uppercase text-muted text-tiny fw-bold mt-3 mb-2">${groupTitle[g] || g}</h6>
+              <div class="list-group mb-2">
+                ${grouped[g].map(r => {
+                  const s = sessByRole[r.code];
+                  const prog = s ? progressPenilaian(s.id) : null;
+                  const sbCls = !s ? 'badge-status-belum' : (prog.persen >= 100 ? 'badge-status-selesai' : (prog.persen > 0 ? 'badge-status-sebagian' : 'badge-status-belum'));
+                  const sbTxt = !s ? 'Belum dimulai' : (prog.persen >= 100 ? 'Selesai' : (prog.persen > 0 ? `${Math.round(prog.persen)}%` : 'Belum dimulai'));
+                  const finalTag = s && s.status === 'final' ? ' <span class="badge bg-success ms-1">FINAL</span>' : '';
+                  return `
+                    <button type="button" class="list-group-item list-group-item-action d-flex justify-content-between align-items-center" data-role="${r.code}">
+                      <div>
+                        <div class="fw-semibold">${escapeHTML(r.label)}</div>
+                        <div class="text-tiny text-muted">Instrumen: ${r.instrumen === 'gtk' ? 'Guru/Tendik &amp; Komite' : 'Pengawas'}</div>
+                      </div>
+                      <div class="text-end">
+                        <span class="badge ${sbCls}">${sbTxt}</span>${finalTag}
+                        <i class="bi bi-chevron-right ms-2"></i>
+                      </div>
+                    </button>`;
+                }).join('')}
+              </div>`).join('')}
             <div class="mt-3 text-end">
               <a href="#/agregat/${kamad_id}/${periode_id}" class="btn btn-sm btn-outline-primary"><i class="bi bi-graph-up"></i> Lihat Rekap Agregat</a>
             </div>
@@ -1592,7 +1600,7 @@ route('#/agregat/:kamadId/:periodeId', (root, params) => {
     return;
   }
   const sebutan = window.getPKKMSebutan(agg.nilaiAgregat);
-  const groupLabel = { pengawas: 'Pengawas Madrasah', gtk: 'Guru / Tendik', komite: 'Komite / KKM' };
+  const groupLabel = { pengawas: 'Pengawas Madrasah', gtk: 'Guru / Tendik', km_kb_ks: 'Komite / Kasi-Yayasan / Kabid' };
 
   // Build per-session rows for detail table
   const ROLES = window.PKKM_ROLES || [];
@@ -2548,19 +2556,19 @@ route('#/pengaturan', (root) => {
         <div class="card mt-3">
           <div class="card-header">Bobot Penilai (Multi-Assessor)</div>
           <div class="card-body">
-            <p class="text-tiny text-muted mb-2">Bobot rata-rata kelompok penilai untuk halaman <strong>Rekap Agregat</strong>. Default Pengawas 50% · Guru/Tendik 30% · Komite 20%.</p>
+            <p class="text-tiny text-muted mb-2">Bobot rata-rata kelompok penilai untuk halaman <strong>Rekap Agregat</strong> (terutama penilaian 4 Tahunan). Default Pengawas 50% · Guru/Tendik 30% · Komite/KKKS 20%.</p>
             <form id="bobotRoleForm">
               <div class="mb-2 row">
                 <label class="col-sm-8 col-form-label col-form-label-sm">Pengawas Madrasah (gabungan I &amp; II)</label>
                 <div class="col-sm-4"><input class="form-control form-control-sm" type="number" name="pengawas" min="0" max="100" step="1" value="${bobotRole.pengawas}"></div>
               </div>
               <div class="mb-2 row">
-                <label class="col-sm-8 col-form-label col-form-label-sm">Guru / Tendik (gabungan I &amp; II)</label>
+                <label class="col-sm-8 col-form-label col-form-label-sm">Guru &amp; Tendik (Guru I/II + Tendik I/II)</label>
                 <div class="col-sm-4"><input class="form-control form-control-sm" type="number" name="gtk" min="0" max="100" step="1" value="${bobotRole.gtk}"></div>
               </div>
               <div class="mb-2 row">
-                <label class="col-sm-8 col-form-label col-form-label-sm">Komite / KKM</label>
-                <div class="col-sm-4"><input class="form-control form-control-sm" type="number" name="komite" min="0" max="100" step="1" value="${bobotRole.komite}"></div>
+                <label class="col-sm-8 col-form-label col-form-label-sm">Komite / Kasi-Yayasan / Kabid</label>
+                <div class="col-sm-4"><input class="form-control form-control-sm" type="number" name="km_kb_ks" min="0" max="100" step="1" value="${bobotRole.km_kb_ks}"></div>
               </div>
               <div class="text-tiny text-muted mb-2" id="totalBobotRole"></div>
               <button class="btn btn-sm btn-primary"><i class="bi bi-save"></i> Simpan</button>
@@ -2639,7 +2647,7 @@ route('#/pengaturan', (root) => {
   $('#bobotRoleForm').addEventListener('submit', (e) => {
     e.preventDefault();
     const fd = new FormData(e.target);
-    const map = { pengawas: Number(fd.get('pengawas')), gtk: Number(fd.get('gtk')), komite: Number(fd.get('komite')) };
+    const map = { pengawas: Number(fd.get('pengawas')), gtk: Number(fd.get('gtk')), km_kb_ks: Number(fd.get('km_kb_ks')) };
     Meta.set('bobot_role', map);
     toast('Bobot penilai disimpan.');
   });

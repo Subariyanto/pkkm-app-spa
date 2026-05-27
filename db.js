@@ -319,14 +319,16 @@ function progressPenilaian(penilaian_id) {
 }
 
 // === Multi-assessor agregat (1 kamad + 1 periode = beberapa role assessor) ===
-// Bobot rata-rata default per role group:
-//   pengawas_1 + pengawas_2 → 50% (rata2 di internal group)
-//   guru_1 + guru_2 → 30%
-//   komite → 20%
+// Bobot rata-rata default per role group (3 grup sesuai instrumen Excel resmi):
+//   pengawas_1 + pengawas_2          → 50% (group 'pengawas')
+//   guru_1 + guru_2 + tendik_1/2     → 30% (group 'gtk')
+//   komite_1/2 + kasi_yayasan + kabid → 20% (group 'km_kb_ks')
 // Bobot ini bisa dioverride lewat Meta key 'bobot_role'.
 function getBobotRole() {
-  const def = { pengawas: 50, gtk: 30, komite: 20 };
+  const def = { pengawas: 50, gtk: 30, km_kb_ks: 20 };
   const overrides = Meta.get('bobot_role', {});
+  // Backward-compat: kalau override masih pakai key 'komite' dari versi lama, map ke km_kb_ks
+  if (overrides.komite != null && overrides.km_kb_ks == null) overrides.km_kb_ks = overrides.komite;
   return { ...def, ...overrides };
 }
 
@@ -334,15 +336,14 @@ function hitungNilaiAgregat(kamad_id, periode_id) {
   const sessions = Penilaian.forKamadPeriode(kamad_id, periode_id);
   if (!sessions.length) return null;
   const bobotRole = getBobotRole();
-  const groupMap = {
-    pengawas_1: 'pengawas', pengawas_2: 'pengawas',
-    guru_1: 'gtk', guru_2: 'gtk',
-    komite: 'komite',
-  };
+  // Build group map dari PKKM_ROLES (ambil field group)
+  const groupMap = {};
+  for (const r of (window.PKKM_ROLES || [])) groupMap[r.code] = r.group || 'pengawas';
   // group sessions by group
-  const groups = { pengawas: [], gtk: [], komite: [] };
+  const groups = { pengawas: [], gtk: [], km_kb_ks: [] };
   for (const s of sessions) {
     const g = groupMap[s.role || 'pengawas_1'] || 'pengawas';
+    if (!groups[g]) groups[g] = [];
     const akhir = hitungNilaiAkhir(s.id);
     groups[g].push({ session: s, nilai: akhir.nilaiAkhir, detail: akhir.detail });
   }
@@ -357,7 +358,7 @@ function hitungNilaiAgregat(kamad_id, periode_id) {
   // Weighted final using bobotRole
   let totalW = 0, weighted = 0;
   const breakdown = [];
-  for (const g of ['pengawas','gtk','komite']) {
+  for (const g of ['pengawas','gtk','km_kb_ks']) {
     const w = Number(bobotRole[g] || 0);
     const v = groupAvg[g];
     if (v != null && w > 0) {

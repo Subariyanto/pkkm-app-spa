@@ -1877,11 +1877,26 @@ window.PKKM_PERIODE_TYPES = [
   { code: 'sumatif',  label: 'Sumatif (Akhir Tahun)' },
 ];
 
-// Role assessor
+// Role assessor — disesuaikan format resmi PKKM Kemenag
+// Tahunan (Tahun 1-3, formatif/sumatif): hanya Pengawas I & II
+// 4 Tahunan (Tahun 4): 10 penilai lengkap (Pengawas, Guru, Tendik, Komite, Kasi/Yayasan, Kabid)
 window.PKKM_ROLES = [
-  { code: 'pengawas_1', label: 'Pengawas Madrasah I',  instrumen: 'pengawas' },
-  { code: 'pengawas_2', label: 'Pengawas Madrasah II', instrumen: 'pengawas' },
-  { code: 'guru_1',     label: 'Guru/Tendik I',        instrumen: 'gtk' },
-  { code: 'guru_2',     label: 'Guru/Tendik II',       instrumen: 'gtk' },
-  { code: 'komite',     label: 'Komite/KKM',           instrumen: 'gtk' },
+  { code: 'pengawas_1',   label: 'Pengawas Madrasah I',          instrumen: 'pengawas', group: 'pengawas',  scope: 'all' },
+  { code: 'pengawas_2',   label: 'Pengawas Madrasah II',         instrumen: 'pengawas', group: 'pengawas',  scope: 'all' },
+  { code: 'guru_1',       label: 'Guru I',                       instrumen: 'gtk',      group: 'gtk',       scope: 'tahun_4' },
+  { code: 'guru_2',       label: 'Guru II',                      instrumen: 'gtk',      group: 'gtk',       scope: 'tahun_4' },
+  { code: 'tendik_1',     label: 'Tenaga Kependidikan I',        instrumen: 'gtk',      group: 'gtk',       scope: 'tahun_4' },
+  { code: 'tendik_2',     label: 'Tenaga Kependidikan II',       instrumen: 'gtk',      group: 'gtk',       scope: 'tahun_4' },
+  { code: 'komite_1',     label: 'Komite I',                     instrumen: 'gtk',      group: 'km_kb_ks',  scope: 'tahun_4' },
+  { code: 'komite_2',     label: 'Komite II',                    instrumen: 'gtk',      group: 'km_kb_ks',  scope: 'tahun_4' },
+  { code: 'kasi_yayasan', label: 'Kepala Seksi / Ketua Yayasan', instrumen: 'gtk',      group: 'km_kb_ks',  scope: 'tahun_4' },
+  { code: 'kabid',        label: 'Kepala Bidang',                instrumen: 'gtk',      group: 'km_kb_ks',  scope: 'tahun_4' },
 ];
+
+// Helper: dapatkan roles yang berlaku untuk jenis periode tertentu
+window.getRolesForPeriode = function (periodeType) {
+  // tahun_4 = 4-tahunan: semua role
+  // tahun_1/2/3 + formatif/sumatif = tahunan: hanya pengawas
+  if (periodeType === 'tahun_4') return window.PKKM_ROLES;
+  return window.PKKM_ROLES.filter(r => r.scope === 'all');
+};
