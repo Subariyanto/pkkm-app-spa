@@ -1607,6 +1607,12 @@ route('#/agregat/:kamadId/:periodeId', (root, params) => {
       <a href="#/penilaian" class="btn btn-sm btn-outline-secondary"><i class="bi bi-arrow-left"></i> Kembali</a>
     </div>
 
+    <div class="mb-3">
+      <a href="#/rekap-tahunan?k=${kamad.id}" class="btn btn-sm btn-outline-primary"><i class="bi bi-calendar3-range"></i> Rekap 4 Tahunan</a>
+      <a href="#/pkb/${kamad.id}/${periode.id}" class="btn btn-sm btn-outline-warning"><i class="bi bi-mortarboard"></i> Analisis PKB</a>
+      <button class="btn btn-sm btn-success" id="btnAggExportXlsx"><i class="bi bi-file-earmark-excel"></i> Export Excel Resmi</button>
+    </div>
+
     <div class="row g-3">
       <div class="col-lg-5">
         <div class="card">
@@ -1706,6 +1712,11 @@ route('#/agregat/:kamadId/:periodeId', (root, params) => {
       </div>
     </div>
   `;
+
+  document.getElementById('btnAggExportXlsx')?.addEventListener('click', async () => {
+    if (typeof window.exportPKKMExcel !== 'function') { toast('Modul export belum siap.', 'error'); return; }
+    await window.exportPKKMExcel(kamad.id);
+  });
 });
 
 // --- Riwayat Penilaian per Kamad (multi-periode) --------------
@@ -2328,9 +2339,12 @@ route('#/rekap-tahunan', (root) => {
   root.innerHTML = `
     <div class="d-flex justify-content-between align-items-center mb-3 flex-wrap gap-2">
       <h5 class="mb-0"><i class="bi bi-calendar3-range"></i> Rekap 4 Tahunan</h5>
-      <select class="form-select form-select-sm" id="kamadSelect" style="min-width: 280px;">
-        ${kamadList.map(k => `<option value="${k.id}" ${k.id===selKid?'selected':''}>${escapeHTML(k.nama)} · ${escapeHTML(k.nama_madrasah||'-')}</option>`).join('')}
-      </select>
+      <div class="d-flex gap-2 align-items-center flex-wrap">
+        <select class="form-select form-select-sm" id="kamadSelect" style="min-width: 280px;">
+          ${kamadList.map(k => `<option value="${k.id}" ${k.id===selKid?'selected':''}>${escapeHTML(k.nama)} · ${escapeHTML(k.nama_madrasah||'-')}</option>`).join('')}
+        </select>
+        <button class="btn btn-sm btn-success" id="btnExportXlsx"><i class="bi bi-file-earmark-excel"></i> Export Excel Resmi</button>
+      </div>
     </div>
 
     <div class="card mb-3">
@@ -2419,6 +2433,10 @@ route('#/rekap-tahunan', (root) => {
 
   $('#kamadSelect').addEventListener('change', e => {
     location.hash = `#/rekap-tahunan?k=${e.target.value}`;
+  });
+  $('#btnExportXlsx').addEventListener('click', async () => {
+    if (typeof window.exportPKKMExcel !== 'function') { toast('Modul export belum siap.', 'error'); return; }
+    await window.exportPKKMExcel(selKid);
   });
 });
 
