@@ -39,6 +39,111 @@ function toast(msg, type='success') {
 
 function confirmAction(msg) { return window.confirm(msg); }
 
+// === Bukti dukung helpers ======================================
+const MAX_IMG_DIM = 1200;       // resize max width/height (px)
+const MAX_IMG_QUALITY = 0.78;
+const MAX_BUKTI_BYTES = 1.5 * 1024 * 1024; // 1.5 MB warn threshold per bukti
+
+function readFileAsDataURL(file) {
+  return new Promise((resolve, reject) => {
+    const r = new FileReader();
+    r.onload = () => resolve(r.result);
+    r.onerror = () => reject(r.error || new Error('read failed'));
+    r.readAsDataURL(file);
+  });
+}
+
+function compressImage(file) {
+  return new Promise((resolve, reject) => {
+    const url = URL.createObjectURL(file);
+    const img = new Image();
+    img.onload = () => {
+      let { width, height } = img;
+      if (width > MAX_IMG_DIM || height > MAX_IMG_DIM) {
+        const scale = Math.min(MAX_IMG_DIM / width, MAX_IMG_DIM / height);
+        width = Math.round(width * scale);
+        height = Math.round(height * scale);
+      }
+      const canvas = document.createElement('canvas');
+      canvas.width = width; canvas.height = height;
+      const ctx = canvas.getContext('2d');
+      ctx.drawImage(img, 0, 0, width, height);
+      URL.revokeObjectURL(url);
+      const dataUrl = canvas.toDataURL('image/jpeg', MAX_IMG_QUALITY);
+      resolve({ dataUrl, width, height });
+    };
+    img.onerror = (e) => { URL.revokeObjectURL(url); reject(new Error('image decode failed')); };
+    img.src = url;
+  });
+}
+
+async function fileToBukti(file) {
+  const isImage = file.type.startsWith('image/');
+  let dataUrl, mime;
+  if (isImage) {
+    try {
+      const c = await compressImage(file);
+      dataUrl = c.dataUrl;
+      mime = 'image/jpeg';
+    } catch (e) {
+      // fallback to raw
+      dataUrl = await readFileAsDataURL(file);
+      mime = file.type || 'image/*';
+    }
+  } else {
+    dataUrl = await readFileAsDataURL(file);
+    mime = file.type || 'application/octet-stream';
+  }
+  return {
+    name: file.name,
+    mime,
+    size: dataUrl.length,        // approx
+    dataUrl,
+    added_at: nowLocal(),
+  };
+}
+
+function buktiBadgeHTML(b, index, isFinal) {
+  const isImg = (b.mime || '').startsWith('image/');
+  const sizeKB = b.size ? Math.round(b.size / 1024) : 0;
+  const safeName = escapeHTML(b.name || `bukti-${index+1}`);
+  const thumb = isImg
+    ? `<img class="bukti-thumb" src="${b.dataUrl}" alt="${safeName}" data-action="open-bukti" data-bukti-idx="${index}" style="cursor:pointer;">`
+    : `<a class="btn btn-sm btn-outline-secondary" href="${b.dataUrl}" target="_blank" download="${safeName}"><i class="bi bi-file-earmark-pdf"></i> ${safeName}</a>`;
+  const removeBtn = isFinal ? '' : `<button type="button" class="btn btn-sm btn-link text-danger p-0 ms-1" data-action="remove-bukti" data-bukti-idx="${index}" title="Hapus bukti"><i class="bi bi-x-circle"></i></button>`;
+  return `<span class="d-inline-flex align-items-center gap-1 me-1" data-bukti-wrapper="${index}" title="${safeName} (${sizeKB} KB)">${thumb}${removeBtn}</span>`;
+}
+
+function openBuktiPreview(bukti) {
+  const isImg = (bukti.mime || '').startsWith('image/');
+  const html = `
+    <div class="modal fade" id="buktiPreviewModal" tabindex="-1">
+      <div class="modal-dialog modal-lg modal-dialog-centered">
+        <div class="modal-content">
+          <div class="modal-header">
+            <h5 class="modal-title">${escapeHTML(bukti.name||'Bukti')}</h5>
+            <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+          </div>
+          <div class="modal-body text-center">
+            ${isImg
+              ? `<img src="${bukti.dataUrl}" class="img-fluid" style="max-height:75vh;">`
+              : `<embed src="${bukti.dataUrl}" type="${bukti.mime}" style="width:100%; height:75vh;">`}
+          </div>
+          <div class="modal-footer">
+            <a class="btn btn-outline-primary" href="${bukti.dataUrl}" download="${escapeHTML(bukti.name||'bukti')}"><i class="bi bi-download"></i> Download</a>
+            <button type="button" class="btn btn-light" data-bs-dismiss="modal">Tutup</button>
+          </div>
+        </div>
+      </div>
+    </div>`;
+  let host = document.getElementById('buktiPreviewHost');
+  if (!host) { host = document.createElement('div'); host.id = 'buktiPreviewHost'; document.body.appendChild(host); }
+  host.innerHTML = html;
+  const m = new bootstrap.Modal(document.getElementById('buktiPreviewModal'));
+  m.show();
+}
+
+
 function setActiveNav(hash) {
   $$('#mainNav .nav-link').forEach(a => {
     if (a.getAttribute('href') === hash) a.classList.add('active');
@@ -154,6 +259,7 @@ route('#/', (root) => {
           <div class="card-header"><i class="bi bi-stars"></i> Aksi Cepat</div>
           <div class="card-body d-grid gap-2">
             <a href="#/kamad" class="btn btn-outline-primary"><i class="bi bi-person-plus"></i> Kelola Data Kepala Madrasah</a>
+            <a href="#/import" class="btn btn-outline-primary"><i class="bi bi-file-earmark-arrow-up"></i> Import Excel + Integrasi PKG</a>
             <a href="#/penilaian" class="btn btn-outline-primary"><i class="bi bi-clipboard-data"></i> Mulai / Lanjutkan Penilaian</a>
             <a href="#/rekap" class="btn btn-outline-primary"><i class="bi bi-bar-chart"></i> Lihat Rekap Nilai</a>
             <a href="#/cetak" class="btn btn-outline-primary"><i class="bi bi-printer"></i> Cetak Laporan</a>
@@ -319,6 +425,142 @@ route('#/kamad/:id', (root, params) => {
       Kamad.update(k.id, data);
       toast('Data diperbarui.');
     }
+  });
+});
+
+// --- Import / Export Excel kamad + Integrasi PKG --------------
+route('#/import', (root) => {
+  const ringkas = window.PKKMTools.getRingkasanPkg();
+  root.innerHTML = `
+    <h5 class="mb-3"><i class="bi bi-file-earmark-arrow-up"></i> Import Data &amp; Integrasi PKG</h5>
+    <div class="row g-3">
+      <div class="col-md-6">
+        <div class="card h-100">
+          <div class="card-header"><i class="bi bi-people"></i> Import Kepala Madrasah (Excel)</div>
+          <div class="card-body">
+            <p class="text-tiny text-muted mb-2">
+              Unduh template, isi datanya, lalu upload kembali. Format yang didukung: <code>.xlsx</code> / <code>.xlsm</code>.
+            </p>
+            <div class="d-flex gap-2 flex-wrap mb-2">
+              <button class="btn btn-sm btn-outline-primary" id="btnTemplateKamad"><i class="bi bi-download"></i> Download Template</button>
+            </div>
+            <hr>
+            <div class="mb-2">
+              <label class="form-label text-tiny mb-1">File Excel</label>
+              <input type="file" class="form-control form-control-sm" id="importKamadFile" accept=".xlsx,.xlsm,.xls">
+            </div>
+            <div class="mb-2">
+              <label class="form-label text-tiny mb-1">Mode</label>
+              <select class="form-select form-select-sm" id="importKamadMode">
+                <option value="create">Tambah baru saja (skip duplikat)</option>
+                <option value="update">Tambah baru + update yang sudah ada (match NIP/Nama+Madrasah)</option>
+              </select>
+            </div>
+            <button class="btn btn-sm btn-primary" id="btnImportKamad"><i class="bi bi-upload"></i> Proses Import</button>
+            <div id="importKamadResult" class="mt-2 text-tiny"></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="col-md-6">
+        <div class="card h-100">
+          <div class="card-header"><i class="bi bi-link-45deg"></i> Integrasi Rata-rata PKG Madrasah</div>
+          <div class="card-body">
+            <p class="text-tiny text-muted mb-2">
+              Upload file <strong>backup JSON</strong> dari PKG App SPA. Aplikasi akan menghitung rata-rata nilai PKG
+              per madrasah dan menyimpannya untuk digunakan sebagai saran skor pada komponen <em>Hasil Kinerja</em>.
+            </p>
+            <div class="mb-2">
+              <label class="form-label text-tiny mb-1">File backup PKG (.json)</label>
+              <input type="file" class="form-control form-control-sm" id="pkgFile" accept=".json,application/json">
+            </div>
+            <button class="btn btn-sm btn-primary" id="btnPkgImport"><i class="bi bi-cloud-arrow-up"></i> Proses</button>
+            <div id="pkgResult" class="mt-2 text-tiny"></div>
+            ${ringkas ? `
+              <hr>
+              <div class="text-tiny text-muted">Ringkasan PKG terakhir di-update: ${escapeHTML(ringkas.generated_at||'-')}</div>
+              <div class="table-responsive mt-2" style="max-height: 300px; overflow:auto;">
+                <table class="table table-sm mb-0">
+                  <thead class="table-light"><tr><th>Madrasah</th><th class="text-end">Guru</th><th class="text-end">Dinilai</th><th class="text-end">Rata PKG</th><th class="text-end">Saran Skor</th></tr></thead>
+                  <tbody>
+                    ${(ringkas.rows||[]).map(r => `
+                      <tr>
+                        <td>${escapeHTML(r.madrasah)}</td>
+                        <td class="text-end">${r.jumlah_guru}</td>
+                        <td class="text-end">${r.guru_dinilai}</td>
+                        <td class="text-end">${r.rata_pkg!=null?fmtNilai(r.rata_pkg):'-'}</td>
+                        <td class="text-end">${window.PKKMTools.suggestSkorFromPkg(r.rata_pkg) ?? '-'}</td>
+                      </tr>`).join('')}
+                  </tbody>
+                </table>
+              </div>
+              <button class="btn btn-sm btn-outline-danger mt-2" id="btnClearPkg"><i class="bi bi-x-circle"></i> Hapus Ringkasan PKG</button>
+            ` : `<div class="text-tiny text-muted mt-2"><i class="bi bi-info-circle"></i> Belum ada data PKG terhubung.</div>`}
+          </div>
+        </div>
+      </div>
+
+      <div class="col-12">
+        <div class="card">
+          <div class="card-header"><i class="bi bi-info-circle"></i> Catatan</div>
+          <div class="card-body text-tiny text-muted">
+            <ul class="mb-0">
+              <li>Saran skor PKG hanya digunakan sebagai <strong>referensi</strong> untuk aspek <em>Capaian Mutu Pembelajaran</em>; pengawas tetap memberi skor final.</li>
+              <li>Skala saran: rata PKG &gt; 90 → skor 4, &gt; 75 → 3, &gt; 60 → 2, selainnya 1.</li>
+              <li>Pencocokan madrasah dilakukan berdasarkan field <code>nama_madrasah</code> di PKG App.</li>
+            </ul>
+          </div>
+        </div>
+      </div>
+    </div>
+  `;
+
+  $('#btnTemplateKamad')?.addEventListener('click', () => window.PKKMTools.downloadTemplateKamad());
+
+  $('#btnImportKamad')?.addEventListener('click', async () => {
+    const f = $('#importKamadFile').files[0];
+    if (!f) { toast('Pilih file Excel dulu.', 'error'); return; }
+    const mode = $('#importKamadMode').value;
+    const out = $('#importKamadResult');
+    out.innerHTML = '<div class="text-muted"><i class="bi bi-arrow-repeat"></i> Memproses...</div>';
+    try {
+      const rows = await window.PKKMTools.parseImportKamad(f);
+      if (!rows.length) { out.innerHTML = '<div class="alert alert-warning">Tidak ada data terbaca.</div>'; return; }
+      const result = window.PKKMTools.applyImportKamad(rows, { mode });
+      out.innerHTML = `
+        <div class="alert alert-success py-2">
+          <strong>Selesai.</strong> Tambah baru: ${result.created}, update: ${result.updated}, dilewati: ${result.skipped}.
+          ${result.errors.length ? `<div class="text-danger mt-1">Error: ${result.errors.length} baris</div>` : ''}
+        </div>`;
+      toast(`Import selesai: +${result.created} baru, ${result.updated} update.`);
+    } catch (e) {
+      out.innerHTML = `<div class="alert alert-danger py-2">Gagal: ${escapeHTML(e.message)}</div>`;
+    }
+  });
+
+  $('#btnPkgImport')?.addEventListener('click', async () => {
+    const f = $('#pkgFile').files[0];
+    if (!f) { toast('Pilih file backup PKG dulu.', 'error'); return; }
+    const out = $('#pkgResult');
+    out.innerHTML = '<div class="text-muted"><i class="bi bi-arrow-repeat"></i> Memproses...</div>';
+    try {
+      const json = await window.PKKMTools.importPkgBackupJson(f);
+      const rows = window.PKKMTools.ringkasanPkgPerMadrasah(json);
+      if (!rows.length) { out.innerHTML = '<div class="alert alert-warning">Tidak ada data guru terbaca.</div>'; return; }
+      window.PKKMTools.saveRingkasanPkg(rows);
+      out.innerHTML = `<div class="alert alert-success py-2">Berhasil: ${rows.length} madrasah ter-ringkas.</div>`;
+      toast('Ringkasan PKG tersimpan.');
+      setTimeout(() => render(), 600);
+    } catch (e) {
+      out.innerHTML = `<div class="alert alert-danger py-2">Gagal: ${escapeHTML(e.message)}</div>`;
+    }
+  });
+
+  $('#btnClearPkg')?.addEventListener('click', () => {
+    if (!confirmAction('Hapus ringkasan PKG?')) return;
+    window.Meta.set('ringkasan_pkg', null);
+    toast('Ringkasan PKG dihapus.');
+    render();
   });
 });
 
@@ -546,12 +788,34 @@ route('#/penilaian/:kamadId/:periodeId', (root, params) => {
                 const id = `${k.code}_${a.no}`;
                 const cur = skorMap[id] || {};
                 const skor = cur.skor;
+                const buktiList = Array.isArray(cur.bukti) ? cur.bukti : [];
+                // Suggestion PKG khusus aspek HK_2 (Capaian Mutu Pembelajaran)
+                let suggestionHtml = '';
+                if (id === 'HK_2') {
+                  const ringkas = window.PKKMTools?.getRingkasanPkg?.();
+                  const rec = ringkas?.rows?.find(rr => (rr.madrasah||'').toLowerCase().trim() === (kamad.nama_madrasah||'').toLowerCase().trim());
+                  if (rec && rec.rata_pkg != null) {
+                    const sug = window.PKKMTools.suggestSkorFromPkg(rec.rata_pkg);
+                    suggestionHtml = `<div class="text-tiny mt-1"><i class="bi bi-magic text-primary"></i> Rata PKG madrasah ini: <strong>${fmtNilai(rec.rata_pkg)}</strong> → saran skor <strong>${sug}</strong>. <a href="#" data-action="apply-pkg-suggest" data-aspek-id="${id}" data-skor="${sug}">Terapkan</a></div>`;
+                  } else if (ringkas) {
+                    suggestionHtml = `<div class="text-tiny text-muted mt-1"><i class="bi bi-info-circle"></i> Madrasah "${escapeHTML(kamad.nama_madrasah||'-')}" belum ditemukan di ringkasan PKG.</div>`;
+                  }
+                }
                 return `
                   <div class="aspek-row" data-aspek-id="${id}">
                     <div class="flex-grow-1">
                       <div class="fw-semibold">${k.no}.${a.no} ${escapeHTML(a.judul)}</div>
                       <div class="text-tiny text-muted mb-1">${escapeHTML(a.deskripsi||'')}</div>
                       <textarea class="form-control form-control-sm mt-1" rows="1" placeholder="Catatan / bukti pendukung (opsional)" data-field="catatan" ${isFinal?'disabled':''}>${escapeHTML(cur.catatan||'')}</textarea>
+                      ${suggestionHtml}
+                      <div class="d-flex flex-wrap gap-2 align-items-center mt-2 bukti-host" data-bukti-host="${id}">
+                        ${buktiList.map((b, bi) => buktiBadgeHTML(b, bi, isFinal)).join('')}
+                        ${isFinal ? '' : `
+                          <label class="btn btn-sm btn-outline-secondary mb-0" title="Upload bukti dukung">
+                            <i class="bi bi-paperclip"></i> Bukti
+                            <input type="file" class="d-none" data-action="upload-bukti" data-aspek-id="${id}" accept="image/*,application/pdf" multiple>
+                          </label>`}
+                      </div>
                     </div>
                     <div class="skor-pill" role="group" aria-label="Skor">
                       ${[1,2,3,4].map(v => `
@@ -675,6 +939,96 @@ route('#/penilaian/:kamadId/:periodeId', (root, params) => {
             Skor.set(pen.id, aspek_id, { skor: cur.skor ?? null, catatan: ta.value, bukti: cur.bukti || [] });
           }, 350);
         });
+      }
+    });
+
+    // Bukti dukung handlers
+    function rerenderBuktiHost(aspek_id) {
+      const host = root.querySelector(`[data-bukti-host="${aspek_id}"]`);
+      if (!host) return;
+      const cur = Skor.get(pen.id, aspek_id) || {};
+      const list = Array.isArray(cur.bukti) ? cur.bukti : [];
+      const badges = list.map((b, bi) => buktiBadgeHTML(b, bi, isFinal)).join('');
+      const addBtn = isFinal ? '' : `
+        <label class="btn btn-sm btn-outline-secondary mb-0" title="Upload bukti dukung">
+          <i class="bi bi-paperclip"></i> Bukti
+          <input type="file" class="d-none" data-action="upload-bukti" data-aspek-id="${aspek_id}" accept="image/*,application/pdf" multiple>
+        </label>`;
+      host.innerHTML = badges + addBtn;
+    }
+
+    root.addEventListener('change', async (ev) => {
+      const inp = ev.target.closest('[data-action="upload-bukti"]');
+      if (!inp) return;
+      const aspek_id = inp.dataset.aspekId;
+      const files = Array.from(inp.files || []);
+      if (!files.length) return;
+      const cur = Skor.get(pen.id, aspek_id) || {};
+      const arr = Array.isArray(cur.bukti) ? cur.bukti.slice() : [];
+      let totalNew = 0;
+      for (const f of files) {
+        try {
+          const b = await fileToBukti(f);
+          arr.push(b);
+          totalNew += b.size || 0;
+          if (b.size > MAX_BUKTI_BYTES) toast(`Bukti "${f.name}" cukup besar (${Math.round(b.size/1024)} KB).`, 'info');
+        } catch (e) {
+          toast(`Gagal memproses ${f.name}: ${e.message}`, 'error');
+        }
+      }
+      Skor.set(pen.id, aspek_id, { skor: cur.skor ?? null, catatan: cur.catatan || '', bukti: arr });
+      inp.value = '';
+      rerenderBuktiHost(aspek_id);
+      if (totalNew > 0) toast(`Bukti tersimpan (${files.length} file).`);
+    });
+
+    root.addEventListener('click', (ev) => {
+      const remBtn = ev.target.closest('[data-action="remove-bukti"]');
+      if (remBtn) {
+        const wrapper = remBtn.closest('.aspek-row');
+        const aspek_id = wrapper?.dataset.aspekId;
+        const idx = Number(remBtn.dataset.buktiIdx);
+        if (!aspek_id || isNaN(idx)) return;
+        if (!confirmAction('Hapus bukti ini?')) return;
+        const cur = Skor.get(pen.id, aspek_id) || {};
+        const arr = Array.isArray(cur.bukti) ? cur.bukti.slice() : [];
+        arr.splice(idx, 1);
+        Skor.set(pen.id, aspek_id, { skor: cur.skor ?? null, catatan: cur.catatan || '', bukti: arr });
+        rerenderBuktiHost(aspek_id);
+        return;
+      }
+      const openImg = ev.target.closest('[data-action="open-bukti"]');
+      if (openImg) {
+        const wrapper = openImg.closest('.aspek-row');
+        const aspek_id = wrapper?.dataset.aspekId;
+        const idx = Number(openImg.dataset.buktiIdx);
+        if (!aspek_id || isNaN(idx)) return;
+        const cur = Skor.get(pen.id, aspek_id) || {};
+        const b = (cur.bukti || [])[idx];
+        if (b) openBuktiPreview(b);
+      }
+      const applySug = ev.target.closest('[data-action="apply-pkg-suggest"]');
+      if (applySug) {
+        ev.preventDefault();
+        if (isFinal) { toast('Penilaian sudah final.', 'error'); return; }
+        const aspek_id = applySug.dataset.aspekId;
+        const v = Number(applySug.dataset.skor);
+        if (!aspek_id || !v) return;
+        const cur = Skor.get(pen.id, aspek_id) || {};
+        Skor.set(pen.id, aspek_id, { skor: v, catatan: cur.catatan || '', bukti: cur.bukti || [] });
+        const radio = root.querySelector(`#skor_${aspek_id}_${v}`);
+        if (radio) radio.checked = true;
+        $('#ringkasanHost').innerHTML = renderRingkasan();
+        // update badges
+        const k = aspek_id.split('_')[0];
+        const h = hitungNilaiKomponen(pen.id, k);
+        const headerBtn = document.querySelector(`#komponenAcc [data-bs-target="#k_${k}"]`);
+        if (headerBtn) {
+          const badges = headerBtn.querySelectorAll('.badge');
+          if (badges[0]) badges[0].textContent = `${h.terisi}/${h.totalAspek} aspek`;
+          if (badges[1]) badges[1].textContent = `Nilai: ${fmtNilai(h.nilai)}`;
+        }
+        toast(`Saran skor ${v} diterapkan.`);
       }
     });
 
