@@ -1,0 +1,26 @@
+{
+  "name": "Aplikasi PKKM - Penilaian Kinerja Kepala Madrasah",
+  "short_name": "PKKM",
+  "description": "Aplikasi PKKM Pokjawas Kemenag",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#f4faf5",
+  "theme_color": "#047a3a",
+  "lang": "id",
+  "icons": [
+    {
+      "src": "icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ]
+}
