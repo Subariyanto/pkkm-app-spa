@@ -724,12 +724,25 @@ route('#/penilaian', (root) => {
     $$('[data-status-for]').forEach(el => {
       const kid = Number(el.dataset.statusFor);
       if (!pid) { el.innerHTML = '<span class="text-muted">Pilih periode</span>'; return; }
-      const pen = Penilaian.byKamadPeriode(kid, pid);
-      if (!pen) { el.innerHTML = '<span class="badge badge-status-belum">Belum mulai</span>'; return; }
-      const prog = progressPenilaian(pen.id);
-      const sb = statusBadge(prog.persen);
-      const finalTag = pen.status === 'final' ? ' <span class="badge bg-success">FINAL</span>' : '';
-      el.innerHTML = `<span class="badge ${sb.cls}">${sb.text} (${prog.terisi}/${prog.total})</span>${finalTag}`;
+      const sessions = Penilaian.forKamadPeriode(kid, pid);
+      if (!sessions.length) { el.innerHTML = '<span class="badge badge-status-belum">Belum mulai</span>'; return; }
+      const groupCount = { pengawas: 0, gtk: 0, komite: 0 };
+      let allFinal = true;
+      let totalProg = 0;
+      for (const s of sessions) {
+        const r = s.role || 'pengawas_1';
+        if (r.startsWith('pengawas')) groupCount.pengawas++;
+        else if (r.startsWith('guru')) groupCount.gtk++;
+        else if (r === 'komite') groupCount.komite++;
+        if (s.status !== 'final') allFinal = false;
+        const prog = progressPenilaian(s.id);
+        totalProg += prog.persen;
+      }
+      const avgProg = totalProg / sessions.length;
+      const sb = statusBadge(avgProg);
+      const finalTag = allFinal ? ' <span class="badge bg-success">FINAL</span>' : '';
+      el.innerHTML = `<span class="badge ${sb.cls}">${sb.text}</span>` +
+        ` <span class="text-tiny text-muted">${sessions.length} penilai</span>${finalTag}`;
     });
   }
 
@@ -739,8 +752,7 @@ route('#/penilaian', (root) => {
     const pid = selectedPeriodeId();
     if (!pid) { toast('Buat periode dulu.', 'error'); return; }
     const kid = Number(b.dataset.kamad);
-    Penilaian.ensure(kid, pid);
-    navigate(`#/penilaian/${kid}/${pid}`);
+    openPilihRoleModal(kid, pid);
   }));
 
   $$('[data-action="del-periode"]').forEach(b => b.addEventListener('click', (e) => {
@@ -761,6 +773,81 @@ route('#/penilaian', (root) => {
   bindAdd($('#btnAddPeriode'));
   bindAdd($('#btnAddPeriode2'));
 });
+
+function openPilihRoleModal(kamad_id, periode_id) {
+  const kamad = Kamad.get(kamad_id);
+  const periode = Periode.get(periode_id);
+  if (!kamad || !periode) { toast('Data tidak lengkap.', 'error'); return; }
+  const sessions = Penilaian.forKamadPeriode(kamad_id, periode_id);
+  const sessByRole = {};
+  for (const s of sessions) sessByRole[s.role || 'pengawas_1'] = s;
+  const roles = window.PKKM_ROLES || [
+    { code: 'pengawas_1', label: 'Pengawas Madrasah I',  instrumen: 'pengawas' },
+    { code: 'pengawas_2', label: 'Pengawas Madrasah II', instrumen: 'pengawas' },
+    { code: 'guru_1',     label: 'Guru/Tendik I',        instrumen: 'gtk' },
+    { code: 'guru_2',     label: 'Guru/Tendik II',       instrumen: 'gtk' },
+    { code: 'komite',     label: 'Komite/KKM',           instrumen: 'gtk' },
+  ];
+
+  const html = `
+    <div class="modal fade" id="pilihRoleModal" tabindex="-1">
+      <div class="modal-dialog modal-lg modal-dialog-centered">
+        <div class="modal-content">
+          <div class="modal-header bg-light">
+            <div>
+              <div class="text-tiny text-muted">${escapeHTML(kamad.nama_madrasah||'')} · ${escapeHTML(periode.label||'')}</div>
+              <h5 class="modal-title mb-0"><i class="bi bi-person-check"></i> Pilih Penilai untuk ${escapeHTML(kamad.nama)}</h5>
+            </div>
+            <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+          </div>
+          <div class="modal-body">
+            <div class="alert alert-info py-2 text-tiny mb-3">
+              <i class="bi bi-info-circle"></i> 1 kamad bisa dinilai oleh beberapa penilai. Hasil akan diagregat di rekap (Pengawas 50% · Guru/Tendik 30% · Komite 20%; bisa diubah di Pengaturan).
+            </div>
+            <div class="list-group">
+              ${roles.map(r => {
+                const s = sessByRole[r.code];
+                const prog = s ? progressPenilaian(s.id) : null;
+                const sbCls = !s ? 'badge-status-belum' : (prog.persen >= 100 ? 'badge-status-selesai' : (prog.persen > 0 ? 'badge-status-sebagian' : 'badge-status-belum'));
+                const sbTxt = !s ? 'Belum dimulai' : (prog.persen >= 100 ? 'Selesai' : (prog.persen > 0 ? `${Math.round(prog.persen)}%` : 'Belum dimulai'));
+                const finalTag = s && s.status === 'final' ? ' <span class="badge bg-success ms-1">FINAL</span>' : '';
+                return `
+                  <button type="button" class="list-group-item list-group-item-action d-flex justify-content-between align-items-center" data-role="${r.code}">
+                    <div>
+                      <div class="fw-semibold">${escapeHTML(r.label)}</div>
+                      <div class="text-tiny text-muted">Instrumen: ${r.instrumen === 'gtk' ? 'Guru/Tendik &amp; Komite' : 'Pengawas'}</div>
+                    </div>
+                    <div class="text-end">
+                      <span class="badge ${sbCls}">${sbTxt}</span>${finalTag}
+                      <i class="bi bi-chevron-right ms-2"></i>
+                    </div>
+                  </button>`;
+              }).join('')}
+            </div>
+            <div class="mt-3 text-end">
+              <a href="#/agregat/${kamad_id}/${periode_id}" class="btn btn-sm btn-outline-primary"><i class="bi bi-graph-up"></i> Lihat Rekap Agregat</a>
+            </div>
+          </div>
+          <div class="modal-footer">
+            <button type="button" class="btn btn-light" data-bs-dismiss="modal">Tutup</button>
+          </div>
+        </div>
+      </div>
+    </div>`;
+  let host = document.getElementById('pilihRoleModalHost');
+  if (!host) { host = document.createElement('div'); host.id = 'pilihRoleModalHost'; document.body.appendChild(host); }
+  host.innerHTML = html;
+  const m = new bootstrap.Modal(document.getElementById('pilihRoleModal'));
+  m.show();
+  document.querySelectorAll('#pilihRoleModal [data-role]').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const role = btn.dataset.role;
+      Penilaian.ensureRole(kamad_id, periode_id, role);
+      m.hide();
+      navigate(`#/penilaian/${kamad_id}/${periode_id}/${role}`);
+    });
+  });
+}
 
 function openPeriodeModal() {
   const html = `
@@ -830,13 +917,22 @@ function openPeriodeModal() {
 
 // --- Penilaian: form ------------------------------------------
 route('#/penilaian/:kamadId/:periodeId', (root, params) => {
+  // No role provided: redirect to role chooser modal via penilaian list
+  navigate(`#/penilaian`);
+  setTimeout(() => openPilihRoleModal(Number(params.kamadId), Number(params.periodeId)), 100);
+});
+route('#/penilaian/:kamadId/:periodeId/:role', (root, params) => {
   const kamad = Kamad.get(Number(params.kamadId));
   const periode = Periode.get(Number(params.periodeId));
+  const role = params.role || 'pengawas_1';
   if (!kamad || !periode) {
     root.innerHTML = `<div class="alert alert-warning">Data kepala madrasah / periode tidak ditemukan. <a href="#/penilaian">Kembali</a></div>`;
     return;
   }
-  const pen = Penilaian.ensure(kamad.id, periode.id);
+  // Switch instrumen sesuai role
+  const roleInfo = (window.PKKM_ROLES||[]).find(x => x.code === role) || { instrumen: 'pengawas', label: role };
+  if (typeof window.setInstrumenRole === 'function') window.setInstrumenRole(roleInfo.instrumen);
+  const pen = Penilaian.ensureRole(kamad.id, periode.id, role);
   const isFinal = pen.status === 'final';
 
   function renderKomponenAccordion() {
@@ -966,6 +1062,7 @@ route('#/penilaian/:kamadId/:periodeId', (root, params) => {
         <div>
           <h5 class="mb-0"><i class="bi bi-pencil-square"></i> Penilaian: ${escapeHTML(kamad.nama)}</h5>
           <div class="text-tiny text-muted">${escapeHTML(kamad.nama_madrasah)} (${escapeHTML(kamad.jenjang||'-')}) &middot; ${escapeHTML(periode.label)}</div>
+          <div class="mt-1"><span class="badge bg-primary"><i class="bi bi-person-badge"></i> Penilai: ${escapeHTML(roleInfo.label||role)}</span> <span class="badge bg-light text-dark border ms-1">Instrumen: ${roleInfo.instrumen === 'gtk' ? 'Guru/Tendik &amp; Komite' : 'Pengawas'}</span></div>
         </div>
         <div class="btn-group">
           <a href="#/penilaian" class="btn btn-sm btn-outline-secondary"><i class="bi bi-arrow-left"></i></a>
@@ -1188,12 +1285,23 @@ route('#/rekap', (root) => {
   const kamadList = Kamad.list();
 
   const rows = kamadList.map(k => {
-    const pen = Penilaian.byKamadPeriode(k.id, selPid);
-    if (!pen) return { k, pen: null, prog: null, akhir: null, sebutan: null };
-    const prog = progressPenilaian(pen.id);
-    const akhir = hitungNilaiAkhir(pen.id);
+    const sessions = Penilaian.forKamadPeriode(k.id, selPid);
+    if (!sessions.length) return { k, pen: null, sessions: [], prog: null, akhir: null, sebutan: null, agg: null };
+    // Agregat multi-role kalau >1 session, single kalau cuma 1
+    let akhir = null;
+    let agg = null;
+    if (sessions.length > 1) {
+      agg = hitungNilaiAgregat(k.id, selPid);
+      akhir = { nilaiAkhir: agg.nilaiAgregat, detail: (window.PKKM_KOMPONEN_META||window.PKKM_KOMPONEN).map(km => {
+        const vals = sessions.map(s => hitungNilaiKomponen(s.id, km.code).nilai);
+        return { code: km.code, label: km.label, nilai: vals.reduce((a,b)=>a+b,0)/vals.length, bobot: 0, kontribusi: 0 };
+      }) };
+    } else {
+      akhir = hitungNilaiAkhir(sessions[0].id);
+    }
+    const prog = progressPenilaian(sessions[0].id);
     const sebutan = window.getPKKMSebutan(akhir.nilaiAkhir);
-    return { k, pen, prog, akhir, sebutan };
+    return { k, pen: sessions[0], sessions, prog, akhir, sebutan, agg };
   });
 
   root.innerHTML = `
@@ -1233,13 +1341,15 @@ route('#/rekap', (root) => {
                   const d = detail?.find(x => x.code === k.code);
                   return `<td class="text-center">${d ? fmtNilai(d.nilai) : '-'}</td>`;
                 }).join('')}
-                <td class="text-center fw-bold">${r.akhir ? fmtNilai(r.akhir.nilaiAkhir) : '-'}</td>
+                <td class="text-center fw-bold">${r.akhir ? fmtNilai(r.akhir.nilaiAkhir) : '-'}
+                  ${r.sessions.length > 1 ? `<div class="text-tiny text-muted">${r.sessions.length} penilai</div>` : ''}
+                </td>
                 <td class="text-center">${r.sebutan ? `<span class="${r.sebutan.cssClass}">${r.sebutan.label}</span>` : '-'}</td>
                 <td class="text-center">
                   ${r.pen
-                    ? `<a href="#/penilaian/${r.k.id}/${selPid}" class="btn btn-sm btn-outline-primary"><i class="bi bi-pencil"></i></a>
-                       <a href="#/cetak/${r.pen.id}" class="btn btn-sm btn-outline-secondary"><i class="bi bi-printer"></i></a>`
-                    : `<a href="#/penilaian/${r.k.id}/${selPid}" class="btn btn-sm btn-primary"><i class="bi bi-play-fill"></i> Mulai</a>`}
+                    ? `<a href="#/agregat/${r.k.id}/${selPid}" class="btn btn-sm btn-outline-primary" title="Detail Agregat"><i class="bi bi-graph-up"></i></a>
+                       <a href="#/cetak/${r.pen.id}" class="btn btn-sm btn-outline-secondary" title="Cetak"><i class="bi bi-printer"></i></a>`
+                    : `<button class="btn btn-sm btn-primary" data-action="open-rekap-penilaian" data-kamad="${r.k.id}"><i class="bi bi-play-fill"></i> Mulai</button>`}
                 </td>
               </tr>`;
             }).join('')}
@@ -1252,6 +1362,9 @@ route('#/rekap', (root) => {
   $('#periodeSelect').addEventListener('change', e => {
     location.hash = `#/rekap?p=${e.target.value}`;
   });
+  $$('[data-action="open-rekap-penilaian"]').forEach(b => b.addEventListener('click', () => {
+    openPilihRoleModal(Number(b.dataset.kamad), selPid);
+  }));
 
   $('#btnExportRekap').addEventListener('click', () => exportRekapExcel(periode, rows));
 });
@@ -1450,6 +1563,140 @@ route('#/cetak/:id', (root, params) => {
             <div>Mengetahui,<br>Ketua Pokjawas Madrasah Kab. Jember</div>
             <div style="margin-top:4rem; font-weight:700; text-decoration:underline;">${escapeHTML(pokjawas.nama||'..............................')}</div>
             <div>NIP. ${escapeHTML(pokjawas.nip||'..............................')}</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  `;
+});
+
+// --- Rekap Agregat (multi-assessor) ----------------------------
+route('#/agregat/:kamadId/:periodeId', (root, params) => {
+  const kamad = Kamad.get(Number(params.kamadId));
+  const periode = Periode.get(Number(params.periodeId));
+  if (!kamad || !periode) {
+    root.innerHTML = `<div class="alert alert-warning">Data tidak ditemukan. <a href="#/penilaian">Kembali</a></div>`;
+    return;
+  }
+  const agg = hitungNilaiAgregat(kamad.id, periode.id);
+  if (!agg || !agg.sessions.length) {
+    root.innerHTML = `
+      <h5 class="mb-3"><i class="bi bi-graph-up"></i> Rekap Agregat</h5>
+      <div class="alert alert-info">Belum ada penilaian untuk ${escapeHTML(kamad.nama)} di periode ${escapeHTML(periode.label)}.
+        <a href="#/penilaian" class="btn btn-sm btn-primary ms-2">Mulai Penilaian</a>
+      </div>`;
+    return;
+  }
+  const sebutan = window.getPKKMSebutan(agg.nilaiAgregat);
+  const groupLabel = { pengawas: 'Pengawas Madrasah', gtk: 'Guru / Tendik', komite: 'Komite / KKM' };
+
+  // Build per-session rows for detail table
+  const ROLES = window.PKKM_ROLES || [];
+  const roleLabel = (code) => (ROLES.find(r => r.code === code)?.label || code);
+
+  root.innerHTML = `
+    <div class="d-flex justify-content-between align-items-center mb-3">
+      <div>
+        <h5 class="mb-0"><i class="bi bi-graph-up"></i> Rekap Agregat Multi-Penilai</h5>
+        <div class="text-tiny text-muted">${escapeHTML(kamad.nama)} · ${escapeHTML(kamad.nama_madrasah||'-')} · ${escapeHTML(periode.label)}</div>
+      </div>
+      <a href="#/penilaian" class="btn btn-sm btn-outline-secondary"><i class="bi bi-arrow-left"></i> Kembali</a>
+    </div>
+
+    <div class="row g-3">
+      <div class="col-lg-5">
+        <div class="card">
+          <div class="card-body">
+            <div class="nilai-akhir-box p-3 mb-3 text-center">
+              <div class="text-tiny opacity-75">NILAI AGREGAT</div>
+              <div class="display-4 fw-bold">${fmtNilai(agg.nilaiAgregat)}</div>
+              <div class="${sebutan?sebutan.cssClass:''} bg-white rounded px-2 py-1 d-inline-block mt-1">${sebutan?sebutan.label:'-'}</div>
+            </div>
+            <table class="table table-sm mb-0">
+              <thead><tr><th>Kelompok</th><th class="text-end">Nilai</th><th class="text-end">Bobot</th><th class="text-end">Penilai</th></tr></thead>
+              <tbody>
+                ${agg.breakdown.map(b => `
+                  <tr>
+                    <td>${escapeHTML(groupLabel[b.group]||b.group)}</td>
+                    <td class="text-end">${b.nilai != null ? fmtNilai(b.nilai) : '<span class="text-muted">-</span>'}</td>
+                    <td class="text-end">${b.bobot}%</td>
+                    <td class="text-end">${b.jumlahPenilai}</td>
+                  </tr>`).join('')}
+              </tbody>
+              <tfoot>
+                <tr><th colspan="2" class="text-end">Total bobot aktif</th><th class="text-end">${agg.totalBobotRole}%</th><th></th></tr>
+              </tfoot>
+            </table>
+            <div class="text-tiny text-muted mt-2">Bobot kelompok bisa diubah di <a href="#/pengaturan">Pengaturan</a>.</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="col-lg-7">
+        <div class="card">
+          <div class="card-header"><i class="bi bi-list-ul"></i> Detail per Penilai</div>
+          <div class="card-body p-0">
+            <div class="table-responsive">
+              <table class="table table-hover mb-0 align-middle">
+                <thead class="table-light">
+                  <tr><th>Penilai</th><th class="text-end">Nilai Akhir</th><th class="text-center">Status</th><th class="text-end">Aksi</th></tr>
+                </thead>
+                <tbody>
+                  ${agg.sessions.sort((a,b) => (a.role||'').localeCompare(b.role||'')).map(s => {
+                    const akhir = hitungNilaiAkhir(s.id);
+                    const prog = progressPenilaian(s.id);
+                    const sb = statusBadge(prog.persen);
+                    return `
+                      <tr>
+                        <td>
+                          <div class="fw-semibold">${escapeHTML(roleLabel(s.role||'pengawas_1'))}</div>
+                          <div class="text-tiny text-muted">${escapeHTML(s.tanggal||'-')}</div>
+                        </td>
+                        <td class="text-end"><strong>${fmtNilai(akhir.nilaiAkhir)}</strong></td>
+                        <td class="text-center">
+                          <span class="badge ${sb.cls}">${sb.text}</span>
+                          ${s.status === 'final' ? '<span class="badge bg-success ms-1">FINAL</span>' : ''}
+                        </td>
+                        <td class="text-end">
+                          <a href="#/penilaian/${kamad.id}/${periode.id}/${s.role||'pengawas_1'}" class="btn btn-sm btn-outline-primary" title="Buka"><i class="bi bi-pencil-square"></i></a>
+                          <a href="#/cetak/${s.id}" class="btn btn-sm btn-outline-secondary" title="Cetak"><i class="bi bi-printer"></i></a>
+                        </td>
+                      </tr>`;
+                  }).join('')}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="col-12">
+        <div class="card">
+          <div class="card-header"><i class="bi bi-bar-chart"></i> Nilai Komponen per Penilai</div>
+          <div class="card-body p-0">
+            <div class="table-responsive">
+              <table class="table mb-0">
+                <thead class="table-light">
+                  <tr>
+                    <th>Komponen</th>
+                    ${agg.sessions.map(s => `<th class="text-center text-tiny">${escapeHTML(roleLabel(s.role||'pengawas_1'))}</th>`).join('')}
+                    <th class="text-center">Rata-rata</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  ${(window.PKKM_KOMPONEN_META || []).map(km => {
+                    const vals = agg.sessions.map(s => hitungNilaiKomponen(s.id, km.code).nilai);
+                    const rata = vals.length ? vals.reduce((a,b)=>a+b,0)/vals.length : 0;
+                    return `
+                      <tr>
+                        <td><strong>${km.no}.</strong> ${escapeHTML(km.label)}</td>
+                        ${vals.map(v => `<td class="text-center">${fmtNilai(v)}</td>`).join('')}
+                        <td class="text-center"><strong>${fmtNilai(rata)}</strong></td>
+                      </tr>`;
+                  }).join('')}
+                </tbody>
+              </table>
+            </div>
           </div>
         </div>
       </div>
@@ -1849,9 +2096,13 @@ route('#/backup', (root) => {
 // --- Pengaturan ------------------------------------------------
 route('#/pengaturan', (root) => {
   const bobot = Meta.bobot();
+  const bobotRole = window.getBobotRole ? window.getBobotRole() : { pengawas: 50, gtk: 30, komite: 20 };
   const pengawas = Meta.get('identitas_pengawas', { nama: '', nip: '' });
   const pokjawas = Meta.get('identitas_ketua_pokjawas', { nama: 'SUBARIYANTO, S.Pd, M.Pd.I', nip: '197002122005011004' });
   const tempat = Meta.get('lokasi_ttd', 'Jember');
+
+  // Use META komponen list (5 komp) supaya tidak terpengaruh role aktif
+  const KOMP_META = window.PKKM_KOMPONEN_META || window.PKKM_KOMPONEN.map(k => ({ no: k.no, code: k.code, label: k.label, bobot_default: 20 }));
 
   root.innerHTML = `
     <h5 class="mb-3"><i class="bi bi-gear"></i> Pengaturan</h5>
@@ -1861,7 +2112,7 @@ route('#/pengaturan', (root) => {
           <div class="card-header">Bobot Komponen (%)</div>
           <div class="card-body">
             <form id="bobotForm">
-              ${window.PKKM_KOMPONEN.map(k => `
+              ${KOMP_META.map(k => `
                 <div class="mb-2 row">
                   <label class="col-sm-8 col-form-label col-form-label-sm">${k.no}. ${escapeHTML(k.label)}</label>
                   <div class="col-sm-4">
@@ -1872,6 +2123,30 @@ route('#/pengaturan', (root) => {
               <div class="text-tiny text-muted mb-2" id="totalBobot"></div>
               <button class="btn btn-sm btn-primary"><i class="bi bi-save"></i> Simpan</button>
               <button type="button" class="btn btn-sm btn-outline-secondary" id="btnResetBobot">Reset Default</button>
+            </form>
+          </div>
+        </div>
+
+        <div class="card mt-3">
+          <div class="card-header">Bobot Penilai (Multi-Assessor)</div>
+          <div class="card-body">
+            <p class="text-tiny text-muted mb-2">Bobot rata-rata kelompok penilai untuk halaman <strong>Rekap Agregat</strong>. Default Pengawas 50% · Guru/Tendik 30% · Komite 20%.</p>
+            <form id="bobotRoleForm">
+              <div class="mb-2 row">
+                <label class="col-sm-8 col-form-label col-form-label-sm">Pengawas Madrasah (gabungan I &amp; II)</label>
+                <div class="col-sm-4"><input class="form-control form-control-sm" type="number" name="pengawas" min="0" max="100" step="1" value="${bobotRole.pengawas}"></div>
+              </div>
+              <div class="mb-2 row">
+                <label class="col-sm-8 col-form-label col-form-label-sm">Guru / Tendik (gabungan I &amp; II)</label>
+                <div class="col-sm-4"><input class="form-control form-control-sm" type="number" name="gtk" min="0" max="100" step="1" value="${bobotRole.gtk}"></div>
+              </div>
+              <div class="mb-2 row">
+                <label class="col-sm-8 col-form-label col-form-label-sm">Komite / KKM</label>
+                <div class="col-sm-4"><input class="form-control form-control-sm" type="number" name="komite" min="0" max="100" step="1" value="${bobotRole.komite}"></div>
+              </div>
+              <div class="text-tiny text-muted mb-2" id="totalBobotRole"></div>
+              <button class="btn btn-sm btn-primary"><i class="bi bi-save"></i> Simpan</button>
+              <button type="button" class="btn btn-sm btn-outline-secondary" id="btnResetBobotRole">Reset Default</button>
             </form>
           </div>
         </div>
@@ -1931,6 +2206,29 @@ route('#/pengaturan', (root) => {
   $('#btnResetBobot').addEventListener('click', () => {
     Meta.setBobot({});
     toast('Bobot direset ke default.');
+    render();
+  });
+
+  // Bobot role handlers
+  function refreshTotalRole() {
+    let total = 0;
+    $$('#bobotRoleForm input[type=number]').forEach(i => total += Number(i.value || 0));
+    $('#totalBobotRole').innerHTML = `Total bobot: <strong>${total.toFixed(0)}%</strong> ${total === 100 ? '<span class="text-success">(ideal)</span>' : '<span class="text-warning">(akan dinormalisasi)</span>'}`;
+  }
+  refreshTotalRole();
+  $$('#bobotRoleForm input[type=number]').forEach(i => i.addEventListener('input', refreshTotalRole));
+
+  $('#bobotRoleForm').addEventListener('submit', (e) => {
+    e.preventDefault();
+    const fd = new FormData(e.target);
+    const map = { pengawas: Number(fd.get('pengawas')), gtk: Number(fd.get('gtk')), komite: Number(fd.get('komite')) };
+    Meta.set('bobot_role', map);
+    toast('Bobot penilai disimpan.');
+  });
+
+  $('#btnResetBobotRole').addEventListener('click', () => {
+    Meta.set('bobot_role', null);
+    toast('Bobot penilai direset.');
     render();
   });
 

@@ -155,19 +155,30 @@ const Periode = {
 const Penilaian = {
   list() { return pLoad(PKKM_KEYS.penilaian, []); },
   forKamad(kamad_id) { return this.list().filter(p => p.kamad_id === kamad_id); },
+  // All sessions for a (kamad, periode) - one per role
+  forKamadPeriode(kamad_id, periode_id) {
+    return this.list().filter(p => p.kamad_id === kamad_id && p.periode_id === periode_id);
+  },
+  // Single session by (kamad, periode, role) - returns null if not found
+  byKamadPeriodeRole(kamad_id, periode_id, role) {
+    return this.list().find(p => p.kamad_id === kamad_id && p.periode_id === periode_id && (p.role||'pengawas_1') === role) || null;
+  },
+  // Legacy alias (returns first session for backward compat in older callers)
   byKamadPeriode(kamad_id, periode_id) {
     return this.list().find(p => p.kamad_id === kamad_id && p.periode_id === periode_id) || null;
   },
   get(id) { return this.list().find(p => p.id === id) || null; },
-  ensure(kamad_id, periode_id) {
-    let p = this.byKamadPeriode(kamad_id, periode_id);
+  // Ensure a session exists for (kamad, periode, role); default role = pengawas_1
+  ensureRole(kamad_id, periode_id, role) {
+    role = role || 'pengawas_1';
+    let p = this.byKamadPeriodeRole(kamad_id, periode_id, role);
     if (p) return p;
     const all = this.list();
     p = {
       id: pNextId('penilaian'),
       kamad_id,
       periode_id,
-      role: 'pengawas_1',
+      role,
       status: 'draft',
       tanggal: nowLocal().slice(0,10),
       catatan_umum: '',
@@ -177,6 +188,8 @@ const Penilaian = {
     pSave(PKKM_KEYS.penilaian, all);
     return p;
   },
+  // Legacy ensure (default pengawas_1)
+  ensure(kamad_id, periode_id, role) { return this.ensureRole(kamad_id, periode_id, role || 'pengawas_1'); },
   update(id, patch) {
     const all = this.list();
     const i = all.findIndex(x => x.id === id);
@@ -304,6 +317,64 @@ function progressPenilaian(penilaian_id) {
   return { terisi, total, persen: total > 0 ? (terisi/total)*100 : 0 };
 }
 
+// === Multi-assessor agregat (1 kamad + 1 periode = beberapa role assessor) ===
+// Bobot rata-rata default per role group:
+//   pengawas_1 + pengawas_2 → 50% (rata2 di internal group)
+//   guru_1 + guru_2 → 30%
+//   komite → 20%
+// Bobot ini bisa dioverride lewat Meta key 'bobot_role'.
+function getBobotRole() {
+  const def = { pengawas: 50, gtk: 30, komite: 20 };
+  const overrides = Meta.get('bobot_role', {});
+  return { ...def, ...overrides };
+}
+
+function hitungNilaiAgregat(kamad_id, periode_id) {
+  const sessions = Penilaian.forKamadPeriode(kamad_id, periode_id);
+  if (!sessions.length) return null;
+  const bobotRole = getBobotRole();
+  const groupMap = {
+    pengawas_1: 'pengawas', pengawas_2: 'pengawas',
+    guru_1: 'gtk', guru_2: 'gtk',
+    komite: 'komite',
+  };
+  // group sessions by group
+  const groups = { pengawas: [], gtk: [], komite: [] };
+  for (const s of sessions) {
+    const g = groupMap[s.role || 'pengawas_1'] || 'pengawas';
+    const akhir = hitungNilaiAkhir(s.id);
+    groups[g].push({ session: s, nilai: akhir.nilaiAkhir, detail: akhir.detail });
+  }
+  // For each group, average the role members' final scores
+  const groupAvg = {};
+  for (const g of Object.keys(groups)) {
+    const arr = groups[g];
+    if (!arr.length) { groupAvg[g] = null; continue; }
+    const sum = arr.reduce((s,x) => s + (x.nilai||0), 0);
+    groupAvg[g] = sum / arr.length;
+  }
+  // Weighted final using bobotRole
+  let totalW = 0, weighted = 0;
+  const breakdown = [];
+  for (const g of ['pengawas','gtk','komite']) {
+    const w = Number(bobotRole[g] || 0);
+    const v = groupAvg[g];
+    if (v != null && w > 0) {
+      weighted += v * w;
+      totalW += w;
+    }
+    breakdown.push({ group: g, bobot: w, nilai: v, jumlahPenilai: groups[g].length });
+  }
+  const nilaiAgregat = totalW > 0 ? weighted / totalW : 0;
+  return {
+    nilaiAgregat,
+    breakdown,
+    sessions,
+    groups,
+    totalBobotRole: totalW,
+  };
+}
+
 function statusBadge(persen) {
   if (persen >= 100) return { cls: 'badge-status-selesai', text: 'Selesai' };
   if (persen > 0)    return { cls: 'badge-status-sebagian', text: 'Sebagian' };
@@ -356,6 +427,8 @@ window.hitungNilaiKomponen = hitungNilaiKomponen;
 window.hitungNilaiAkhir = hitungNilaiAkhir;
 window.progressPenilaian = progressPenilaian;
 window.statusBadge = statusBadge;
+window.hitungNilaiAgregat = hitungNilaiAgregat;
+window.getBobotRole = getBobotRole;
 window.backupAll = backupAll;
 window.restoreAll = restoreAll;
 window.wipeAll = wipeAll;
