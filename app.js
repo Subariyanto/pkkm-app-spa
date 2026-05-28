@@ -2129,6 +2129,42 @@ const PKB_UNSUR = [
   { code: 'karya_inovatif',    label: 'Karya Inovatif',    jenis: ['Buku, Bahan Diklat, dan Pedoman KM', 'Standar MSDM (buku pedoman/modul)', 'Metode atau Teknologi Kepemimpinan/Manajemen'] },
 ];
 
+// Mapping default unsur+jenis+kegiatan PKB berdasarkan komponen + sub-aspek
+function suggestPKBForSubAspek(komponen_code, sub_aspek_kode, sub_aspek_unsur) {
+  const unsur = (sub_aspek_unsur || '').toLowerCase();
+  // Default mapping per komponen
+  const presetByKomponen = {
+    PM: { unsur: 'pengembangan_diri', jenis: 'Pengembangan Madrasah' },
+    MJ: { unsur: 'pengembangan_diri', jenis: 'Diklat' },
+    KW: { unsur: 'karya_inovatif',    jenis: 'Metode atau Teknologi Kepemimpinan/Manajemen' },
+    SP: { unsur: 'pengembangan_diri', jenis: 'Pembimbingan/Mentoring' },
+    HK: { unsur: 'publikasi_ilmiah',  jenis: 'Karya Ilmiah' },
+  };
+  const preset = presetByKomponen[komponen_code] || { unsur: 'pengembangan_diri', jenis: 'Diklat' };
+
+  // Override khusus berdasarkan kata kunci di unsur sub-aspek
+  let overrideJenis = null;
+  if (/pembelajaran|kurikulum/.test(unsur)) overrideJenis = 'Diklat';
+  else if (/supervisi/.test(unsur)) overrideJenis = 'Pembimbingan/Mentoring';
+  else if (/manajemen|administrasi|sim|informasi/.test(unsur)) overrideJenis = 'Diklat';
+  else if (/kewirausahaan|inovasi/.test(unsur)) overrideJenis = 'Metode atau Teknologi Kepemimpinan/Manajemen';
+  else if (/kepemimpinan|kompetensi/.test(unsur)) overrideJenis = 'Pengembangan Madrasah';
+  else if (/penelitian|kajian/.test(unsur)) overrideJenis = 'Kajian dan Penelitian Tindakan';
+  else if (/publikasi|karya|tulis/.test(unsur)) overrideJenis = 'Karya Ilmiah';
+  else if (/komite|hubungan|masyarakat/.test(unsur)) overrideJenis = 'Kegiatan Kolektif';
+
+  if (overrideJenis) {
+    // Adjust unsur kalau jenis baru tidak cocok dengan unsur preset
+    const findUnsur = PKB_UNSUR.find(u => u.jenis.includes(overrideJenis));
+    if (findUnsur) preset.unsur = findUnsur.code;
+    preset.jenis = overrideJenis;
+  }
+
+  // Generate kegiatan otomatis
+  const kegiatan = `Diklat / Bimtek / Pelatihan tentang ${sub_aspek_unsur || 'aspek terkait'}`;
+  return { unsur_pkb: preset.unsur, jenis_pkb: preset.jenis, kegiatan_pkb: kegiatan };
+}
+
 function openPilihKamadPKB() {
   const kamadList = Kamad.list();
   const periodeList = Periode.list();
@@ -2263,6 +2299,7 @@ route('#/pkb/:kamadId/:periodeId', (root, params) => {
         <div class="btn-group">
           <a href="#/pkb" class="btn btn-sm btn-outline-secondary"><i class="bi bi-arrow-left"></i></a>
           <button class="btn btn-sm btn-warning" id="btnRefreshPkb" title="Hitung ulang prioritas dari nilai terkini"><i class="bi bi-arrow-clockwise"></i> Refresh Prioritas</button>
+          <button class="btn btn-sm btn-success" id="btnAutoPkb" title="Isi unsur/jenis/kegiatan PKB otomatis"><i class="bi bi-magic"></i> Isi Otomatis</button>
           <a href="#/agregat/${kamad.id}/${periode.id}" class="btn btn-sm btn-outline-primary"><i class="bi bi-graph-up"></i> Lihat Nilai</a>
         </div>
       </div>
@@ -2380,6 +2417,25 @@ route('#/pkb/:kamadId/:periodeId', (root, params) => {
         });
       });
       toast('Prioritas PKB di-refresh.');
+      renderPKBForm();
+    });
+
+    document.getElementById('btnAutoPkb').addEventListener('click', () => {
+      const items = window.PKB.forKamadPeriode(kamad.id, periode.id);
+      if (!items.length) { toast('Belum ada prioritas PKB.', 'error'); return; }
+      const sudahTerisi = items.some(p => (p.unsur_pkb || p.jenis_pkb || p.kegiatan_pkb || '').toString().trim());
+      if (sudahTerisi && !confirmAction('Beberapa kolom sudah terisi. Isi otomatis akan menimpa. Lanjutkan?')) return;
+      items.forEach(p => {
+        const sug = suggestPKBForSubAspek(p.komponen_code, p.sub_aspek_kode, p.sub_aspek_unsur);
+        const catatan = p.catatan || `Direncanakan agar nilai sub-aspek "${p.sub_aspek_unsur || '-'}" meningkat dari ${p.nilai != null ? Number(p.nilai).toFixed(2) : '-'} menuju kategori Baik/Amat Baik.`;
+        window.PKB.upsert(kamad.id, periode.id, p.sub_aspek_kode, {
+          unsur_pkb: sug.unsur_pkb,
+          jenis_pkb: sug.jenis_pkb,
+          kegiatan_pkb: sug.kegiatan_pkb,
+          catatan,
+        });
+      });
+      toast('Unsur, jenis, kegiatan, dan catatan PKB terisi otomatis.');
       renderPKBForm();
     });
   }

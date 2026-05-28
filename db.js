@@ -481,14 +481,22 @@ const PKB = {
 
 // Identifikasi 5 sub-aspek dengan nilai terendah untuk dijadikan prioritas PKB
 // Kalau ada >1 penilaian assessor (multi-role), pakai rata-rata komponen agregat
+// Untuk penilaian tahunan (Tahun 1/2/3/formatif/sumatif), komponen HK di-skip karena tidak dinilai
 function identifikasiPrioritasPKB(kamad_id, periode_id, topN) {
   topN = topN || 5;
   const sessions = Penilaian.forKamadPeriode(kamad_id, periode_id);
   if (!sessions.length) return [];
+  // Cek jenis periode
+  let skipHK = false;
+  try {
+    const periode = Periode.get(periode_id);
+    if (periode && periode.type !== 'tahun_4') skipHK = true;
+  } catch (e) { /* fallback */ }
 
   // Build daftar sub-aspek dari instrumen aktif (komponen × aspek)
   const subAspeks = [];
   for (const k of (window.PKKM_INSTRUMEN_PENGAWAS || window.PKKM_KOMPONEN || [])) {
+    if (skipHK && k.code === 'HK') continue;
     for (const a of k.aspek) {
       // Hitung nilai rata-rata sub-aspek dari semua sessions
       const vals = sessions.map(s => hitungNilaiAspek(s.id, k.code, a.kode));
