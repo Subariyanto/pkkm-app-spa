@@ -1006,17 +1006,7 @@ route('#/penilaian/:kamadId/:periodeId/:role', (root, params) => {
                               <span class="flex-grow-1">${escapeHTML(ind.indikator||'')}</span>
                               <button type="button" class="btn btn-sm btn-link p-0 text-primary" data-action="open-penggalian" data-indikator-id="${id}" title="Catatan penggalian data"><i class="bi bi-info-circle"></i></button>
                             </div>
-                            <div class="text-tiny text-muted ms-3 mt-1"><i class="bi bi-clipboard-data"></i> Data yang diharapkan: ${escapeHTML(ind.data||'-')}</div>
-                            <textarea class="form-control form-control-sm mt-1" rows="1" placeholder="Catatan penilaian (opsional)" data-field="catatan" ${isFinal?'disabled':''}>${escapeHTML(cur.catatan||'')}</textarea>
                             ${suggestionHtml}
-                            <div class="d-flex flex-wrap gap-2 align-items-center mt-2 bukti-host" data-bukti-host="${id}">
-                              ${buktiList.map((b, bi) => buktiBadgeHTML(b, bi, isFinal)).join('')}
-                              ${isFinal ? '' : `
-                                <label class="btn btn-sm btn-outline-secondary mb-0" title="Upload bukti dukung">
-                                  <i class="bi bi-paperclip"></i> Bukti
-                                  <input type="file" class="d-none" data-action="upload-bukti" data-indikator-id="${id}" accept="image/*,application/pdf" multiple>
-                                </label>`}
-                            </div>
                           </div>
                           <div class="skor-pill" role="group" aria-label="Skor">
                             ${[1,2,3,4].map(v => `
@@ -1121,23 +1111,12 @@ route('#/penilaian/:kamadId/:periodeId/:role', (root, params) => {
         r.addEventListener('change', () => {
           const v = Number(r.value);
           const cur = Skor.get(pen.id, indikator_id) || {};
-          Skor.set(pen.id, indikator_id, { skor: v, catatan: cur.catatan || row.querySelector('[data-field="catatan"]').value, bukti: cur.bukti || [] });
+          Skor.set(pen.id, indikator_id, { skor: v, catatan: cur.catatan || '', bukti: cur.bukti || [] });
           $('#ringkasanHost').innerHTML = renderRingkasan();
           // refresh badges di header komponen + sub-aspek
           updateAccordionBadges(indikator_id);
         });
       });
-      const ta = row.querySelector('[data-field="catatan"]');
-      if (ta) {
-        let t;
-        ta.addEventListener('input', () => {
-          clearTimeout(t);
-          t = setTimeout(() => {
-            const cur = Skor.get(pen.id, indikator_id) || {};
-            Skor.set(pen.id, indikator_id, { skor: cur.skor ?? null, catatan: ta.value, bukti: cur.bukti || [] });
-          }, 350);
-        });
-      }
     });
 
     function updateAccordionBadges(indikator_id) {
