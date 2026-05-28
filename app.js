@@ -774,6 +774,73 @@ route('#/penilaian', (root) => {
   bindAdd($('#btnAddPeriode2'));
 });
 
+// Generator catatan umum & rekomendasi pembinaan otomatis
+// Berdasarkan hasil penilaian: nilai akhir, sebutan, komponen tertinggi/terendah, sub-aspek terendah
+function generateCatatanRekomendasi(penilaian_id, kamad) {
+  const akhir = hitungNilaiAkhir(penilaian_id);
+  const sebutan = window.getPKKMSebutan(akhir.nilaiAkhir);
+  const sebutanLabel = sebutan ? sebutan.label : '-';
+  const nilai = fmtNilai(akhir.nilaiAkhir);
+
+  // Komponen tertinggi & terendah
+  const detailSorted = [...akhir.detail].sort((a, b) => b.nilai - a.nilai);
+  const tertinggi = detailSorted[0];
+  const terendah = detailSorted[detailSorted.length - 1];
+
+  // Sub-aspek nilai terendah top 3
+  const subAspeks = [];
+  for (const k of (window.PKKM_INSTRUMEN_PENGAWAS || window.PKKM_KOMPONEN || [])) {
+    for (const a of k.aspek) {
+      const ha = hitungNilaiAspek(penilaian_id, k.code, a.kode);
+      if (ha.terisi > 0) {
+        subAspeks.push({
+          komponen: k.label,
+          kode: a.kode,
+          unsur: a.unsur,
+          nilai: ha.nilai,
+        });
+      }
+    }
+  }
+  subAspeks.sort((a, b) => a.nilai - b.nilai);
+  const top3Rendah = subAspeks.slice(0, 3);
+
+  // Catatan Umum
+  const namaKamad = kamad?.nama || 'Kepala Madrasah';
+  const namaMadrasah = kamad?.nama_madrasah || 'madrasah binaan';
+  let catatan = `Berdasarkan hasil Penilaian Kinerja Kepala Madrasah, Saudara ${namaKamad} selaku Kepala ${namaMadrasah} memperoleh nilai akhir ${nilai} dengan sebutan "${sebutanLabel}". `;
+  if (tertinggi) {
+    catatan += `Komponen dengan capaian tertinggi adalah ${tertinggi.label} (nilai ${fmtNilai(tertinggi.nilai)}), menunjukkan kekuatan yang perlu dipertahankan dan dijadikan praktik baik. `;
+  }
+  if (terendah && tertinggi && terendah.code !== tertinggi.code) {
+    catatan += `Sementara itu, komponen ${terendah.label} (nilai ${fmtNilai(terendah.nilai)}) menjadi area yang memerlukan perhatian dan pengembangan lebih lanjut. `;
+  }
+  catatan += `Secara keseluruhan, kinerja yang bersangkutan menunjukkan dedikasi dan komitmen dalam menjalankan tugas sebagai Kepala Madrasah.`;
+
+  // Rekomendasi Pembinaan
+  let rekomendasi = '';
+  if (akhir.nilaiAkhir > 90) {
+    rekomendasi = `Mempertahankan kinerja yang sudah amat baik dan menjadi mentor bagi kepala madrasah lain. `;
+  } else if (akhir.nilaiAkhir > 75) {
+    rekomendasi = `Meningkatkan kinerja dari kategori "Baik" menuju "Amat Baik" melalui pengembangan keprofesian berkelanjutan. `;
+  } else if (akhir.nilaiAkhir > 60) {
+    rekomendasi = `Diperlukan pembinaan terstruktur untuk meningkatkan kinerja dari kategori "Cukup" menuju "Baik". `;
+  } else {
+    rekomendasi = `Diperlukan pendampingan intensif dan pembinaan menyeluruh untuk meningkatkan kinerja kepala madrasah. `;
+  }
+  rekomendasi += `Fokus pengembangan diarahkan pada:\n`;
+  if (top3Rendah.length) {
+    top3Rendah.forEach((sa, i) => {
+      rekomendasi += `${i + 1}. ${sa.unsur} (${sa.komponen}) — nilai ${fmtNilai(sa.nilai)}.\n`;
+    });
+  } else {
+    rekomendasi += `1. Pengembangan kompetensi manajerial dan kepemimpinan.\n2. Peningkatan kualitas supervisi guru dan tenaga kependidikan.\n3. Inovasi dalam pengelolaan madrasah.\n`;
+  }
+  rekomendasi += `\nDirekomendasikan mengikuti kegiatan PKB (Pengembangan Keprofesian Berkelanjutan) sesuai prioritas yang telah ditetapkan, serta aktif dalam forum KKMA/MGMP untuk pertukaran praktik baik.`;
+
+  return { catatan, rekomendasi };
+}
+
 function openPilihRoleModal(kamad_id, periode_id) {
   const kamad = Kamad.get(kamad_id);
   const periode = Periode.get(periode_id);
@@ -1083,15 +1150,18 @@ route('#/penilaian/:kamadId/:periodeId/:role', (root, params) => {
           </div>
 
           <div class="card mt-3">
-            <div class="card-header"><i class="bi bi-chat-left-text"></i> Catatan & Rekomendasi Pengawas</div>
+            <div class="card-header d-flex justify-content-between align-items-center">
+              <span><i class="bi bi-chat-left-text"></i> Catatan &amp; Rekomendasi Pengawas</span>
+              ${isFinal ? '' : '<button type="button" class="btn btn-sm btn-outline-success" id="btnAutoCatatan" title="Isi otomatis berdasarkan hasil penilaian"><i class="bi bi-magic"></i> Isi Otomatis</button>'}
+            </div>
             <div class="card-body">
               <div class="mb-2">
                 <label class="form-label text-tiny mb-1">Catatan Umum</label>
-                <textarea id="catatanUmum" class="form-control" rows="3" ${isFinal?'disabled':''}>${escapeHTML(pen.catatan_umum||'')}</textarea>
+                <textarea id="catatanUmum" class="form-control" rows="4" ${isFinal?'disabled':''}>${escapeHTML(pen.catatan_umum||'')}</textarea>
               </div>
               <div>
                 <label class="form-label text-tiny mb-1">Rekomendasi Pembinaan</label>
-                <textarea id="rekomendasi" class="form-control" rows="3" ${isFinal?'disabled':''}>${escapeHTML(pen.rekomendasi||'')}</textarea>
+                <textarea id="rekomendasi" class="form-control" rows="4" ${isFinal?'disabled':''}>${escapeHTML(pen.rekomendasi||'')}</textarea>
               </div>
             </div>
           </div>
@@ -1243,6 +1313,20 @@ route('#/penilaian/:kamadId/:periodeId/:role', (root, params) => {
     });
     $('#rekomendasi')?.addEventListener('input', e => {
       clearTimeout(t2); t2 = setTimeout(() => Penilaian.update(pen.id, { rekomendasi: e.target.value }), 350);
+    });
+
+    // Auto-generate catatan umum & rekomendasi dari hasil penilaian
+    $('#btnAutoCatatan')?.addEventListener('click', () => {
+      const ta1 = $('#catatanUmum');
+      const ta2 = $('#rekomendasi');
+      if (!ta1 || !ta2) return;
+      const hasIsi = (ta1.value || '').trim() || (ta2.value || '').trim();
+      if (hasIsi && !confirmAction('Catatan/rekomendasi yang sudah ada akan diganti. Lanjutkan?')) return;
+      const generated = generateCatatanRekomendasi(pen.id, kamad);
+      ta1.value = generated.catatan;
+      ta2.value = generated.rekomendasi;
+      Penilaian.update(pen.id, { catatan_umum: generated.catatan, rekomendasi: generated.rekomendasi });
+      toast('Catatan dan rekomendasi terisi otomatis.');
     });
 
     // final / unfinal
