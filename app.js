@@ -1134,10 +1134,14 @@ route('#/penilaian/:kamadId/:periodeId/:role', (root, params) => {
       const subBlocks = document.querySelectorAll('.sub-aspek-block');
       subBlocks.forEach(sb => {
         const head = sb.querySelector('.sub-aspek-header strong');
-        if (head && head.textContent.trim() === aspekKode) {
-          const subBadges = sb.querySelectorAll('.sub-aspek-header .badge');
-          if (subBadges[0]) subBadges[0].textContent = `${ha.terisi}/${ha.total} ind`;
-          if (subBadges[1]) subBadges[1].textContent = `Nilai: ${fmtNilai(ha.nilai)}`;
+        if (head) {
+          const headText = head.textContent.trim();
+          // Match kalau text dimulai dengan aspekKode (header sekarang gabung kode + unsur)
+          if (headText === aspekKode || headText.startsWith(aspekKode + ' ')) {
+            const subBadges = sb.querySelectorAll('.sub-aspek-header .badge');
+            if (subBadges[0]) subBadges[0].textContent = `${ha.terisi}/${ha.total} ind`;
+            if (subBadges[1]) subBadges[1].textContent = `Nilai: ${fmtNilai(ha.nilai)}`;
+          }
         }
       });
     }
