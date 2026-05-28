@@ -776,20 +776,24 @@ route('#/penilaian', (root) => {
 
 // Generator catatan umum & rekomendasi pembinaan otomatis
 // Berdasarkan hasil penilaian: nilai akhir, sebutan, komponen tertinggi/terendah, sub-aspek terendah
-function generateCatatanRekomendasi(penilaian_id, kamad) {
+// Periode tahunan (tahun_1/2/3/formatif/sumatif): komponen HK (Hasil Kinerja) di-skip karena hanya dinilai di Tahun 4
+function generateCatatanRekomendasi(penilaian_id, kamad, periode) {
   const akhir = hitungNilaiAkhir(penilaian_id);
   const sebutan = window.getPKKMSebutan(akhir.nilaiAkhir);
   const sebutanLabel = sebutan ? sebutan.label : '-';
   const nilai = fmtNilai(akhir.nilaiAkhir);
+  const isFourYear = periode?.type === 'tahun_4';
 
-  // Komponen tertinggi & terendah
-  const detailSorted = [...akhir.detail].sort((a, b) => b.nilai - a.nilai);
+  // Komponen tertinggi & terendah — untuk penilaian tahunan, skip HK (Hasil Kinerja Kepala Madrasah)
+  const detailFiltered = isFourYear ? [...akhir.detail] : akhir.detail.filter(d => d.code !== 'HK');
+  const detailSorted = [...detailFiltered].sort((a, b) => b.nilai - a.nilai);
   const tertinggi = detailSorted[0];
   const terendah = detailSorted[detailSorted.length - 1];
 
-  // Sub-aspek nilai terendah top 3
+  // Sub-aspek nilai terendah top 3 — juga skip komponen HK kalau bukan 4-tahunan
   const subAspeks = [];
   for (const k of (window.PKKM_INSTRUMEN_PENGAWAS || window.PKKM_KOMPONEN || [])) {
+    if (!isFourYear && k.code === 'HK') continue;
     for (const a of k.aspek) {
       const ha = hitungNilaiAspek(penilaian_id, k.code, a.kode);
       if (ha.terisi > 0) {
@@ -1322,7 +1326,7 @@ route('#/penilaian/:kamadId/:periodeId/:role', (root, params) => {
       if (!ta1 || !ta2) return;
       const hasIsi = (ta1.value || '').trim() || (ta2.value || '').trim();
       if (hasIsi && !confirmAction('Catatan/rekomendasi yang sudah ada akan diganti. Lanjutkan?')) return;
-      const generated = generateCatatanRekomendasi(pen.id, kamad);
+      const generated = generateCatatanRekomendasi(pen.id, kamad, periode);
       ta1.value = generated.catatan;
       ta2.value = generated.rekomendasi;
       Penilaian.update(pen.id, { catatan_umum: generated.catatan, rekomendasi: generated.rekomendasi });
