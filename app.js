@@ -1668,18 +1668,18 @@ route('#/cetak/:id', (root, params) => {
 
         <div class="ttd-grid">
           <div class="ttd-box">
-            <div class="ttd-tempat">${escapeHTML(tempat)}, ${escapeHTML(pen.tanggal||nowLocal().slice(0,10))}</div>
-            <div class="ttd-jabatan">Pengawas Madrasah,</div>
-            <div class="ttd-spacer"></div>
-            <div class="ttd-name">${escapeHTML(pengawas.nama||'..............................')}</div>
-            <div class="ttd-nip">NIP. ${escapeHTML(pengawas.nip||'..............................')}</div>
-          </div>
-          <div class="ttd-box">
             <div class="ttd-tempat">&nbsp;</div>
             <div class="ttd-jabatan">Mengetahui,<br>Ketua Pokjawas Madrasah Kab. Jember</div>
             <div class="ttd-spacer"></div>
             <div class="ttd-name">${escapeHTML(pokjawas.nama||'..............................')}</div>
             <div class="ttd-nip">NIP. ${escapeHTML(pokjawas.nip||'..............................')}</div>
+          </div>
+          <div class="ttd-box">
+            <div class="ttd-tempat">${escapeHTML(tempat)}, ${escapeHTML(pen.tanggal||nowLocal().slice(0,10))}</div>
+            <div class="ttd-jabatan">Pengawas Madrasah,</div>
+            <div class="ttd-spacer"></div>
+            <div class="ttd-name">${escapeHTML(pengawas.nama||'..............................')}</div>
+            <div class="ttd-nip">NIP. ${escapeHTML(pengawas.nip||'..............................')}</div>
           </div>
         </div>
       </div>
