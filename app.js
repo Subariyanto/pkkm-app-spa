@@ -653,27 +653,27 @@ route('#/penilaian', (root) => {
     </div>
 
     <div class="row g-3">
-      <div class="col-md-5">
+      <div class="col-md-3">
         <div class="card h-100">
-          <div class="card-header"><i class="bi bi-calendar3"></i> Periode</div>
+          <div class="card-header py-2"><i class="bi bi-calendar3"></i> Periode</div>
           <div class="card-body p-0">
             ${periodeList.length === 0
-              ? `<div class="text-center text-muted py-4">Belum ada periode.<br><button class="btn btn-sm btn-primary mt-2" id="btnAddPeriode2"><i class="bi bi-plus"></i> Buat Periode</button></div>`
+              ? `<div class="text-center text-muted py-4 px-2"><span class="text-tiny">Belum ada periode.</span><br><button class="btn btn-sm btn-primary mt-2" id="btnAddPeriode2"><i class="bi bi-plus"></i> Buat Periode</button></div>`
               : `<ul class="list-group list-group-flush" id="periodeList">
                   ${periodeList.map(p => `
-                    <li class="list-group-item d-flex justify-content-between align-items-center cursor-pointer" data-periode="${p.id}">
-                      <div>
-                        <div class="fw-semibold">${escapeHTML(p.label)}</div>
-                        <div class="text-tiny text-muted">${escapeHTML(p.tanggal_penilaian||'-')} &middot; ${escapeHTML(p.type)}</div>
+                    <li class="list-group-item d-flex justify-content-between align-items-start cursor-pointer py-2" data-periode="${p.id}">
+                      <div class="flex-grow-1" style="min-width:0">
+                        <div class="fw-semibold text-truncate" title="${escapeHTML(p.label)}">${escapeHTML(p.label)}</div>
+                        <div class="text-tiny text-muted text-truncate">${escapeHTML(p.tanggal_penilaian||'-')} · ${escapeHTML(p.type)}</div>
                       </div>
-                      <button class="btn btn-sm btn-link text-danger p-0" data-action="del-periode" data-id="${p.id}" title="Hapus periode"><i class="bi bi-x-circle"></i></button>
+                      <button class="btn btn-sm btn-link text-danger p-0 ms-1 flex-shrink-0" data-action="del-periode" data-id="${p.id}" title="Hapus periode"><i class="bi bi-x-circle"></i></button>
                     </li>`).join('')}
                 </ul>`}
           </div>
         </div>
       </div>
 
-      <div class="col-md-7">
+      <div class="col-md-9">
         <div class="card h-100">
           <div class="card-header"><i class="bi bi-people"></i> Kepala Madrasah</div>
           <div class="card-body p-0">
