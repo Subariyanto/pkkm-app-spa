@@ -157,6 +157,7 @@ a:hover { color: var(--pkkm-primary-dark); }
   .print-header { text-align: center; margin-bottom: 1rem; }
   .print-table { width: 100%; border-collapse: collapse; }
   .print-table th, .print-table td { border: 1px solid #444; padding: .35rem .5rem; }
+  .print-only { display: block !important; }
 }
 
 /* TTD layout - rapi & sejajar di tampilan layar dan cetak */

@@ -1392,16 +1392,20 @@ route('#/rekap', (root) => {
   });
 
   root.innerHTML = `
-    <div class="d-flex justify-content-between align-items-center mb-3 flex-wrap gap-2">
+    <div class="d-flex justify-content-between align-items-center mb-3 flex-wrap gap-2 no-print">
       <h5 class="mb-0"><i class="bi bi-bar-chart"></i> Rekap Nilai</h5>
       <div class="d-flex gap-2 align-items-center">
         <label class="text-tiny text-muted mb-0">Periode:</label>
         <select class="form-select form-select-sm" id="periodeSelect" style="min-width: 200px;">
           ${periodeList.map(p => `<option value="${p.id}" ${p.id===selPid?'selected':''}>${escapeHTML(p.label)}</option>`).join('')}
         </select>
-        <button class="btn btn-sm btn-outline-primary" id="btnExportRekap"><i class="bi bi-file-earmark-excel"></i> Export Excel</button>
-        <button class="btn btn-sm btn-outline-secondary" id="btnPrintRekap"><i class="bi bi-printer"></i> Cetak</button>
+        <button class="btn btn-sm btn-success" id="btnExportRekap"><i class="bi bi-file-earmark-excel"></i> Export Excel</button>
+        <button class="btn btn-sm btn-primary" id="btnPrintRekap"><i class="bi bi-printer"></i> Cetak</button>
       </div>
+    </div>
+    <div class="print-only print-header text-center mb-3" style="display:none;">
+      <h5 class="mb-1">REKAP NILAI PKKM</h5>
+      <div>${escapeHTML(periode.label)}</div>
     </div>
     <div class="card">
       <div class="card-body p-0">
@@ -1413,7 +1417,7 @@ route('#/rekap', (root) => {
               ${window.PKKM_KOMPONEN.map(k => `<th class="text-center text-tiny" title="${escapeHTML(k.label)}">${k.code}</th>`).join('')}
               <th class="text-center">Nilai Akhir</th>
               <th class="text-center">Sebutan</th>
-              <th class="text-center" width="100">Aksi</th>
+              <th class="text-center no-print" width="100">Aksi</th>
             </tr>
           </thead>
           <tbody>
@@ -1433,7 +1437,7 @@ route('#/rekap', (root) => {
                   ${r.sessions.length > 1 ? `<div class="text-tiny text-muted">${r.sessions.length} penilai</div>` : ''}
                 </td>
                 <td class="text-center">${r.sebutan ? `<span class="${r.sebutan.cssClass}">${r.sebutan.label}</span>` : '-'}</td>
-                <td class="text-center">
+                <td class="text-center no-print">
                   ${r.pen
                     ? `<a href="#/agregat/${r.k.id}/${selPid}" class="btn btn-sm btn-outline-primary" title="Detail Agregat"><i class="bi bi-graph-up"></i></a>
                        <a href="#/cetak/${r.pen.id}" class="btn btn-sm btn-outline-secondary" title="Cetak"><i class="bi bi-printer"></i></a>`
@@ -1949,16 +1953,20 @@ route('#/rekap-kkma', (root) => {
   }).sort((a,b) => a.kkma.localeCompare(b.kkma));
 
   root.innerHTML = `
-    <div class="d-flex justify-content-between align-items-center mb-3 flex-wrap gap-2">
+    <div class="d-flex justify-content-between align-items-center mb-3 flex-wrap gap-2 no-print">
       <h5 class="mb-0"><i class="bi bi-diagram-3"></i> Rekap KKMA</h5>
       <div class="d-flex gap-2 align-items-center">
         <label class="text-tiny text-muted mb-0">Periode:</label>
         <select class="form-select form-select-sm" id="periodeSelectKkma" style="min-width: 220px;">
           ${periodeList.map(p => `<option value="${p.id}" ${p.id===selPid?'selected':''}>${escapeHTML(p.label)}</option>`).join('')}
         </select>
-        <button class="btn btn-sm btn-outline-primary" id="btnExportKkma"><i class="bi bi-file-earmark-excel"></i> Export Excel</button>
-        <button class="btn btn-sm btn-outline-secondary" id="btnPrintKkma"><i class="bi bi-printer"></i> Cetak</button>
+        <button class="btn btn-sm btn-success" id="btnExportKkma"><i class="bi bi-file-earmark-excel"></i> Export Excel</button>
+        <button class="btn btn-sm btn-primary" id="btnPrintKkma"><i class="bi bi-printer"></i> Cetak</button>
       </div>
+    </div>
+    <div class="print-only print-header text-center mb-3" style="display:none;">
+      <h5 class="mb-1">REKAP NILAI PKKM PER KKMA</h5>
+      <div>${escapeHTML(periode.label)}</div>
     </div>
 
     <div class="card mb-3">
@@ -2011,7 +2019,7 @@ route('#/rekap-kkma', (root) => {
                 <th class="text-center">Jenjang</th>
                 <th class="text-end">Nilai</th>
                 <th class="text-center">Sebutan</th>
-                <th class="text-center" width="110">Aksi</th>
+                <th class="text-center no-print" width="110">Aksi</th>
               </tr>
             </thead>
             <tbody>
@@ -2023,7 +2031,7 @@ route('#/rekap-kkma', (root) => {
                   <td class="text-center"><span class="badge bg-secondary">${escapeHTML(row.k.jenjang||'-')}</span></td>
                   <td class="text-end fw-bold">${row.akhir!=null?fmtNilai(row.akhir):'-'}</td>
                   <td class="text-center">${row.sebutan?`<span class="${row.sebutan.cssClass}">${row.sebutan.label}</span>`:'-'}</td>
-                  <td class="text-center">
+                  <td class="text-center no-print">
                     <a href="#/penilaian/${row.k.id}/${selPid}" class="btn btn-sm btn-outline-primary"><i class="bi bi-pencil"></i></a>
                     <a href="#/riwayat/${row.k.id}" class="btn btn-sm btn-outline-secondary"><i class="bi bi-clock-history"></i></a>
                   </td>
