@@ -206,7 +206,7 @@
         <h2 class="ll-h">KATA PENGANTAR</h2>
         <p style="text-indent:2em;">Puji syukur ke hadirat Allah SWT yang telah melimpahkan rahmat, taufik, dan hidayah-Nya sehingga laporan Penilaian Kinerja Kepala Madrasah (PKKM) ini dapat tersusun dengan baik. Shalawat serta salam senantiasa tercurah kepada Nabi Muhammad SAW, keluarga, sahabat, dan para pengikutnya hingga akhir zaman.</p>
         <p style="text-indent:2em;">Penilaian Kinerja Kepala Madrasah merupakan amanat regulasi yang bertujuan menjamin mutu kepemimpinan madrasah, meningkatkan akuntabilitas pengelolaan pendidikan, serta menjadi dasar pembinaan dan pengembangan keprofesian Kepala Madrasah secara berkelanjutan. PKKM dilaksanakan oleh Pengawas Bina dengan melibatkan unsur guru, tenaga kependidikan, komite, dan stakeholder lainnya pada penilaian empat tahunan.</p>
-        <p style="text-indent:2em;">Laporan ini disusun sebagai dokumentasi resmi pelaksanaan PKKM pada wilayah binaan <strong>${escapeHTML(ctx.kkma)}</strong> periode <strong>${escapeHTML(ctx.periode.label || '-')}</strong>. Cakupan laporan meliputi <strong>${ctx.kamadList.length} Kepala Madrasah</strong> yang berada dalam tanggung jawab pengawas bina. Penyusunan laporan berpedoman pada KMA Nomor 624 Tahun 2021 tentang Pedoman Penilaian Kinerja Kepala Madrasah serta Permenpan RB Nomor 6 Tahun 2022 tentang Pengelolaan Kinerja Pegawai ASN.</p>
+        <p style="text-indent:2em;">Laporan ini disusun sebagai dokumentasi resmi pelaksanaan PKKM pada wilayah binaan <strong>${escapeHTML(ctx.kkma)}</strong> periode <strong>${escapeHTML(ctx.periode.label || '-')}</strong>. Cakupan laporan meliputi <strong>${ctx.kamadList.length} Kepala Madrasah</strong> yang berada dalam tanggung jawab pengawas bina. Penyusunan laporan berpedoman pada PMA Nomor 58 Tahun 2017 jo. PMA Nomor 24 Tahun 2018, PMA Nomor 38 Tahun 2018 tentang Pengembangan Keprofesian Berkelanjutan (PKB), serta SK Dirjen Pendis Nomor 1111 Tahun 2019 yang menjadi juknis dan instrumen PKKM.</p>
         <p style="text-indent:2em;">Penyusun menyampaikan terima kasih kepada Kepala Kantor Kementerian Agama Kabupaten Jember, Ketua Pokjawas Madrasah, rekan-rekan pengawas, kepala madrasah, dewan guru, tenaga kependidikan, komite, serta seluruh pihak yang telah mendukung kelancaran proses penilaian ini. Saran dan masukan untuk perbaikan laporan sangat penyusun harapkan demi peningkatan kualitas penilaian di masa mendatang.</p>
         <p style="text-indent:2em;">Semoga laporan ini bermanfaat sebagai bahan refleksi dan acuan pembinaan kepala madrasah di lingkungan Kementerian Agama Kabupaten Jember.</p>
         <div class="text-end mt-4">
@@ -262,18 +262,15 @@
         <h3 class="ll-h3">A. Latar Belakang</h3>
         <p style="text-indent:2em;">Kepala Madrasah memegang peran strategis dalam mewujudkan madrasah yang bermutu, berdaya saing, dan berkarakter. Kualitas kepemimpinan kepala madrasah berbanding lurus dengan mutu proses pendidikan dan capaian peserta didik. Untuk menjamin mutu kepemimpinan tersebut, diperlukan mekanisme penilaian kinerja yang sistematis, terukur, akuntabel, dan dilaksanakan secara berkelanjutan.</p>
         <p style="text-indent:2em;">Pengawas Madrasah selaku Pengawas Bina memiliki tanggung jawab melaksanakan Penilaian Kinerja Kepala Madrasah (PKKM) terhadap seluruh kepala madrasah dalam wilayah binaannya. Laporan ini menyajikan hasil PKKM atas <strong>${ctx.kamadList.length} Kepala Madrasah</strong> di wilayah binaan <strong>${escapeHTML(ctx.kkma)}</strong> sebagai bahan pembinaan, evaluasi, dan tindak lanjut yang dikonsolidasikan di tingkat KKMA.</p>
-        <p style="text-indent:2em;">Berdasarkan KMA Nomor 624 Tahun 2021 dan regulasi pendukung, PKKM dilaksanakan setiap tahun (penilaian tahunan) dan diakhiri dengan penilaian empat tahunan yang melibatkan tim penilai lebih lengkap. Hasil PKKM diolah untuk menghasilkan nilai akhir dan sebutan yang menggambarkan kinerja kepala madrasah pada periode tertentu.</p>
+        <p style="text-indent:2em;">Berdasarkan SK Dirjen Pendis Nomor 1111 Tahun 2019 dan regulasi pendukung, PKKM dilaksanakan setiap tahun (penilaian tahunan) dan diakhiri dengan penilaian empat tahunan yang melibatkan tim penilai lebih lengkap. Hasil PKKM diolah untuk menghasilkan nilai akhir dan sebutan yang menggambarkan kinerja kepala madrasah pada periode tertentu.</p>
 
         <h3 class="ll-h3">B. Dasar Hukum</h3>
         <ol class="ll-ol">
-          <li>Undang-Undang Nomor 20 Tahun 2003 tentang Sistem Pendidikan Nasional;</li>
-          <li>Undang-Undang Nomor 14 Tahun 2005 tentang Guru dan Dosen;</li>
-          <li>Peraturan Pemerintah Nomor 19 Tahun 2017 tentang Perubahan atas PP Nomor 74 Tahun 2008 tentang Guru;</li>
-          <li>Peraturan Menteri Agama Nomor 58 Tahun 2017 tentang Kepala Madrasah, sebagaimana diubah dengan PMA Nomor 24 Tahun 2018;</li>
-          <li>Peraturan Menteri Pendayagunaan Aparatur Negara dan Reformasi Birokrasi Nomor 6 Tahun 2022 tentang Pengelolaan Kinerja Pegawai Aparatur Sipil Negara;</li>
-          <li>Keputusan Menteri Agama Nomor 624 Tahun 2021 tentang Pedoman Penilaian Kinerja Kepala Madrasah;</li>
-          <li>Peraturan Menteri Agama Nomor 31 Tahun 2013 tentang Pengawas Madrasah;</li>
-          <li>Surat Edaran Direktur Jenderal Pendidikan Islam terkait pelaksanaan PKKM tahun berjalan.</li>
+          <li>Peraturan Menteri Agama Nomor 90 Tahun 2013 tentang Penyelenggaraan Pendidikan Madrasah beserta perubahannya;</li>
+          <li>Peraturan Menteri Agama Nomor 58 Tahun 2017 tentang Kepala Madrasah, sebagai dasar tugas dan fungsi kepala madrasah;</li>
+          <li>Peraturan Menteri Agama Nomor 24 Tahun 2018 tentang Perubahan atas PMA Nomor 58 Tahun 2017 tentang Kepala Madrasah;</li>
+          <li>Peraturan Menteri Agama Nomor 38 Tahun 2018 tentang Pengembangan Keprofesian Berkelanjutan (PKB) Bagi Guru;</li>
+          <li>Surat Keputusan Direktur Jenderal Pendidikan Islam Nomor 1111 Tahun 2019 tentang Juknis dan Instrumen Penilaian Kinerja Kepala Madrasah.</li>
         </ol>
 
         <h3 class="ll-h3">C. Tujuan</h3>
@@ -313,11 +310,11 @@
 
         <h3 class="ll-h3">C. Regulasi Terkait</h3>
         <ol class="ll-ol">
-          <li><strong>KMA Nomor 624 Tahun 2021</strong> — Pedoman Penilaian Kinerja Kepala Madrasah; menetapkan instrumen, prosedur, dan pengolahan nilai PKKM.</li>
-          <li><strong>PMA Nomor 58 Tahun 2017 jo. PMA 24/2018</strong> — Kepala Madrasah; mengatur tugas, kompetensi, dan masa tugas kepala madrasah.</li>
-          <li><strong>Permenpan RB Nomor 6 Tahun 2022</strong> — Pengelolaan Kinerja Pegawai ASN; mengatur siklus kinerja pegawai termasuk penyusunan SKP dan evaluasi.</li>
-          <li><strong>PMA Nomor 31 Tahun 2013</strong> — Pengawas Madrasah; menetapkan kewenangan pengawas dalam pelaksanaan PKKM.</li>
-          <li>Pedoman teknis tahunan yang diterbitkan oleh Direktorat KSKK Madrasah dan/atau Pokjawas Madrasah Provinsi/Kabupaten.</li>
+          <li><strong>PMA Nomor 90 Tahun 2013</strong> — Penyelenggaraan Pendidikan Madrasah beserta perubahannya; menjadi payung penyelenggaraan pendidikan pada madrasah.</li>
+          <li><strong>PMA Nomor 58 Tahun 2017</strong> — Kepala Madrasah; mengatur tugas dan fungsi kepala madrasah.</li>
+          <li><strong>PMA Nomor 24 Tahun 2018</strong> — perubahan atas PMA Nomor 58 Tahun 2017 tentang Kepala Madrasah.</li>
+          <li><strong>PMA Nomor 38 Tahun 2018</strong> — Pengembangan Keprofesian Berkelanjutan (PKB) Bagi Guru; menjadi acuan tindak lanjut hasil PKKM.</li>
+          <li><strong>SK Dirjen Pendis Nomor 1111 Tahun 2019</strong> — Juknis dan Instrumen Penilaian Kinerja Kepala Madrasah; menjadi pedoman teknis pelaksanaan dan pengolahan nilai PKKM.</li>
         </ol>
       </section>`;
   }
@@ -342,7 +339,7 @@
         </table>
 
         <h3 class="ll-h3">C. Instrumen dan Prosedur</h3>
-        <p style="text-indent:2em;">Instrumen yang digunakan adalah instrumen baku PKKM yang merujuk pada KMA 624 Tahun 2021, terdiri atas <strong>5 komponen, 29 sub-aspek, dan 108 indikator</strong>. Setiap indikator dinilai dengan skala 1-4 (Kurang, Cukup, Baik, Amat Baik) berdasarkan bukti dokumen, hasil observasi langsung, serta wawancara dengan kepala madrasah dan stakeholder terkait.</p>
+        <p style="text-indent:2em;">Instrumen yang digunakan adalah instrumen baku PKKM yang merujuk pada SK Dirjen Pendis Nomor 1111 Tahun 2019, terdiri atas <strong>5 komponen, 29 sub-aspek, dan 108 indikator</strong>. Setiap indikator dinilai dengan skala 1-4 (Kurang, Cukup, Baik, Amat Baik) berdasarkan bukti dokumen, hasil observasi langsung, serta wawancara dengan kepala madrasah dan stakeholder terkait.</p>
         <p>Prosedur penilaian meliputi:</p>
         <ol class="ll-ol">
           <li><strong>Pra-penilaian</strong> — koordinasi jadwal, penyiapan instrumen, sosialisasi kepada kepala madrasah pada forum KKMA.</li>
