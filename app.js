@@ -1399,8 +1399,8 @@ route('#/rekap', (root) => {
         <select class="form-select form-select-sm" id="periodeSelect" style="min-width: 200px;">
           ${periodeList.map(p => `<option value="${p.id}" ${p.id===selPid?'selected':''}>${escapeHTML(p.label)}</option>`).join('')}
         </select>
-        <button class="btn btn-sm btn-success" id="btnExportRekap"><i class="bi bi-file-earmark-excel"></i> Export Excel</button>
-        <button class="btn btn-sm btn-primary" id="btnPrintRekap"><i class="bi bi-printer"></i> Cetak</button>
+        <button class="btn btn-sm btn-gradient-excel" id="btnExportRekap"><i class="bi bi-file-earmark-excel"></i> Export Excel</button>
+        <button class="btn btn-sm btn-gradient-print" id="btnPrintRekap"><i class="bi bi-printer"></i> Cetak Laporan</button>
       </div>
     </div>
     <div class="print-only print-header text-center mb-3" style="display:none;">
@@ -1960,8 +1960,8 @@ route('#/rekap-kkma', (root) => {
         <select class="form-select form-select-sm" id="periodeSelectKkma" style="min-width: 220px;">
           ${periodeList.map(p => `<option value="${p.id}" ${p.id===selPid?'selected':''}>${escapeHTML(p.label)}</option>`).join('')}
         </select>
-        <button class="btn btn-sm btn-success" id="btnExportKkma"><i class="bi bi-file-earmark-excel"></i> Export Excel</button>
-        <button class="btn btn-sm btn-primary" id="btnPrintKkma"><i class="bi bi-printer"></i> Cetak</button>
+        <button class="btn btn-sm btn-gradient-excel" id="btnExportKkma"><i class="bi bi-file-earmark-excel"></i> Export Excel</button>
+        <button class="btn btn-sm btn-gradient-print" id="btnPrintKkma"><i class="bi bi-printer"></i> Cetak Laporan</button>
       </div>
     </div>
     <div class="print-only print-header text-center mb-3" style="display:none;">

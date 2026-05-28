@@ -160,6 +160,43 @@ a:hover { color: var(--pkkm-primary-dark); }
   .print-only { display: block !important; }
 }
 
+/* Tombol gradient ala report — pakai class .btn-gradient-print / .btn-gradient-excel */
+.btn-gradient-print,
+.btn-gradient-excel {
+  border: none;
+  color: #fff !important;
+  font-weight: 500;
+  border-radius: 999px;
+  padding: 0.4rem 1.1rem;
+  box-shadow: 0 3px 8px rgba(0, 0, 0, .18);
+  transition: transform .15s ease, box-shadow .15s ease, filter .15s ease;
+  display: inline-flex;
+  align-items: center;
+  gap: .45rem;
+}
+.btn-gradient-print {
+  background: linear-gradient(90deg, #14b8a6 0%, #0ea5e9 50%, #2563eb 100%);
+}
+.btn-gradient-excel {
+  background: linear-gradient(90deg, #16a34a 0%, #0ea5e9 100%);
+}
+.btn-gradient-print:hover,
+.btn-gradient-excel:hover,
+.btn-gradient-print:focus,
+.btn-gradient-excel:focus {
+  color: #fff !important;
+  filter: brightness(1.06);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, .25);
+  transform: translateY(-1px);
+}
+.btn-gradient-print:active,
+.btn-gradient-excel:active {
+  transform: translateY(0);
+  filter: brightness(.98);
+}
+.btn-gradient-print i,
+.btn-gradient-excel i { font-size: 1rem; }
+
 /* TTD layout - rapi & sejajar di tampilan layar dan cetak */
 .ttd-grid {
   display: grid;
