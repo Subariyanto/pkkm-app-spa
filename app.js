@@ -666,7 +666,10 @@ route('#/penilaian', (root) => {
                         <div class="fw-semibold text-truncate" title="${escapeHTML(p.label)}">${escapeHTML(p.label)}</div>
                         <div class="text-tiny text-muted text-truncate">${escapeHTML(p.tanggal_penilaian||'-')} · ${escapeHTML(p.type)}</div>
                       </div>
-                      <button class="btn btn-sm btn-link text-danger p-0 ms-1 flex-shrink-0" data-action="del-periode" data-id="${p.id}" title="Hapus periode"><i class="bi bi-x-circle"></i></button>
+                      <div class="d-flex flex-shrink-0 ms-1">
+                        <button class="btn btn-sm btn-link text-primary p-0 me-2" data-action="edit-periode" data-id="${p.id}" title="Edit periode"><i class="bi bi-pencil"></i></button>
+                        <button class="btn btn-sm btn-link text-danger p-0" data-action="del-periode" data-id="${p.id}" title="Hapus periode"><i class="bi bi-x-circle"></i></button>
+                      </div>
                     </li>`).join('')}
                 </ul>`}
           </div>
@@ -713,6 +716,7 @@ route('#/penilaian', (root) => {
   $$('#periodeList li').forEach(li => {
     li.addEventListener('click', (e) => {
       if (e.target.closest('[data-action="del-periode"]')) return;
+      if (e.target.closest('[data-action="edit-periode"]')) return;
       $$('#periodeList li').forEach(x => x.classList.remove('active'));
       li.classList.add('active');
       refreshKamadStatus();
@@ -762,6 +766,12 @@ route('#/penilaian', (root) => {
       Periode.remove(id);
       render();
     }
+  }));
+
+  $$('[data-action="edit-periode"]').forEach(b => b.addEventListener('click', (e) => {
+    e.stopPropagation();
+    const id = Number(b.dataset.id);
+    openPeriodeModal(id);
   }));
 
   function bindAdd(btn) {
@@ -928,48 +938,53 @@ function openPilihRoleModal(kamad_id, periode_id) {
   });
 }
 
-function openPeriodeModal() {
+function openPeriodeModal(id) {
+  const editMode = id != null;
+  const existing = editMode ? Periode.get(id) : null;
+  if (editMode && !existing) { toast('Periode tidak ditemukan.', 'error'); return; }
+  const def = existing || { tahun: new Date().getFullYear(), semester: '1', type: 'sumatif', label: '', tanggal_penilaian: nowLocal().slice(0,10) };
+
   const html = `
     <div class="modal fade" id="periodeModal" tabindex="-1">
       <div class="modal-dialog">
         <div class="modal-content">
           <form id="periodeForm">
             <div class="modal-header">
-              <h5 class="modal-title">Periode Penilaian Baru</h5>
+              <h5 class="modal-title">${editMode ? 'Edit Periode Penilaian' : 'Periode Penilaian Baru'}</h5>
               <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
             </div>
             <div class="modal-body">
               <div class="row g-2">
                 <div class="col-md-4">
                   <label class="form-label">Tahun</label>
-                  <input class="form-control" name="tahun" type="number" value="${new Date().getFullYear()}" required>
+                  <input class="form-control" name="tahun" type="number" value="${escapeHTML(String(def.tahun||''))}" required>
                 </div>
                 <div class="col-md-4">
                   <label class="form-label">Semester</label>
                   <select class="form-select" name="semester">
-                    <option value="1">1 (Ganjil)</option>
-                    <option value="2">2 (Genap)</option>
+                    <option value="1" ${String(def.semester)==='1'?'selected':''}>1 (Ganjil)</option>
+                    <option value="2" ${String(def.semester)==='2'?'selected':''}>2 (Genap)</option>
                   </select>
                 </div>
                 <div class="col-md-4">
                   <label class="form-label">Jenis</label>
                   <select class="form-select" name="type">
-                    ${window.PKKM_PERIODE_TYPES.map(t => `<option value="${t.code}">${t.label}</option>`).join('')}
+                    ${window.PKKM_PERIODE_TYPES.map(t => `<option value="${t.code}" ${def.type===t.code?'selected':''}>${escapeHTML(t.label)}</option>`).join('')}
                   </select>
                 </div>
                 <div class="col-md-8">
                   <label class="form-label">Label</label>
-                  <input class="form-control" name="label" placeholder="Contoh: Sumatif TP 2025/2026">
+                  <input class="form-control" name="label" placeholder="Contoh: Sumatif TP 2025/2026" value="${escapeHTML(def.label||'')}">
                 </div>
                 <div class="col-md-4">
                   <label class="form-label">Tgl Penilaian</label>
-                  <input class="form-control" type="date" name="tanggal_penilaian" value="${nowLocal().slice(0,10)}">
+                  <input class="form-control" type="date" name="tanggal_penilaian" value="${escapeHTML((def.tanggal_penilaian||'').slice(0,10))}">
                 </div>
               </div>
             </div>
             <div class="modal-footer">
               <button type="button" class="btn btn-light" data-bs-dismiss="modal">Batal</button>
-              <button type="submit" class="btn btn-primary">Simpan</button>
+              <button type="submit" class="btn btn-primary">${editMode ? 'Simpan Perubahan' : 'Simpan'}</button>
             </div>
           </form>
         </div>
@@ -991,9 +1006,14 @@ function openPeriodeModal() {
       const tlabel = t ? t.label : data.type;
       data.label = `${tlabel} ${data.tahun} Sem ${data.semester}`;
     }
-    Periode.create(data);
+    if (editMode) {
+      Periode.update(id, data);
+      toast('Periode diperbarui.');
+    } else {
+      Periode.create(data);
+      toast('Periode dibuat.');
+    }
     m.hide();
-    toast('Periode dibuat.');
     render();
   });
 }
