@@ -974,8 +974,7 @@ route('#/penilaian/:kamadId/:periodeId/:role', (root, params) => {
                     <div class="sub-aspek-header bg-light px-3 py-2">
                       <div class="d-flex justify-content-between align-items-center">
                         <div class="flex-grow-1">
-                          <strong>${escapeHTML(a.kode)}</strong> &middot;
-                          <span>${escapeHTML(a.unsur||'')}</span>
+                          <strong>${escapeHTML(a.kode)} · ${escapeHTML(a.unsur||'')}</strong>
                         </div>
                         <span class="text-tiny">
                           <span class="badge bg-light text-dark border">${ha.terisi}/${ha.total} ind</span>
@@ -1001,7 +1000,7 @@ route('#/penilaian/:kamadId/:periodeId/:role', (root, params) => {
                       return `
                         <div class="aspek-row" data-indikator-id="${id}">
                           <div class="flex-grow-1">
-                            <div class="fw-semibold d-flex align-items-start gap-2">
+                            <div class="d-flex align-items-start gap-2">
                               <span class="text-muted text-tiny pt-1" style="min-width:24px">${ind.no}.</span>
                               <span class="flex-grow-1">${escapeHTML(ind.indikator||'')}</span>
                               <button type="button" class="btn btn-sm btn-link p-0 text-primary" data-action="open-penggalian" data-indikator-id="${id}" title="Catatan penggalian data"><i class="bi bi-info-circle"></i></button>
