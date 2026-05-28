@@ -333,7 +333,7 @@ route('#/', (root) => {
             <a href="#/rekap" class="btn btn-outline-primary"><i class="bi bi-bar-chart"></i> Lihat Rekap Nilai</a>
             <a href="#/rekap-kkma" class="btn btn-outline-primary"><i class="bi bi-diagram-3"></i> Rekap per KKMA</a>
             <a href="#/cetak" class="btn btn-outline-primary"><i class="bi bi-printer"></i> Cetak Laporan</a>
-            <a href="#/cetak" class="btn btn-outline-success"><i class="bi bi-file-earmark-richtext"></i> Cetak Laporan Lengkap</a>
+            <a href="#/laporan-lengkap" class="btn btn-outline-success"><i class="bi bi-file-earmark-richtext"></i> Cetak Laporan Lengkap (per KKMA)</a>
             <a href="#/backup" class="btn btn-outline-secondary"><i class="bi bi-cloud-arrow-down"></i> Backup / Restore</a>
           </div>
         </div>
@@ -1552,8 +1552,7 @@ route('#/cetak', (root) => {
                     <td>${escapeHTML(k?.nama||'?')}<div class="text-tiny text-muted">${escapeHTML(k?.nama_madrasah||'')}</div></td>
                     <td>${escapeHTML(per?.label||'?')} ${roleBadge}</td>
                     <td>${p.status === 'final' ? '<span class="badge bg-success">FINAL</span>' : '<span class="badge bg-secondary">Draft</span>'}</td>
-                    <td><a class="btn btn-sm btn-primary" href="#/cetak/${p.id}"><i class="bi bi-eye"></i> Lihat</a>
-                        <a class="btn btn-sm btn-success ms-1" href="#/laporan-lengkap/${p.id}" title="Laporan Lengkap (Cover, BAB I-V, Lampiran)"><i class="bi bi-file-earmark-richtext"></i></a></td>
+                    <td><a class="btn btn-sm btn-primary" href="#/cetak/${p.id}"><i class="bi bi-eye"></i> Lihat</a></td>
                   </tr>`;
                 }).join('')}
               </tbody>
@@ -1582,7 +1581,7 @@ route('#/cetak/:id', (root, params) => {
     <div class="d-flex justify-content-between align-items-center mb-3 no-print">
       <a href="#/cetak" class="btn btn-sm btn-outline-secondary"><i class="bi bi-arrow-left"></i> Kembali</a>
       <div class="d-flex gap-2">
-        <a href="#/laporan-lengkap/${pen.id}" class="btn btn-sm btn-success"><i class="bi bi-file-earmark-richtext"></i> Laporan Lengkap</a>
+        <a href="#/laporan-lengkap" class="btn btn-sm btn-success" title="Cetak Laporan Lengkap per KKMA"><i class="bi bi-file-earmark-richtext"></i> Laporan Lengkap (per KKMA)</a>
         <button class="btn btn-sm btn-primary" onclick="window.print()"><i class="bi bi-printer"></i> Cetak / Save PDF</button>
       </div>
     </div>
@@ -1693,20 +1692,79 @@ route('#/cetak/:id', (root, params) => {
   `;
 });
 
-// --- Laporan Lengkap (Cover, Pengesahan, Kata Pengantar, BAB I-V, Lampiran) ---
-route('#/laporan-lengkap/:id', (root, params) => {
-  const pen = Penilaian.get(Number(params.id));
-  if (!pen) { root.innerHTML = `<div class="alert alert-warning">Penilaian tidak ditemukan.</div>`; return; }
-  if (typeof window.renderLaporanLengkap !== 'function') {
-    root.innerHTML = `<div class="alert alert-danger">Modul Laporan Lengkap belum termuat. Coba refresh halaman (Ctrl+Shift+R).</div>`;
+// --- Laporan Lengkap KKMA (Cover, Pengesahan, Kata Pengantar, BAB I-V, Lampiran) ---
+route('#/laporan-lengkap', (root) => {
+  const periodeList = Periode.list();
+  const kamadList = Kamad.list();
+  const kkmaSet = new Set();
+  for (const k of kamadList) {
+    const v = (k.kkma || '').trim();
+    if (v) kkmaSet.add(v);
+  }
+  const kkmaArr = [...kkmaSet].sort();
+
+  if (kkmaArr.length === 0) {
+    root.innerHTML = `<div class="alert alert-warning">Belum ada Kepala Madrasah dengan field <strong>KKMA</strong> terisi. Silakan lengkapi field KKMA pada data Kepala Madrasah terlebih dahulu di menu <a href="#/kamad">Kepala Madrasah</a>.</div>`;
+    return;
+  }
+  if (periodeList.length === 0) {
+    root.innerHTML = `<div class="alert alert-info">Belum ada periode penilaian. Buat dulu di menu <a href="#/penilaian">Penilaian</a>.</div>`;
+    return;
+  }
+
+  root.innerHTML = `
+    <h5 class="mb-3"><i class="bi bi-file-earmark-richtext"></i> Cetak Laporan Lengkap PKKM (per KKMA)</h5>
+    <div class="alert alert-info text-tiny">
+      Laporan lengkap dibuat oleh Pengawas Bina dan mencakup seluruh Kepala Madrasah pada satu KKMA dalam satu periode penilaian.
+      Pilih KKMA dan periode di bawah ini.
+    </div>
+    <div class="card">
+      <div class="card-body">
+        <form id="frmLapLengkap" class="row g-2 align-items-end">
+          <div class="col-md-6">
+            <label class="form-label">KKMA / Wilayah Binaan</label>
+            <select class="form-select" name="kkma" required>
+              <option value="">-- pilih --</option>
+              ${kkmaArr.map(v => `<option value="${escapeHTML(v)}">${escapeHTML(v)}</option>`).join('')}
+            </select>
+          </div>
+          <div class="col-md-6">
+            <label class="form-label">Periode</label>
+            <select class="form-select" name="periode_id" required>
+              <option value="">-- pilih --</option>
+              ${periodeList.map(p => `<option value="${p.id}">${escapeHTML(p.label)}</option>`).join('')}
+            </select>
+          </div>
+          <div class="col-12">
+            <button type="submit" class="btn btn-success"><i class="bi bi-file-earmark-richtext"></i> Buka Laporan Lengkap</button>
+          </div>
+        </form>
+      </div>
+    </div>
+  `;
+  $('#frmLapLengkap').addEventListener('submit', (e) => {
+    e.preventDefault();
+    const fd = new FormData(e.target);
+    const kkma = fd.get('kkma');
+    const pid = fd.get('periode_id');
+    if (!kkma || !pid) return;
+    location.hash = `#/laporan-lengkap/${encodeURIComponent(kkma)}/${pid}`;
+  });
+});
+
+route('#/laporan-lengkap/:kkma/:periodeId', (root, params) => {
+  const kkma = decodeURIComponent(params.kkma || '');
+  const pid = Number(params.periodeId);
+  if (typeof window.renderLaporanLengkapKKMA !== 'function') {
+    root.innerHTML = `<div class="alert alert-danger">Modul Laporan Lengkap belum termuat. Hard refresh (Ctrl+Shift+R) lalu coba lagi.</div>`;
     return;
   }
   root.innerHTML = `
     <div class="d-flex justify-content-between align-items-center mb-3 no-print">
-      <a href="#/cetak/${pen.id}" class="btn btn-sm btn-outline-secondary"><i class="bi bi-arrow-left"></i> Kembali</a>
+      <a href="#/laporan-lengkap" class="btn btn-sm btn-outline-secondary"><i class="bi bi-arrow-left"></i> Pilih KKMA Lain</a>
       <button class="btn btn-sm btn-primary" onclick="window.print()"><i class="bi bi-printer"></i> Cetak / Save PDF</button>
     </div>
-    ${window.renderLaporanLengkap(pen.id)}
+    ${window.renderLaporanLengkapKKMA(kkma, pid)}
   `;
 });
 
@@ -2005,6 +2063,7 @@ route('#/rekap-kkma', (root) => {
         </select>
         <button class="btn btn-sm btn-gradient-excel" id="btnExportKkma"><i class="bi bi-file-earmark-excel"></i> Export Excel</button>
         <button class="btn btn-sm btn-gradient-print" id="btnPrintKkma"><i class="bi bi-printer"></i> Cetak Laporan</button>
+        <button class="btn btn-sm btn-success" id="btnLapLengkapKkma"><i class="bi bi-file-earmark-richtext"></i> Laporan Lengkap</button>
       </div>
     </div>
     <div class="print-only print-header text-center mb-3" style="display:none;">
@@ -2126,6 +2185,22 @@ route('#/rekap-kkma', (root) => {
   });
 
   $('#btnPrintKkma').addEventListener('click', () => window.print());
+
+  $('#btnLapLengkapKkma').addEventListener('click', () => {
+    // Cek apakah ada KKMA yang terisi pada kamad list di periode ini
+    const kkmaSet = new Set();
+    for (const k of Kamad.list()) { const v = (k.kkma||'').trim(); if (v) kkmaSet.add(v); }
+    const kkmaArr = [...kkmaSet].sort();
+    if (kkmaArr.length === 0) {
+      toast('Belum ada KKMA terisi di data Kepala Madrasah.', 'warning');
+      return;
+    }
+    if (kkmaArr.length === 1) {
+      location.hash = `#/laporan-lengkap/${encodeURIComponent(kkmaArr[0])}/${selPid}`;
+      return;
+    }
+    location.hash = `#/laporan-lengkap`;
+  });
 });
 
 // --- Instrumen viewer ------------------------------------------
