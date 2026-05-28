@@ -296,25 +296,59 @@ function hitungNilaiKomponen(penilaian_id, komponenCode) {
 
 function hitungNilaiAkhir(penilaian_id) {
   const bobot = Meta.bobot();
-  const totalBobot = Object.values(bobot).reduce((a,b)=>a+Number(b||0),0);
+  // Cek apakah periode ini tahunan (Tahun 1/2/3/formatif/sumatif) — jika ya, komponen HK tidak dinilai
+  let skipHK = false;
+  try {
+    const pen = Penilaian.get(penilaian_id);
+    if (pen) {
+      const periode = Periode.get(pen.periode_id);
+      if (periode && periode.type !== 'tahun_4') skipHK = true;
+    }
+  } catch (e) { /* fallback: include semua komponen */ }
+
+  let totalBobot = 0;
   let nilaiTertimbang = 0;
   const detail = [];
   for (const k of window.PKKM_KOMPONEN) {
+    if (skipHK && k.code === 'HK') continue; // skip HK utk penilaian tahunan
     const h = hitungNilaiKomponen(penilaian_id, k.code);
     const w = Number(bobot[k.code] || 0);
     const kontrib = (h.nilai * w) / 100;
     nilaiTertimbang += kontrib;
+    totalBobot += w;
     detail.push({ code: k.code, label: k.label, nilai: h.nilai, bobot: w, kontribusi: kontrib, terisi: h.terisi, total: h.totalAspek });
   }
-  // normalisasi jika totalBobot != 100
+  // normalisasi jika totalBobot != 100 (termasuk kasus HK di-skip)
   const nilaiAkhir = totalBobot > 0 ? (nilaiTertimbang * 100) / totalBobot : 0;
-  return { nilaiAkhir, detail, totalBobot };
+  return { nilaiAkhir, detail, totalBobot, skipHK };
 }
 
 function progressPenilaian(penilaian_id) {
+  // Untuk penilaian tahunan, indikator komponen HK tidak masuk hitungan progress
+  let skipHK = false;
+  try {
+    const pen = Penilaian.get(penilaian_id);
+    if (pen) {
+      const periode = Periode.get(pen.periode_id);
+      if (periode && periode.type !== 'tahun_4') skipHK = true;
+    }
+  } catch (e) { /* fallback */ }
+
+  let total = window.PKKM_TOTAL_INDIKATOR || 0;
+  if (skipHK) {
+    // Kurangi total indikator komponen HK
+    const HK = (window.PKKM_KOMPONEN || []).find(k => k.code === 'HK');
+    if (HK) {
+      const hkCount = HK.aspek.reduce((s, a) => s + (a.indikator?.length || 0), 0);
+      total = Math.max(0, total - hkCount);
+    }
+  }
   const skorRows = Skor.forPenilaian(penilaian_id);
-  const total = window.PKKM_TOTAL_INDIKATOR || 0;
-  const terisi = skorRows.filter(s => s.indikator_id && typeof s.skor === 'number' && s.skor > 0).length;
+  const terisi = skorRows.filter(s => {
+    if (!s.indikator_id || typeof s.skor !== 'number' || s.skor <= 0) return false;
+    if (skipHK && s.indikator_id.startsWith('HK_')) return false;
+    return true;
+  }).length;
   return { terisi, total, persen: total > 0 ? (terisi/total)*100 : 0 };
 }
 

@@ -1022,8 +1022,13 @@ route('#/penilaian/:kamadId/:periodeId/:role', (root, params) => {
     const skorRows = Skor.forPenilaian(pen.id);
     const skorMap = {};
     for (const s of skorRows) if (s.indikator_id) skorMap[s.indikator_id] = s;
+    // Skip komponen HK utk penilaian tahunan (Tahun 1/2/3/formatif/sumatif)
+    const isFourYear = periode.type === 'tahun_4';
+    const komponenList = isFourYear
+      ? window.PKKM_KOMPONEN
+      : window.PKKM_KOMPONEN.filter(k => k.code !== 'HK');
 
-    return window.PKKM_KOMPONEN.map((k, idx) => {
+    return komponenList.map((k, idx) => {
       const h = hitungNilaiKomponen(pen.id, k.code);
       return `
         <div class="accordion-item">
