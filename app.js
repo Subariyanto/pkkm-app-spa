@@ -1675,6 +1675,7 @@ route('#/cetak/:id', (root, params) => {
             <div class="ttd-nip">NIP. ${escapeHTML(pokjawas.nip||'..............................')}</div>
           </div>
           <div class="ttd-box">
+            <div class="ttd-tempat">&nbsp;</div>
             <div class="ttd-tempat">${escapeHTML(tempat)}, ${escapeHTML(pen.tanggal||nowLocal().slice(0,10))}</div>
             <div class="ttd-jabatan">Pengawas Madrasah,</div>
             <div class="ttd-spacer"></div>
