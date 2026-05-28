@@ -333,6 +333,7 @@ route('#/', (root) => {
             <a href="#/rekap" class="btn btn-outline-primary"><i class="bi bi-bar-chart"></i> Lihat Rekap Nilai</a>
             <a href="#/rekap-kkma" class="btn btn-outline-primary"><i class="bi bi-diagram-3"></i> Rekap per KKMA</a>
             <a href="#/cetak" class="btn btn-outline-primary"><i class="bi bi-printer"></i> Cetak Laporan</a>
+            <a href="#/cetak" class="btn btn-outline-success"><i class="bi bi-file-earmark-richtext"></i> Cetak Laporan Lengkap</a>
             <a href="#/backup" class="btn btn-outline-secondary"><i class="bi bi-cloud-arrow-down"></i> Backup / Restore</a>
           </div>
         </div>
@@ -1551,7 +1552,8 @@ route('#/cetak', (root) => {
                     <td>${escapeHTML(k?.nama||'?')}<div class="text-tiny text-muted">${escapeHTML(k?.nama_madrasah||'')}</div></td>
                     <td>${escapeHTML(per?.label||'?')} ${roleBadge}</td>
                     <td>${p.status === 'final' ? '<span class="badge bg-success">FINAL</span>' : '<span class="badge bg-secondary">Draft</span>'}</td>
-                    <td><a class="btn btn-sm btn-primary" href="#/cetak/${p.id}"><i class="bi bi-eye"></i> Lihat</a></td>
+                    <td><a class="btn btn-sm btn-primary" href="#/cetak/${p.id}"><i class="bi bi-eye"></i> Lihat</a>
+                        <a class="btn btn-sm btn-success ms-1" href="#/laporan-lengkap/${p.id}" title="Laporan Lengkap (Cover, BAB I-V, Lampiran)"><i class="bi bi-file-earmark-richtext"></i></a></td>
                   </tr>`;
                 }).join('')}
               </tbody>
@@ -1579,7 +1581,10 @@ route('#/cetak/:id', (root, params) => {
   root.innerHTML = `
     <div class="d-flex justify-content-between align-items-center mb-3 no-print">
       <a href="#/cetak" class="btn btn-sm btn-outline-secondary"><i class="bi bi-arrow-left"></i> Kembali</a>
-      <button class="btn btn-sm btn-primary" onclick="window.print()"><i class="bi bi-printer"></i> Cetak / Save PDF</button>
+      <div class="d-flex gap-2">
+        <a href="#/laporan-lengkap/${pen.id}" class="btn btn-sm btn-success"><i class="bi bi-file-earmark-richtext"></i> Laporan Lengkap</a>
+        <button class="btn btn-sm btn-primary" onclick="window.print()"><i class="bi bi-printer"></i> Cetak / Save PDF</button>
+      </div>
     </div>
 
     <div class="card">
@@ -1685,6 +1690,23 @@ route('#/cetak/:id', (root, params) => {
         </div>
       </div>
     </div>
+  `;
+});
+
+// --- Laporan Lengkap (Cover, Pengesahan, Kata Pengantar, BAB I-V, Lampiran) ---
+route('#/laporan-lengkap/:id', (root, params) => {
+  const pen = Penilaian.get(Number(params.id));
+  if (!pen) { root.innerHTML = `<div class="alert alert-warning">Penilaian tidak ditemukan.</div>`; return; }
+  if (typeof window.renderLaporanLengkap !== 'function') {
+    root.innerHTML = `<div class="alert alert-danger">Modul Laporan Lengkap belum termuat. Coba refresh halaman (Ctrl+Shift+R).</div>`;
+    return;
+  }
+  root.innerHTML = `
+    <div class="d-flex justify-content-between align-items-center mb-3 no-print">
+      <a href="#/cetak/${pen.id}" class="btn btn-sm btn-outline-secondary"><i class="bi bi-arrow-left"></i> Kembali</a>
+      <button class="btn btn-sm btn-primary" onclick="window.print()"><i class="bi bi-printer"></i> Cetak / Save PDF</button>
+    </div>
+    ${window.renderLaporanLengkap(pen.id)}
   `;
 });
 

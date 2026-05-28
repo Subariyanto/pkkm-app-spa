@@ -160,6 +160,160 @@ a:hover { color: var(--pkkm-primary-dark); }
   .print-only { display: block !important; }
 }
 
+/* ===== Laporan Lengkap PKKM ===== */
+.ll-doc {
+  max-width: 800px;
+  margin: 0 auto;
+  background: #fff;
+  color: #000;
+  font-family: 'Times New Roman', Times, serif;
+  font-size: 12pt;
+  line-height: 1.6;
+  padding: 1rem;
+}
+.ll-page {
+  background: #fff;
+  padding: 2.5rem 3rem;
+  margin-bottom: 1.5rem;
+  min-height: 27cm;
+  page-break-after: always;
+  border: 1px solid #ddd;
+  box-shadow: 0 1px 3px rgba(0,0,0,.1);
+}
+.ll-page:last-child { page-break-after: auto; }
+.ll-h {
+  text-align: center;
+  font-weight: bold;
+  font-size: 14pt;
+  margin: 1rem 0 1.5rem;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+}
+.ll-h3 {
+  font-weight: bold;
+  font-size: 12pt;
+  margin: 1rem 0 .5rem;
+}
+.ll-doc p { text-align: justify; margin-bottom: .8rem; }
+.ll-ol { padding-left: 1.5rem; }
+.ll-ol li { margin-bottom: .35rem; text-align: justify; }
+.ll-cover { display: flex; flex-direction: column; }
+.ll-cover-inner {
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  height: 100%;
+  text-align: center;
+  flex: 1;
+}
+.ll-cover-instansi {
+  font-weight: bold;
+  font-size: 13pt;
+  line-height: 1.4;
+  border-bottom: 3px double #000;
+  padding-bottom: 1rem;
+  margin-bottom: 2rem;
+}
+.ll-cover-title {
+  font-size: 24pt;
+  font-weight: bold;
+  line-height: 1.3;
+  letter-spacing: 1px;
+  margin: 2.5rem 0 1.5rem;
+}
+.ll-cover-sub {
+  font-size: 14pt;
+  font-weight: bold;
+  margin-bottom: 3rem;
+  padding: .5rem 1rem;
+  border: 2px solid #000;
+  display: inline-block;
+}
+.ll-cover-identitas {
+  margin: 2rem 0;
+  font-size: 12pt;
+  line-height: 1.7;
+}
+.ll-cover-identitas .ll-cover-nama {
+  font-size: 16pt;
+  font-weight: bold;
+  margin: .25rem 0;
+}
+.ll-cover-bot {
+  margin-top: 3rem;
+  font-size: 12pt;
+}
+.ll-cover-pengawas { font-size: 14pt; margin: .35rem 0; text-decoration: underline; }
+.ll-id-table {
+  width: 100%;
+  border-collapse: collapse;
+  margin: 1rem 0;
+}
+.ll-id-table td {
+  padding: .25rem .5rem;
+  vertical-align: top;
+}
+.ll-table {
+  width: 100%;
+  border-collapse: collapse;
+  margin: .8rem 0 1rem;
+  font-size: 11pt;
+}
+.ll-table th, .ll-table td {
+  border: 1px solid #444;
+  padding: .35rem .55rem;
+}
+.ll-table thead th {
+  background: #e8f5e9;
+  font-weight: bold;
+  text-align: center;
+}
+.ll-row-total td, .ll-row-total th {
+  background: #fff3cd;
+  font-weight: bold;
+}
+.ll-sub-aspek-row td {
+  background: #f0f0f0;
+}
+.ll-toc {
+  width: 100%;
+  border-collapse: collapse;
+}
+.ll-toc td {
+  padding: .3rem .5rem;
+  vertical-align: top;
+}
+.ll-ttd-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1rem;
+  page-break-inside: avoid;
+}
+.ll-ttd-box {
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  min-height: 180px;
+  font-size: 12pt;
+}
+.ll-ttd-spacer { flex: 1 1 auto; min-height: 5rem; }
+.ll-ttd-name { font-weight: bold; text-decoration: underline; margin-top: .3rem; }
+.ll-ttd-page {
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+}
+@media print {
+  .ll-page {
+    border: none;
+    box-shadow: none;
+    margin: 0;
+    padding: 1cm 1.5cm;
+    min-height: auto;
+  }
+  .ll-doc { padding: 0; max-width: none; }
+}
+
 /* Saat list-group-item aktif (warna biru), tombol icon di dalamnya tetap terlihat */
 .list-group-item.active [data-action="edit-periode"] {
   color: #fff !important;
