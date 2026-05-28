@@ -166,13 +166,16 @@ a:hover { color: var(--pkkm-primary-dark); }
   border: none;
   color: #fff !important;
   font-weight: 500;
+  font-size: .75rem;
+  line-height: 1.1;
   border-radius: 999px;
-  padding: 0.4rem 1.1rem;
-  box-shadow: 0 3px 8px rgba(0, 0, 0, .18);
+  padding: .3rem .8rem;
+  white-space: nowrap;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, .18);
   transition: transform .15s ease, box-shadow .15s ease, filter .15s ease;
   display: inline-flex;
   align-items: center;
-  gap: .45rem;
+  gap: .35rem;
 }
 .btn-gradient-print {
   background: linear-gradient(90deg, #14b8a6 0%, #0ea5e9 50%, #2563eb 100%);
@@ -186,7 +189,7 @@ a:hover { color: var(--pkkm-primary-dark); }
 .btn-gradient-excel:focus {
   color: #fff !important;
   filter: brightness(1.06);
-  box-shadow: 0 4px 12px rgba(0, 0, 0, .25);
+  box-shadow: 0 4px 10px rgba(0, 0, 0, .25);
   transform: translateY(-1px);
 }
 .btn-gradient-print:active,
@@ -195,7 +198,7 @@ a:hover { color: var(--pkkm-primary-dark); }
   filter: brightness(.98);
 }
 .btn-gradient-print i,
-.btn-gradient-excel i { font-size: 1rem; }
+.btn-gradient-excel i { font-size: .85rem; }
 
 /* TTD layout - rapi & sejajar di tampilan layar dan cetak */
 .ttd-grid {
