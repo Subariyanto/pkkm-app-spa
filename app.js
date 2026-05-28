@@ -1640,18 +1640,20 @@ route('#/cetak/:id', (root, params) => {
         ${pen.catatan_umum ? `<h6>Catatan Umum</h6><p>${escapeHTML(pen.catatan_umum)}</p>` : ''}
         ${pen.rekomendasi ? `<h6>Rekomendasi Pembinaan</h6><p>${escapeHTML(pen.rekomendasi)}</p>` : ''}
 
-        <div class="ttd-grid mt-4" style="display:grid; grid-template-columns:1fr 1fr; gap:1rem;">
-          <div class="ttd-box text-center">
-            <div>${escapeHTML(tempat)}, ${escapeHTML(pen.tanggal||nowLocal().slice(0,10))}</div>
-            <div>Pengawas Madrasah,</div>
-            <div style="margin-top:4rem; font-weight:700; text-decoration:underline;">${escapeHTML(pengawas.nama||'..............................')}</div>
-            <div>NIP. ${escapeHTML(pengawas.nip||'..............................')}</div>
+        <div class="ttd-grid">
+          <div class="ttd-box">
+            <div class="ttd-tempat">${escapeHTML(tempat)}, ${escapeHTML(pen.tanggal||nowLocal().slice(0,10))}</div>
+            <div class="ttd-jabatan">Pengawas Madrasah,</div>
+            <div class="ttd-spacer"></div>
+            <div class="ttd-name">${escapeHTML(pengawas.nama||'..............................')}</div>
+            <div class="ttd-nip">NIP. ${escapeHTML(pengawas.nip||'..............................')}</div>
           </div>
-          <div class="ttd-box text-center">
-            <div>&nbsp;</div>
-            <div>Mengetahui,<br>Ketua Pokjawas Madrasah Kab. Jember</div>
-            <div style="margin-top:4rem; font-weight:700; text-decoration:underline;">${escapeHTML(pokjawas.nama||'..............................')}</div>
-            <div>NIP. ${escapeHTML(pokjawas.nip||'..............................')}</div>
+          <div class="ttd-box">
+            <div class="ttd-tempat">&nbsp;</div>
+            <div class="ttd-jabatan">Mengetahui,<br>Ketua Pokjawas Madrasah Kab. Jember</div>
+            <div class="ttd-spacer"></div>
+            <div class="ttd-name">${escapeHTML(pokjawas.nama||'..............................')}</div>
+            <div class="ttd-nip">NIP. ${escapeHTML(pokjawas.nip||'..............................')}</div>
           </div>
         </div>
       </div>

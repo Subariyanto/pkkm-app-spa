@@ -157,15 +157,28 @@ a:hover { color: var(--pkkm-primary-dark); }
   .print-header { text-align: center; margin-bottom: 1rem; }
   .print-table { width: 100%; border-collapse: collapse; }
   .print-table th, .print-table td { border: 1px solid #444; padding: .35rem .5rem; }
-  .ttd-grid {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 1rem;
-    margin-top: 2rem;
-  }
-  .ttd-box { text-align: center; }
-  .ttd-name { margin-top: 4rem; font-weight: 700; text-decoration: underline; }
 }
+
+/* TTD layout - rapi & sejajar di tampilan layar dan cetak */
+.ttd-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1rem;
+  margin-top: 2rem;
+  page-break-inside: avoid;
+  align-items: stretch;
+}
+.ttd-box {
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  min-height: 180px;
+}
+.ttd-tempat { min-height: 1.5rem; }
+.ttd-jabatan { min-height: 2.5rem; line-height: 1.3; }
+.ttd-spacer { flex: 1 1 auto; min-height: 4rem; }
+.ttd-name { font-weight: 700; text-decoration: underline; }
+.ttd-nip { min-height: 1.4rem; }
 
 pre.bukti-fisik {
   font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif !important;
