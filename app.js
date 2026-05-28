@@ -2331,14 +2331,14 @@ route('#/pkb/:kamadId/:periodeId', (root, params) => {
                     <div class="row g-2">
                       <div class="col-md-3">
                         <label class="form-label text-tiny mb-1">Unsur PKB</label>
-                        <select class="form-select form-select-sm" name="unsur_pkb" size="3" style="height:auto;">
+                        <select class="form-select form-select-sm" name="unsur_pkb">
                           <option value="">-- Pilih --</option>
                           ${PKB_UNSUR.map(u => `<option value="${u.code}" ${p.unsur_pkb===u.code?'selected':''}>${escapeHTML(u.label)}</option>`).join('')}
                         </select>
                       </div>
                       <div class="col-md-3">
                         <label class="form-label text-tiny mb-1">Jenis PKB</label>
-                        <select class="form-select form-select-sm" name="jenis_pkb" size="3" style="height:auto;" data-jenis-for="${p.id}">
+                        <select class="form-select form-select-sm" name="jenis_pkb" data-jenis-for="${p.id}">
                           <option value="">-- Pilih unsur dulu --</option>
                           ${(() => {
                             const u = PKB_UNSUR.find(x => x.code === p.unsur_pkb);
