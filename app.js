@@ -2329,14 +2329,14 @@ route('#/pkb/:kamadId/:periodeId', (root, params) => {
                   </div>
                   <form data-pkb-id="${p.id}" data-sub-aspek="${p.sub_aspek_kode}">
                     <div class="row g-2">
-                      <div class="col-md-4">
+                      <div class="col-md-6">
                         <label class="form-label text-tiny mb-1">Unsur PKB</label>
                         <select class="form-select form-select-sm" name="unsur_pkb">
                           <option value="">-- Pilih --</option>
                           ${PKB_UNSUR.map(u => `<option value="${u.code}" ${p.unsur_pkb===u.code?'selected':''}>${escapeHTML(u.label)}</option>`).join('')}
                         </select>
                       </div>
-                      <div class="col-md-4">
+                      <div class="col-md-6">
                         <label class="form-label text-tiny mb-1">Jenis PKB</label>
                         <select class="form-select form-select-sm" name="jenis_pkb" data-jenis-for="${p.id}">
                           <option value="">-- Pilih unsur dulu --</option>
@@ -2346,7 +2346,7 @@ route('#/pkb/:kamadId/:periodeId', (root, params) => {
                           })()}
                         </select>
                       </div>
-                      <div class="col-md-4">
+                      <div class="col-12">
                         <label class="form-label text-tiny mb-1">Kegiatan PKB</label>
                         <input class="form-control form-control-sm" name="kegiatan_pkb" value="${escapeHTML(p.kegiatan_pkb||'')}" placeholder="Contoh: Diklat Kepemimpinan Madrasah">
                       </div>
