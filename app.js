@@ -1400,6 +1400,7 @@ route('#/rekap', (root) => {
           ${periodeList.map(p => `<option value="${p.id}" ${p.id===selPid?'selected':''}>${escapeHTML(p.label)}</option>`).join('')}
         </select>
         <button class="btn btn-sm btn-outline-primary" id="btnExportRekap"><i class="bi bi-file-earmark-excel"></i> Export Excel</button>
+        <button class="btn btn-sm btn-outline-secondary" id="btnPrintRekap"><i class="bi bi-printer"></i> Cetak</button>
       </div>
     </div>
     <div class="card">
@@ -1454,6 +1455,7 @@ route('#/rekap', (root) => {
   }));
 
   $('#btnExportRekap').addEventListener('click', () => exportRekapExcel(periode, rows));
+  $('#btnPrintRekap').addEventListener('click', () => window.print());
 });
 
 async function exportRekapExcel(periode, rows) {
@@ -1955,6 +1957,7 @@ route('#/rekap-kkma', (root) => {
           ${periodeList.map(p => `<option value="${p.id}" ${p.id===selPid?'selected':''}>${escapeHTML(p.label)}</option>`).join('')}
         </select>
         <button class="btn btn-sm btn-outline-primary" id="btnExportKkma"><i class="bi bi-file-earmark-excel"></i> Export Excel</button>
+        <button class="btn btn-sm btn-outline-secondary" id="btnPrintKkma"><i class="bi bi-printer"></i> Cetak</button>
       </div>
     </div>
 
@@ -2070,6 +2073,8 @@ route('#/rekap-kkma', (root) => {
     setTimeout(() => URL.revokeObjectURL(url), 1000);
     toast('Rekap KKMA diunduh.');
   });
+
+  $('#btnPrintKkma').addEventListener('click', () => window.print());
 });
 
 // --- Instrumen viewer ------------------------------------------
