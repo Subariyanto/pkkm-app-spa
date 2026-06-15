@@ -267,8 +267,9 @@ route('#/', (root) => {
   const allP = Penilaian.list();
   const totalPenilaian = allP.length;
   const finalCount = allP.filter(p => p.status === 'final').length;
+  const licBanner = (typeof LIC !== 'undefined' && LIC.bannerHtml) ? LIC.bannerHtml() : '';
 
-  root.innerHTML = `
+  root.innerHTML = licBanner + `
     <div class="row g-3">
       <div class="col-12">
         <div class="card border-0">
@@ -2935,6 +2936,11 @@ route('#/pengaturan', (root) => {
 });
 
 // === Boot ======================================================
+route('#/lisensi', (root) => {
+  if (typeof LIC !== 'undefined' && LIC.renderPage) LIC.renderPage(root);
+  else root.innerHTML = '<div class="alert alert-warning">Modul lisensi belum termuat. Refresh halaman.</div>';
+});
+
 $('#appVersionLabel').textContent = `v${APP_VERSION}`;
 if (!location.hash) location.hash = '#/';
 render();
