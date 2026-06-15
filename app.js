@@ -1485,6 +1485,7 @@ route('#/rekap', (root) => {
 });
 
 async function exportRekapExcel(periode, rows) {
+  if (window.LIC && window.LIC.getStatus){const s=window.LIC.getStatus();if(s&&s.isTrial){toast('Export Excel hanya tersedia untuk akun FULL. Cetak Preview (Ctrl+P) tetap bisa dengan watermark TRIAL.','error');return;}}
   if (typeof ExcelJS === 'undefined') { toast('ExcelJS belum siap, coba lagi.', 'error'); return; }
   const wb = new ExcelJS.Workbook();
   const ws = wb.addWorksheet('Rekap PKKM');
@@ -2151,6 +2152,7 @@ route('#/rekap-kkma', (root) => {
   });
 
   $('#btnExportKkma').addEventListener('click', async () => {
+    if (window.LIC && window.LIC.getStatus){const s=window.LIC.getStatus();if(s&&s.isTrial){toast('Export Excel KKMA hanya tersedia untuk akun FULL. Cetak Preview (Ctrl+P) tetap bisa dengan watermark TRIAL.','error');return;}}
     if (typeof ExcelJS === 'undefined') { toast('ExcelJS belum siap.', 'error'); return; }
     const wb = new ExcelJS.Workbook();
     const ws = wb.addWorksheet('Rekap KKMA');

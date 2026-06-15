@@ -524,6 +524,7 @@
   // ===== Public entry =====
 
   async function exportPKKMExcel(kamad_id) {
+    if (window.LIC && window.LIC.getStatus){var s=window.LIC.getStatus();if(s&&s.isTrial){alert('Export Excel hanya tersedia untuk akun FULL. Cetak Preview (Ctrl+P) tetap bisa dengan watermark TRIAL.');return;}}
     if (typeof ExcelJS === 'undefined') {
       window.toast?.('ExcelJS belum siap, coba lagi.', 'error');
       return;
