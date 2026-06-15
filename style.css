@@ -158,6 +158,8 @@ a:hover { color: var(--pkkm-primary-dark); }
   .print-table { width: 100%; border-collapse: collapse; }
   .print-table th, .print-table td { border: 1px solid #444; padding: .35rem .5rem; }
   .print-only { display: block !important; }
+  body.is-trial-print::before{content:'TRIAL';position:fixed;top:50%;left:50%;transform:translate(-50%,-50%) rotate(-30deg);font-size:8rem;font-weight:900;color:rgba(220,38,38,.18) !important;pointer-events:none;z-index:9998;letter-spacing:1rem;-webkit-print-color-adjust:exact}
+  body.is-trial-print::after{content:'DOKUMEN VERSI TRIAL \2014  TIDAK SAH UNTUK PENGGUNAAN RESMI';position:fixed;top:6px;left:0;right:0;text-align:center;font-size:9pt;color:rgba(220,38,38,.75);font-weight:700;letter-spacing:.1em;pointer-events:none;z-index:9999}
 }
 
 /* ===== Laporan Lengkap PKKM ===== */

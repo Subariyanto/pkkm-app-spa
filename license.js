@@ -201,5 +201,8 @@
   }
 
   // Public API
-  window.LIC = { getStatus: getStatus, bannerHtml: bannerHtml, renderPage: renderPage, guard: guard, redeem: redeem };
+  window.LIC = { getStatus: getStatus, bannerHtml: bannerHtml, renderPage: renderPage, guard: guard, redeem: redeem, applyTrialPrintMark: function(){try{var s=getStatus();document.body.classList.toggle('is-trial-print', !!(s&&s.isTrial));}catch(e){}} };
+  // Auto-toggle watermark sebelum print + saat boot
+  window.addEventListener('beforeprint', function(){try{window.LIC && window.LIC.applyTrialPrintMark && window.LIC.applyTrialPrintMark();}catch(e){}});
+  document.addEventListener('DOMContentLoaded', function(){try{window.LIC && window.LIC.applyTrialPrintMark && window.LIC.applyTrialPrintMark();}catch(e){}});
 })();
