@@ -113,9 +113,14 @@
     html += '<button class="btn btn-outline-primary btn-sm" id="btnGen5">+ 5 Kode</button>';
     if (codes.length === 0) html += '<p class="text-muted mt-3">Belum ada kode di-generate.</p>';
     else {
-      html += '<table class="table table-sm mt-3" style="font-size:.85rem"><thead><tr><th>Kode</th><th class="text-center">Status</th><th class="text-center">Aksi</th></tr></thead><tbody>';
+      html += '<table class="table table-sm mt-3" style="font-size:.85rem"><thead><tr><th>Kode</th><th>Penerima</th><th class="text-center">Status</th><th class="text-center">Aksi</th></tr></thead><tbody>';
       codes.slice().reverse().forEach(function (c) {
-        html += '<tr><td><code>' + c.code + '</code></td><td class="text-center">' + (c.usedBy ? '✅ dipakai' : '🆕 baru') + '</td><td class="text-center">' + (!c.usedBy ? '<button class="btn btn-sm btn-outline-danger" data-revoke="' + c.code + '">🗑</button>' : '-') + '</td></tr>';
+        var recipient = c.recipient || '';
+        var safeCode = String(c.code).replace(/&/g, '&amp;').replace(/"/g, '&quot;');
+        html += '<tr><td><code>' + safeCode + '</code></td><td>' + (recipient ? '<span>' + recipient.replace(/</g, '&lt;') + '</span>' : '<span class="text-muted">Belum ditentukan</span>') + '</td><td class="text-center">' + (c.usedBy ? '✅ dipakai' : '🆕 baru') + '</td><td class="text-center text-nowrap">' +
+          '<button class="btn btn-sm btn-outline-secondary me-1" data-copy="' + safeCode + '" title="Copy kode">📋</button>' +
+          (!c.usedBy ? '<button class="btn btn-sm btn-outline-primary me-1" data-edit-recipient="' + safeCode + '" title="Edit penerima">✏️</button><button class="btn btn-sm btn-success me-1" data-activate-code="' + safeCode + '" title="Aktifkan di perangkat ini">🔓</button><button class="btn btn-sm btn-outline-danger" data-revoke="' + safeCode + '" title="Hapus">🗑</button>' : '') +
+          '</td></tr>';
       });
       html += '</tbody></table>';
     }
@@ -143,6 +148,36 @@
       reset();
       if (typeof navigate === 'function') navigate('#/lisensi'); else location.reload();
     });
+    root.querySelectorAll('[data-copy]').forEach(function (btn) {
+      btn.addEventListener('click', function () {
+        var code = btn.getAttribute('data-copy');
+        if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(code).then(function () { alert('✅ Kode berhasil disalin.'); });
+        else { var ta = document.createElement('textarea'); ta.value = code; document.body.appendChild(ta); ta.select(); document.execCommand('copy'); ta.remove(); alert('✅ Kode berhasil disalin.'); }
+      });
+    });
+    root.querySelectorAll('[data-edit-recipient]').forEach(function (btn) {
+      btn.addEventListener('click', function () {
+        var code = btn.getAttribute('data-edit-recipient');
+        var list = getCodes();
+        var item = list.find(function (x) { return x.code === code; });
+        if (!item) return;
+        var recipient = prompt('Nama penerima kode aktivasi:', item.recipient || '');
+        if (recipient === null) return;
+        item.recipient = recipient.trim();
+        saveCodes(list);
+        renderPage(root);
+      });
+    });
+    root.querySelectorAll('[data-activate-code]').forEach(function (btn) {
+      btn.addEventListener('click', function () {
+        var code = btn.getAttribute('data-activate-code');
+        if (!confirm('Aktifkan kode ini pada perangkat/browser saat ini?')) return;
+        var result = redeem(code);
+        if (!result.ok) { alert('❌ ' + result.reason); return; }
+        alert('✅ Lisensi FULL berhasil diaktifkan pada perangkat ini.');
+        renderPage(root);
+      });
+    });
     root.querySelectorAll('[data-revoke]').forEach(function (btn) {
       btn.addEventListener('click', function () {
         var c = btn.getAttribute('data-revoke');
@@ -155,7 +190,7 @@
   function doGen(n, root) {
     var list = getCodes();
     var made = [];
-    for (var i = 0; i < n; i++) { var k = genCode(); list.push({ code: k, createdAt: new Date().toISOString() }); made.push(k); }
+    for (var i = 0; i < n; i++) { var k = genCode(); list.push({ code: k, recipient: '', createdAt: new Date().toISOString() }); made.push(k); }
     saveCodes(list);
     alert('✅ ' + n + ' kode dibuat:\n\n' + made.join('\n'));
     renderPage(root);
