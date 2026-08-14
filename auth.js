@@ -316,26 +316,13 @@
         </div>
         
         <div class="form-group">
-          <label>Pilihan Peran (Role)</label>
-          <select id="reg-role">
-            <option value="pengawas">Pengawas</option>
-            <option value="admin">Admin</option>
-          </select>
-        </div>
-        
-        <div class="form-group">
           <label>Nama Pengguna (Username untuk login)</label>
-          <input id="reg-username" type="text" placeholder="Contoh: kamad_sukowono" autocomplete="off" minlength="4">
+          <input id="reg-username" type="text" placeholder="Contoh: pengawas_jember" autocomplete="off" minlength="4">
         </div>
         
         <div class="form-group">
           <label>Nama Lengkap</label>
           <input id="reg-fullname" type="text" placeholder="Nama Lengkap beserta gelar" autocomplete="off">
-        </div>
-        
-        <div class="form-group" id="group-madrasah">
-          <label>Nama Madrasah</label>
-          <input id="reg-madrasah" type="text" placeholder="Contoh: MTs Negeri 1 Jember" autocomplete="off">
         </div>
 
         <div class="form-group">
@@ -367,7 +354,8 @@
       </div>
     `;
 
-    const roleSel = document.getElementById('reg-role');
+    // Semua akun hasil registrasi aplikasi ini menggunakan role Pengawas.
+    // Akun Admin hanya melalui kredensial Admin yang telah ditetapkan.
     // Link "Sudah Memiliki Akun" → ke halaman login
     const linkLogin = document.getElementById('link-to-login');
     if (linkLogin) {
@@ -376,14 +364,6 @@
         const oldOverlay = document.getElementById('pkkm-auth-overlay');
         if (oldOverlay) oldOverlay.remove();
         renderLoginScreen();
-      });
-    }
-
-    // Role change: nama madrasah tidak diperlukan untuk Admin/Pengawas
-    const groupMadrasah = document.getElementById('group-madrasah');
-    if (roleSel && groupMadrasah) {
-      roleSel.addEventListener('change', () => {
-        groupMadrasah.style.display = (roleSel.value === 'admin' || roleSel.value === 'pengawas') ? 'none' : 'block';
       });
     }
 
@@ -419,10 +399,10 @@
       const errEl = document.getElementById('auth-reg-err');
       const code = document.getElementById('reg-code').value.trim();
       const isTrialCode = code.toUpperCase() === TRIAL_CODE;
-      const role = isTrialCode ? 'trial' : document.getElementById('reg-role').value;
+      const role = isTrialCode ? 'trial' : 'pengawas';
       const username = document.getElementById('reg-username').value.trim().toLowerCase();
       const fullname = document.getElementById('reg-fullname').value.trim();
-      const madrasah = (role === 'admin' || role === 'pengawas') ? 'Pokjawas Jember' : document.getElementById('reg-madrasah').value.trim();
+      const madrasah = 'Pokjawas Jember';
       const password = document.getElementById('reg-password').value;
       const confirm = document.getElementById('reg-confirm').value;
 
