@@ -177,9 +177,16 @@
       Periode.__licWrapped = true;
     }
     if (typeof Penilaian !== 'undefined' && Penilaian && !Penilaian.__licWrapped) {
-      var nc = Penilaian.create.bind(Penilaian);
-      Penilaian.create = function (d) { if (!guard('create-penilaian')) return null; return nc(d); };
-      if (Penilaian.update) { var nu = Penilaian.update.bind(Penilaian); Penilaian.update = function (id, p) { if (!guard('update-penilaian')) return null; return nu(id, p); }; }
+      // PKKM membuat sesi melalui ensure/ensureRole, bukan create.
+      var ensureName = typeof Penilaian.ensureRole === 'function' ? 'ensureRole' : (typeof Penilaian.ensure === 'function' ? 'ensure' : null);
+      if (ensureName) {
+        var ne = Penilaian[ensureName].bind(Penilaian);
+        Penilaian[ensureName] = function () { if (!guard('create-penilaian')) return null; return ne.apply(Penilaian, arguments); };
+      }
+      if (typeof Penilaian.update === 'function') {
+        var nu = Penilaian.update.bind(Penilaian);
+        Penilaian.update = function (id, p) { if (!guard('update-penilaian')) return null; return nu(id, p); };
+      }
       Penilaian.__licWrapped = true;
     }
     if (typeof Skor !== 'undefined' && Skor && Skor.upsert && !Skor.__licWrapped) {
