@@ -1,6 +1,6 @@
 // auth.js - Kode Aktivasi, Registrasi Akun, Login, & PIN Lock untuk PKKM App SPA
 // Offline device binding logic + local user management.
-// 2 roles supported: Admin (Pokjawas), Kamad (Kepala Madrasah).
+// 2 roles supported: Admin (Pokjawas), Pengawas.
 
 (function () {
   'use strict';
@@ -16,7 +16,7 @@
   const KEY_DEVICE_ID = 'pkkm_v1_device_id';
   const KEY_DEVICE_BINDING = 'pkkm_v1_device_binding';
   
-  const KEY_USER_ROLE = 'pkkm_v1_user_role'; // admin | kamad
+  const KEY_USER_ROLE = 'pkkm_v1_user_role'; // admin | pengawas
   const KEY_USER_USERNAME = 'pkkm_v1_user_username';
   const KEY_USER_PASSWORD_HASH = 'pkkm_v1_user_password_hash';
   const KEY_USER_FULLNAME = 'pkkm_v1_user_fullname';
@@ -162,9 +162,9 @@
     localStorage.setItem(KEY_ACTIVATED, 'true');
     localStorage.setItem(KEY_ACTIVATION_CODE, code);
     localStorage.setItem(KEY_DEVICE_BINDING, binding);
-    // Upgrade role trial -> kamad
+    // Upgrade role trial -> pengawas
     if (localStorage.getItem(KEY_USER_ROLE) === 'trial') {
-      localStorage.setItem(KEY_USER_ROLE, 'kamad');
+      localStorage.setItem(KEY_USER_ROLE, 'pengawas');
     }
 
     // Report aktivasi ke Supabase (cross-device relay). Best-effort.
@@ -175,7 +175,7 @@
           nama: fullname,
           username: username,
           madrasah: madrasah,
-          role: 'kamad',
+          role: 'pengawas',
           device_id: devId,
           device_info: navigator.userAgent || ''
         });
@@ -248,7 +248,7 @@
 
   function getUserInfo() {
     return {
-      role: localStorage.getItem(KEY_USER_ROLE) || 'kamad',
+      role: localStorage.getItem(KEY_USER_ROLE) || 'pengawas',
       username: localStorage.getItem(KEY_USER_USERNAME) || '',
       fullname: localStorage.getItem(KEY_USER_FULLNAME) || '',
       madrasah: localStorage.getItem(KEY_USER_MADRASAH) || '',
@@ -318,8 +318,8 @@
         <div class="form-group">
           <label>Pilihan Peran (Role)</label>
           <select id="reg-role">
-            <option value="pengawas">Pengawas - Pembina</option>
-            <option value="kamad">Kepala Madrasah (Kamad) - Penilai</option>
+            <option value="pengawas">Pengawas</option>
+            <option value="admin">Admin</option>
           </select>
         </div>
         
@@ -379,11 +379,11 @@
       });
     }
 
-    // Role change: hide madrasah field untuk Pengawas
+    // Role change: nama madrasah tidak diperlukan untuk Admin/Pengawas
     const groupMadrasah = document.getElementById('group-madrasah');
     if (roleSel && groupMadrasah) {
       roleSel.addEventListener('change', () => {
-        groupMadrasah.style.display = roleSel.value === 'pengawas' ? 'none' : 'block';
+        groupMadrasah.style.display = (roleSel.value === 'admin' || roleSel.value === 'pengawas') ? 'none' : 'block';
       });
     }
 
@@ -422,7 +422,7 @@
       const role = isTrialCode ? 'trial' : document.getElementById('reg-role').value;
       const username = document.getElementById('reg-username').value.trim().toLowerCase();
       const fullname = document.getElementById('reg-fullname').value.trim();
-      const madrasah = (role === 'pengawas') ? 'Pokjawas Jember' : document.getElementById('reg-madrasah').value.trim();
+      const madrasah = (role === 'admin' || role === 'pengawas') ? 'Pokjawas Jember' : document.getElementById('reg-madrasah').value.trim();
       const password = document.getElementById('reg-password').value;
       const confirm = document.getElementById('reg-confirm').value;
 
