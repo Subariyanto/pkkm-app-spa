@@ -26,7 +26,7 @@
 
   // Trial Account Constants
   const TRIAL_CODE = 'PKKM-TRIAL-2026';
-  const TRIAL_DURATION_MS = 3 * 24 * 60 * 60 * 1000; // 3 hari (259200000 ms)
+  const TRIAL_DURATION_MS = 5 * 24 * 60 * 60 * 1000; // 5 hari (259200000 ms)
   const KEY_TRIAL_START = 'pkkm_v1_trial_start';
 
   // Secret Salt untuk Offline Checksum Kode Aktivasi
@@ -260,16 +260,16 @@
 
   // 1. Screen Registrasi & Aktivasi
   function renderActivationScreen() {
-    let overlay = document.getElementById('pkg-auth-overlay');
+    let overlay = document.getElementById('pkkm-auth-overlay');
     if (!overlay) {
       overlay = document.createElement('div');
-      overlay.id = 'pkg-auth-overlay';
+      overlay.id = 'pkkm-auth-overlay';
       document.body.appendChild(overlay);
     }
 
     overlay.innerHTML = `
       <style>
-        #pkg-auth-overlay {
+        #pkkm-auth-overlay {
           position: fixed; inset: 0; z-index: 3000;
           background: linear-gradient(135deg, #1e40af 0%, #1f5d3a 100%);
           display: flex; align-items: center; justify-content: center;
@@ -306,7 +306,7 @@
         <div class="auth-logo">
           <i class="bi bi-shield-check"></i>
           <h2>Aktivasi & Registrasi Akun</h2>
-          <p>PKG Pokjawasmad Kab. Jember (KMA 1503)</p>
+          <p>PKKM Pokjawasmad Kab. Jember (KMA 1503)</p>
         </div>
         <div class="auth-err" id="auth-reg-err"></div>
         
@@ -373,7 +373,7 @@
     if (linkLogin) {
       linkLogin.addEventListener('click', () => {
         // Langsung render login screen tanpa reload
-        const oldOverlay = document.getElementById('pkg-auth-overlay');
+        const oldOverlay = document.getElementById('pkkm-auth-overlay');
         if (oldOverlay) oldOverlay.remove();
         renderLoginScreen();
       });
@@ -389,7 +389,7 @@
 
     // Tombol Trial: LANGSUNG buat akun trial tanpa isi form, auto-login ke Beranda
     document.getElementById('btn-trial').addEventListener('click', () => {
-      if (!confirm('Aktifkan akun Trial gratis 3 hari?\n\nAkses penuh semua fitur. Dokumen cetak akan ada watermark "TRIAL".\nSetelah 3 hari, hubungi Pengawas untuk kode aktivasi penuh.')) return;
+      if (!confirm('Aktifkan akun Trial gratis 5 hari?\n\nAkses penuh semua fitur. Dokumen cetak akan ada watermark "TRIAL".\nSetelah 5 hari, hubungi Pengawas untuk kode aktivasi penuh.')) return;
 
       // Auto-create trial account — tanpa form, tanpa aktivasi
       const code = TRIAL_CODE;
@@ -497,7 +497,7 @@
       // Jika trial, simpan timestamp mulai trial
       if (isTrialCode) {
         localStorage.setItem(KEY_TRIAL_START, String(Date.now()));
-        alert('Akun Trial berhasil dibuat! Akses penuh 3 hari. Silakan login.');
+        alert('Akun Trial berhasil dibuat! Akses penuh 5 hari. Silakan login.');
       } else {
         alert('Aktivasi berhasil! Silakan login menggunakan akun yang baru saja dibuat.');
       }
@@ -508,10 +508,10 @@
 
   // 2. Screen Login Akun (Username + Password)
   function renderLoginScreen() {
-    let overlay = document.getElementById('pkg-auth-overlay');
+    let overlay = document.getElementById('pkkm-auth-overlay');
     if (!overlay) {
       overlay = document.createElement('div');
-      overlay.id = 'pkg-auth-overlay';
+      overlay.id = 'pkkm-auth-overlay';
       document.body.appendChild(overlay);
     }
 
@@ -520,7 +520,7 @@
 
     overlay.innerHTML = `
       <style>
-        #pkg-auth-overlay {
+        #pkkm-auth-overlay {
           position: fixed; inset: 0; z-index: 3000;
           background: linear-gradient(135deg, #1f5d3a 0%, #1e40af 100%);
           display: flex; align-items: center; justify-content: center;
@@ -559,7 +559,7 @@
         <div class="auth-logo">
           <i class="bi bi-person-lock"></i>
           <h2>Masuk Aplikasi</h2>
-          <p>PKG Pokjawasmad Kab. Jember</p>
+          <p>PKKM Pokjawasmad Kab. Jember</p>
         </div>
         <div class="user-reg-info">
           Terdaftar: <strong>${escapeHtml(regName)}</strong> (${escapeHtml(regMad)})
@@ -671,7 +671,7 @@
         if (!confirm('Pindah ke halaman Aktivasi?\n\nJika Anda membuat akun baru, data akun lama di browser ini akan ditimpa.')) return;
         // Langsung render activation screen tanpa reload
         sessionStorage.removeItem(KEY_LOGGED_IN);
-        const oldOverlay = document.getElementById('pkg-auth-overlay');
+        const oldOverlay = document.getElementById('pkkm-auth-overlay');
         if (oldOverlay) oldOverlay.remove();
         renderActivationScreen();
       });
@@ -680,67 +680,67 @@
 
   // 3. Lock screen: full-page overlay untuk PIN
   function renderLockScreen() {
-    let overlay = document.getElementById('pkg-lock-overlay');
+    let overlay = document.getElementById('pkkm-lock-overlay');
     if (overlay) return;
     overlay = document.createElement('div');
-    overlay.id = 'pkg-lock-overlay';
+    overlay.id = 'pkkm-lock-overlay';
     overlay.innerHTML = `
       <style>
-        #pkg-lock-overlay {
+        #pkkm-lock-overlay {
           position: fixed; inset: 0; z-index: 3000;
           background: linear-gradient(135deg, #1f5d3a 0%, #06a04c 100%);
           display: flex; align-items: center; justify-content: center;
           font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
         }
-        #pkg-lock-card {
+        #pkkm-lock-card {
           background: #fff; border-radius: 12px; padding: 2rem;
           width: 90%; max-width: 360px;
           box-shadow: 0 12px 40px rgba(0,0,0,.25);
           text-align: center;
         }
-        #pkg-lock-card .lock-icon {
+        #pkkm-lock-card .lock-icon {
           font-size: 3rem; color: #1f5d3a;
           width: 80px; height: 80px; line-height: 80px;
           margin: 0 auto 1rem;
           background: #d6efd9; border-radius: 50%;
         }
-        #pkg-lock-card h2 { margin: 0 0 .25rem; color: #1f5d3a; font-size: 1.4rem; }
-        #pkg-lock-card .subtitle { color: #666; font-size: .9rem; margin-bottom: 1.5rem; }
-        #pkg-lock-card input {
+        #pkkm-lock-card h2 { margin: 0 0 .25rem; color: #1f5d3a; font-size: 1.4rem; }
+        #pkkm-lock-card .subtitle { color: #666; font-size: .9rem; margin-bottom: 1.5rem; }
+        #pkkm-lock-card input {
           width: 100%; font-size: 1.6rem; text-align: center; letter-spacing: .8rem;
           padding: .6rem; border: 2px solid #d6efd9; border-radius: 8px;
           margin-bottom: 1rem; outline: none;
         }
-        #pkg-lock-card input:focus { border-color: #1f5d3a; }
-        #pkg-lock-card button.btn-primary {
+        #pkkm-lock-card input:focus { border-color: #1f5d3a; }
+        #pkkm-lock-card button.btn-primary {
           width: 100%; background: #1f5d3a; color: white; border: 0;
           padding: .65rem; border-radius: 8px; font-weight: 600; cursor: pointer;
           font-size: 1rem;
         }
-        #pkg-lock-card button.btn-primary:hover { background: #143e26; }
-        #pkg-lock-card .err { color: #c0392b; font-size: .85rem; min-height: 1.2rem; margin-bottom: .5rem; }
-        #pkg-lock-card .footer-link { margin-top: 1rem; font-size: .85rem; }
-        #pkg-lock-card .footer-link a { color: #1f5d3a; text-decoration: none; cursor: pointer; }
-        #pkg-lock-card .footer-link a:hover { text-decoration: underline; }
+        #pkkm-lock-card button.btn-primary:hover { background: #143e26; }
+        #pkkm-lock-card .err { color: #c0392b; font-size: .85rem; min-height: 1.2rem; margin-bottom: .5rem; }
+        #pkkm-lock-card .footer-link { margin-top: 1rem; font-size: .85rem; }
+        #pkkm-lock-card .footer-link a { color: #1f5d3a; text-decoration: none; cursor: pointer; }
+        #pkkm-lock-card .footer-link a:hover { text-decoration: underline; }
       </style>
-      <div id="pkg-lock-card">
+      <div id="pkkm-lock-card">
         <div class="lock-icon"><i class="bi bi-shield-lock"></i></div>
         <h2>Aplikasi Terkunci</h2>
         <div class="subtitle">Masukkan PIN untuk melanjutkan</div>
-        <input id="pkg-pin-input" type="password" inputmode="numeric" pattern="\\d*"
+        <input id="pkkm-pin-input" type="password" inputmode="numeric" pattern="\\d*"
                maxlength="6" autocomplete="off" placeholder="\u2022\u2022\u2022\u2022">
-        <div class="err" id="pkg-pin-err"></div>
-        <button class="btn-primary" id="pkg-pin-submit">Buka Aplikasi</button>
+        <div class="err" id="pkkm-pin-err"></div>
+        <button class="btn-primary" id="pkkm-pin-submit">Buka Aplikasi</button>
         <div class="footer-link">
-          <a id="pkg-pin-forgot">Lupa PIN?</a>
+          <a id="pkkm-pin-forgot">Lupa PIN?</a>
         </div>
       </div>
     `;
     document.body.appendChild(overlay);
-    const input = document.getElementById('pkg-pin-input');
-    const submit = document.getElementById('pkg-pin-submit');
-    const err = document.getElementById('pkg-pin-err');
-    const forgot = document.getElementById('pkg-pin-forgot');
+    const input = document.getElementById('pkkm-pin-input');
+    const submit = document.getElementById('pkkm-pin-submit');
+    const err = document.getElementById('pkkm-pin-err');
+    const forgot = document.getElementById('pkkm-pin-forgot');
 
     setTimeout(() => input.focus(), 50);
 
@@ -771,19 +771,19 @@
         'Lanjutkan reset?'
       );
       if (!ok) return;
-      const ok2 = confirm('Konfirmasi sekali lagi: HAPUS semua data PKG dan PIN dari browser ini?');
+      const ok2 = confirm('Konfirmasi sekali lagi: HAPUS semua data PKKM dan PIN dari browser ini?');
       if (!ok2) return;
       
       const keys = Object.keys(localStorage).filter(k => k.startsWith('pkkm_v1_'));
       for (const k of keys) localStorage.removeItem(k);
       sessionStorage.clear();
-      alert('Semua data PKG dan PIN sudah dihapus. Halaman akan di-reload.');
+      alert('Semua data PKKM dan PIN sudah dihapus. Halaman akan di-reload.');
       location.reload();
     });
   }
 
   function hideLockScreen() {
-    const o = document.getElementById('pkg-lock-overlay');
+    const o = document.getElementById('pkkm-lock-overlay');
     if (o) o.remove();
   }
 
@@ -791,56 +791,56 @@
   function promptInitialPinSetup() {
     return new Promise((resolve) => {
       const overlay = document.createElement('div');
-      overlay.id = 'pkg-pin-setup-overlay';
+      overlay.id = 'pkkm-pin-setup-overlay';
       overlay.innerHTML = `
         <style>
-          #pkg-pin-setup-overlay {
+          #pkkm-pin-setup-overlay {
             position: fixed; inset: 0; z-index: 3000;
             background: rgba(0,0,0,.5);
             display: flex; align-items: center; justify-content: center;
           }
-          #pkg-pin-setup-card {
+          #pkkm-pin-setup-card {
             background: #fff; border-radius: 12px; padding: 1.75rem;
             width: 92%; max-width: 420px;
             box-shadow: 0 12px 40px rgba(0,0,0,.25);
           }
-          #pkg-pin-setup-card h3 { margin: 0 0 .5rem; color: #1f5d3a; }
-          #pkg-pin-setup-card .desc { color: #555; font-size: .9rem; margin-bottom: 1rem; }
-          #pkg-pin-setup-card label { display: block; font-size: .85rem; font-weight: 600; margin-bottom: .25rem; color: #333; }
-          #pkg-pin-setup-card input {
+          #pkkm-pin-setup-card h3 { margin: 0 0 .5rem; color: #1f5d3a; }
+          #pkkm-pin-setup-card .desc { color: #555; font-size: .9rem; margin-bottom: 1rem; }
+          #pkkm-pin-setup-card label { display: block; font-size: .85rem; font-weight: 600; margin-bottom: .25rem; color: #333; }
+          #pkkm-pin-setup-card input {
             width: 100%; font-size: 1.4rem; text-align: center; letter-spacing: .6rem;
             padding: .5rem; border: 2px solid #d6efd9; border-radius: 8px;
             margin-bottom: .9rem; outline: none;
           }
-          #pkg-pin-setup-card input:focus { border-color: #1f5d3a; }
-          #pkg-pin-setup-card .row-btn { display: flex; gap: .5rem; margin-top: .75rem; }
-          #pkg-pin-setup-card button {
+          #pkkm-pin-setup-card input:focus { border-color: #1f5d3a; }
+          #pkkm-pin-setup-card .row-btn { display: flex; gap: .5rem; margin-top: .75rem; }
+          #pkkm-pin-setup-card button {
             flex: 1; padding: .55rem; border-radius: 8px; font-weight: 600; cursor: pointer; border: 0;
           }
-          #pkg-pin-setup-card .btn-primary { background: #1f5d3a; color: white; }
-          #pkg-pin-setup-card .btn-secondary { background: #e9ecef; color: #333; }
-          #pkg-pin-setup-card .err { color: #c0392b; font-size: .85rem; min-height: 1.1rem; }
+          #pkkm-pin-setup-card .btn-primary { background: #1f5d3a; color: white; }
+          #pkkm-pin-setup-card .btn-secondary { background: #e9ecef; color: #333; }
+          #pkkm-pin-setup-card .err { color: #c0392b; font-size: .85rem; min-height: 1.1rem; }
         </style>
-        <div id="pkg-pin-setup-card">
+        <div id="pkkm-pin-setup-card">
           <h3><i class="bi bi-shield-lock"></i> Atur PIN Aplikasi</h3>
-          <div class="desc">Lindungi data PKG dengan PIN 4-6 digit. PIN akan diminta setiap kali aplikasi dibuka.</div>
+          <div class="desc">Lindungi data PKKM dengan PIN 4-6 digit. PIN akan diminta setiap kali aplikasi dibuka.</div>
           <label>PIN baru (4-6 digit)</label>
-          <input id="pkg-pin-new" type="password" inputmode="numeric" pattern="\\d*" maxlength="6" placeholder="\u2022\u2022\u2022\u2022">
+          <input id="pkkm-pin-new" type="password" inputmode="numeric" pattern="\\d*" maxlength="6" placeholder="\u2022\u2022\u2022\u2022">
           <label>Konfirmasi PIN</label>
-          <input id="pkg-pin-confirm" type="password" inputmode="numeric" pattern="\\d*" maxlength="6" placeholder="\u2022\u2022\u2022\u2022">
-          <div class="err" id="pkg-pin-setup-err"></div>
+          <input id="pkkm-pin-confirm" type="password" inputmode="numeric" pattern="\\d*" maxlength="6" placeholder="\u2022\u2022\u2022\u2022">
+          <div class="err" id="pkkm-pin-setup-err"></div>
           <div class="row-btn">
-            <button class="btn-secondary" id="pkg-pin-skip">Nanti Saja</button>
-            <button class="btn-primary" id="pkg-pin-save">Simpan PIN</button>
+            <button class="btn-secondary" id="pkkm-pin-skip">Nanti Saja</button>
+            <button class="btn-primary" id="pkkm-pin-save">Simpan PIN</button>
           </div>
         </div>
       `;
       document.body.appendChild(overlay);
-      const newInput = document.getElementById('pkg-pin-new');
-      const confirmInput = document.getElementById('pkg-pin-confirm');
-      const err = document.getElementById('pkg-pin-setup-err');
-      const skipBtn = document.getElementById('pkg-pin-skip');
-      const saveBtn = document.getElementById('pkg-pin-save');
+      const newInput = document.getElementById('pkkm-pin-new');
+      const confirmInput = document.getElementById('pkkm-pin-confirm');
+      const err = document.getElementById('pkkm-pin-setup-err');
+      const skipBtn = document.getElementById('pkkm-pin-skip');
+      const saveBtn = document.getElementById('pkkm-pin-save');
 
       setTimeout(() => newInput.focus(), 50);
 
@@ -1054,16 +1054,16 @@
 
   // 4. Screen Trial Expired — blokir akses, minta kode aktivasi penuh
   function renderTrialExpiredScreen() {
-    let overlay = document.getElementById('pkg-auth-overlay');
+    let overlay = document.getElementById('pkkm-auth-overlay');
     if (!overlay) {
       overlay = document.createElement('div');
-      overlay.id = 'pkg-auth-overlay';
+      overlay.id = 'pkkm-auth-overlay';
       document.body.appendChild(overlay);
     }
 
     overlay.innerHTML = `
       <style>
-        #pkg-auth-overlay {
+        #pkkm-auth-overlay {
           position: fixed; inset: 0; z-index: 3000;
           background: linear-gradient(135deg, #c0392b 0%, #1f5d3a 100%);
           display: flex; align-items: center; justify-content: center;
@@ -1101,10 +1101,10 @@
         <div class="auth-logo">
           <i class="bi bi-clock-history"></i>
           <h2>Masa Trial Berakhir</h2>
-          <p>PKG Pokjawasmad Kab. Jember</p>
+          <p>PKKM Pokjawasmad Kab. Jember</p>
         </div>
         <div class="trial-warning">
-          <strong>⏰ Masa trial 3 hari telah berakhir.</strong><br>
+          <strong>⏰ Masa trial 5 hari telah berakhir.</strong><br>
           Data Anda tetap tersimpan dan tidak hilang.<br>
           Hubungi Pengawas untuk mendapatkan Kode Aktivasi Penuh.
         </div>
@@ -1134,7 +1134,7 @@
     });
 
     document.getElementById('btn-trial-logout').addEventListener('click', () => {
-      if (!confirm('Reset semua data PKG di browser ini? Data trial akan dihapus.')) return;
+      if (!confirm('Reset semua data PKKM di browser ini? Data trial akan dihapus.')) return;
       const keys = Object.keys(localStorage).filter(k => k.startsWith('pkkm_v1_'));
       for (const k of keys) localStorage.removeItem(k);
       sessionStorage.clear();
@@ -1206,7 +1206,7 @@
     }
 
     // Lolos semua gate
-    const overlay = document.getElementById('pkg-auth-overlay');
+    const overlay = document.getElementById('pkkm-auth-overlay');
     if (overlay) overlay.remove();
   }
 
