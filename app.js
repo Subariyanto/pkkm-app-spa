@@ -236,10 +236,11 @@ function navigate(hash) {
 
 async function render() {
   const hash = location.hash || '#/';
+  const routeHash = hash.split('?')[0];
   const root = $('#appRoot');
-  setActiveNav(hash.split('/').slice(0,2).join('/'));
+  setActiveNav(routeHash.split('/').slice(0,2).join('/'));
   for (const r of routes) {
-    const m = hash.match(r.re);
+    const m = routeHash.match(r.re);
     if (m) {
       const params = {};
       r.params.forEach((p, i) => params[p] = decodeURIComponent(m[i+1]));

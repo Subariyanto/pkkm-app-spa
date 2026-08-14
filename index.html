@@ -37,17 +37,22 @@
         <li class="nav-item"><a class="nav-link" href="#/">Beranda</a></li>
         <li class="nav-item"><a class="nav-link" href="#/kamad">Kepala Madrasah</a></li>
         <li class="nav-item"><a class="nav-link" href="#/import">Import</a></li>
-        <li class="nav-item"><a class="nav-link" href="#/penilaian">Penilaian</a></li>
+        <li class="nav-item dropdown">
+          <a class="nav-link dropdown-toggle" href="#" id="penilaianDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">Penilaian</a>
+          <ul class="dropdown-menu" aria-labelledby="penilaianDropdown">
+            <li><a class="dropdown-item" href="#/penilaian?jenis=tahunan"><i class="bi bi-calendar3"></i> Penilaian Tahunan</a></li>
+            <li><a class="dropdown-item" href="#/rekap-tahunan"><i class="bi bi-calendar4-week"></i> Penilaian 4 Tahunan</a></li>
+          </ul>
+        </li>
         <li class="nav-item"><a class="nav-link" href="#/rekap">Rekap</a></li>
         <li class="nav-item"><a class="nav-link" href="#/rekap-kkma">Rekap KKMA</a></li>
-        <li class="nav-item"><a class="nav-link" href="#/rekap-tahunan">4 Tahunan</a></li>
         <li class="nav-item"><a class="nav-link" href="#/pkb">Prioritas PKB</a></li>
         <li class="nav-item"><a class="nav-link" href="#/cetak">Cetak</a></li>
         <li class="nav-item"><a class="nav-link" href="#/laporan-lengkap">Lap. Lengkap</a></li>
         <li class="nav-item"><a class="nav-link" href="#/instrumen">Instrumen</a></li>
         <li class="nav-item"><a class="nav-link" href="#/backup">Backup</a></li>
         <li class="nav-item"><a class="nav-link" href="#/pengaturan">Pengaturan</a></li>
-        <li class="nav-item"><a class="nav-link text-warning" href="#/lisensi">🔑 Lisensi</a></li>
+        <li class="nav-item"><a class="nav-link text-warning fw-semibold" href="#/lisensi">🔑 Lisensi</a></li>
       </ul>
       <span class="navbar-text text-white-50 text-tiny" id="appVersionLabel"></span>
     </div>
