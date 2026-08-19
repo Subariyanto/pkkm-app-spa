@@ -177,6 +177,60 @@
     }
   }
 
+  // Admin reactivate kode
+  async function adminReactivateCode(code, adminKey) {
+    try {
+      return await callRpc('admin_reactivate_code', { p_code: code, p_admin_key: adminKey });
+    } catch (e) {
+      console.warn('[SupabaseSync] adminReactivateCode error:', e.message);
+      return { success: false, reason: 'network_error' };
+    }
+  }
+
+  // Admin delete unused code
+  async function adminDeleteUnusedCode(code, adminKey) {
+    try {
+      return await callRpc('admin_delete_unused_code', { p_code: code, p_admin_key: adminKey });
+    } catch (e) {
+      console.warn('[SupabaseSync] adminDeleteUnusedCode error:', e.message);
+      return { success: false, reason: 'network_error' };
+    }
+  }
+
+  // Admin batch create codes
+  async function adminBatchCreateCodes(count, recipient, adminKey) {
+    try {
+      return await callRpc('admin_batch_create_codes', {
+        p_count: count,
+        p_recipient: recipient || '',
+        p_admin_key: adminKey,
+      });
+    } catch (e) {
+      console.warn('[SupabaseSync] adminBatchCreateCodes error:', e.message);
+      return { success: false, reason: 'network_error', codes: [] };
+    }
+  }
+
+  // Admin get stats
+  async function adminGetStats(adminKey) {
+    try {
+      return await callRpc('admin_get_stats', { p_admin_key: adminKey });
+    } catch (e) {
+      console.warn('[SupabaseSync] adminGetStats error:', e.message);
+      return { success: false, reason: 'network_error' };
+    }
+  }
+
+  // Admin get audit log
+  async function adminGetAuditLog(adminKey, limit) {
+    try {
+      return await callRpc('admin_get_audit_log', { p_admin_key: adminKey, p_limit: limit || 50 });
+    } catch (e) {
+      console.warn('[SupabaseSync] adminGetAuditLog error:', e.message);
+      return { success: false, reason: 'network_error', logs: [] };
+    }
+  }
+
   // ================================================================
   // LEGACY COMPAT (deprecated — redirect ke API baru)
   // ================================================================
@@ -217,6 +271,11 @@
     adminRevokeCode: adminRevokeCode,
     adminResetDevice: adminResetDevice,
     adminUpdateRecipient: adminUpdateRecipient,
+    adminReactivateCode: adminReactivateCode,
+    adminDeleteUnusedCode: adminDeleteUnusedCode,
+    adminBatchCreateCodes: adminBatchCreateCodes,
+    adminGetStats: adminGetStats,
+    adminGetAuditLog: adminGetAuditLog,
     // Legacy compat
     isCodeValid: isCodeValid,
     claimCode: claimCode,

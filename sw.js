@@ -1,6 +1,6 @@
 // sw.js - Service worker for PKKM SPA
 // Strategy: network-first for app code, cache-first for static assets.
-const CACHE_VERSION = 'pkkm-v4-2026-08-19-tahap2';
+const CACHE_VERSION = 'pkkm-v5-2026-08-19-tahap3';
 
 const NETWORK_FIRST = [
   'index.html',
@@ -12,6 +12,7 @@ const NETWORK_FIRST = [
   'laporan_lengkap.js',
   'supabaseSync.js',
   'license.js',
+  'admin-license.js',
   'style.css',
   'manifest.json',
 ];

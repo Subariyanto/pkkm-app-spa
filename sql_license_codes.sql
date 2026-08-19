@@ -318,11 +318,27 @@ END;
 $$;
 
 -- ============================================================
--- 9. RPC: admin_update_recipient — Admin update penerima kode
+-- 10. AUDIT LOG TABLE
 -- ============================================================
-CREATE OR REPLACE FUNCTION admin_update_recipient(
+CREATE TABLE IF NOT EXISTS license_audit_log (
+  id BIGSERIAL PRIMARY KEY,
+  license_code TEXT NOT NULL,
+  action TEXT NOT NULL,  -- CREATE | RESET_DEVICE | REVOKE | REACTIVATE | DELETE
+  admin_user TEXT DEFAULT '',
+  old_device TEXT,
+  new_device TEXT,
+  detail TEXT DEFAULT '',
+  created_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+CREATE INDEX IF NOT EXISTS idx_audit_log_code ON license_audit_log(license_code);
+CREATE INDEX IF NOT EXISTS idx_audit_log_created ON license_audit_log(created_at DESC);
+
+-- ============================================================
+-- 11. RPC: admin_reactivate_code — Aktifkan kembali kode
+-- ============================================================
+CREATE OR REPLACE FUNCTION admin_reactivate_code(
   p_code TEXT,
-  p_recipient TEXT,
   p_admin_key TEXT
 )
 RETURNS JSON
@@ -331,19 +347,173 @@ SECURITY DEFINER
 AS $$
 DECLARE
   ADMIN_HASH TEXT := '3f235be78e11ac88393a6c2024cf023e220bd097abbb70638a529f7f4c164803';
+  lic RECORD;
 BEGIN
   IF encode(digest(p_admin_key, 'sha256'), 'hex') <> ADMIN_HASH THEN
     RETURN json_build_object('success', false, 'reason', 'unauthorized');
   END IF;
 
-  UPDATE license_codes
-  SET recipient = p_recipient
-  WHERE code = p_code;
-
+  SELECT * INTO lic FROM license_codes WHERE code = p_code FOR UPDATE;
   IF NOT FOUND THEN
     RETURN json_build_object('success', false, 'reason', 'invalid_code');
   END IF;
 
-  RETURN json_build_object('success', true, 'reason', 'updated');
+  IF lic.status = 'active' THEN
+    RETURN json_build_object('success', false, 'reason', 'already_active');
+  END IF;
+
+  UPDATE license_codes SET status = 'active' WHERE code = p_code;
+
+  INSERT INTO license_audit_log (license_code, action, admin_user, old_device, new_device)
+  VALUES (p_code, 'REACTIVATE', '', lic.used_by, lic.used_by);
+
+  RETURN json_build_object('success', true, 'reason', 'reactivated');
+END;
+$$;
+
+-- ============================================================
+-- 12. RPC: admin_delete_unused_code — Hapus kode belum dipakai
+-- ============================================================
+CREATE OR REPLACE FUNCTION admin_delete_unused_code(
+  p_code TEXT,
+  p_admin_key TEXT
+)
+RETURNS JSON
+LANGUAGE plpgsql
+SECURITY DEFINER
+AS $$
+DECLARE
+  ADMIN_HASH TEXT := '3f235be78e11ac88393a6c2024cf023e220bd097abbb70638a529f7f4c164803';
+  lic RECORD;
+BEGIN
+  IF encode(digest(p_admin_key, 'sha256'), 'hex') <> ADMIN_HASH THEN
+    RETURN json_build_object('success', false, 'reason', 'unauthorized');
+  END IF;
+
+  SELECT * INTO lic FROM license_codes WHERE code = p_code FOR UPDATE;
+  IF NOT FOUND THEN
+    RETURN json_build_object('success', false, 'reason', 'invalid_code');
+  END IF;
+
+  IF lic.used_by IS NOT NULL THEN
+    RETURN json_build_object('success', false, 'reason', 'already_used');
+  END IF;
+
+  INSERT INTO license_audit_log (license_code, action, admin_user)
+  VALUES (p_code, 'DELETE', '');
+
+  DELETE FROM license_codes WHERE code = p_code;
+
+  RETURN json_build_object('success', true, 'reason', 'deleted');
+END;
+$$;
+
+-- ============================================================
+-- 13. RPC: admin_batch_create_codes — Buat multiple kode sekaligus
+-- ============================================================
+CREATE OR REPLACE FUNCTION admin_batch_create_codes(
+  p_count INT,
+  p_recipient TEXT DEFAULT '',
+  p_admin_key TEXT
+)
+RETURNS JSON
+LANGUAGE plpgsql
+SECURITY DEFINER
+AS $$
+DECLARE
+  ADMIN_HASH TEXT := '3f235be78e11ac88393a6c2024cf023e220bd097abbb70638a529f7f4c164803';
+  ch TEXT := 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+  p1 TEXT; p2 TEXT; p3 TEXT;
+  new_code TEXT;
+  exists INT;
+  result TEXT[] := '{}';
+  i INT;
+BEGIN
+  IF encode(digest(p_admin_key, 'sha256'), 'hex') <> ADMIN_HASH THEN
+    RETURN json_build_object('success', false, 'reason', 'unauthorized');
+  END IF;
+
+  IF p_count < 1 OR p_count > 100 THEN
+    RETURN json_build_object('success', false, 'reason', 'invalid_count');
+  END IF;
+
+  FOR i IN 1..p_count LOOP
+    LOOP
+      p1 := '';
+      FOR j IN 1..4 LOOP p1 := p1 || substr(ch, 1 + floor(random() * length(ch))::INT, 1); END LOOP;
+      p2 := '';
+      FOR j IN 1..4 LOOP p2 := p2 || substr(ch, 1 + floor(random() * length(ch))::INT, 1); END LOOP;
+      p3 := '';
+      FOR j IN 1..4 LOOP p3 := p3 || substr(ch, 1 + floor(random() * length(ch))::INT, 1); END LOOP;
+      new_code := 'PKKM-' || p1 || '-' || p2 || '-' || p3;
+      SELECT COUNT(*) INTO exists FROM license_codes WHERE code = new_code;
+      EXIT WHEN exists = 0;
+    END LOOP;
+    INSERT INTO license_codes (code, status, recipient, created_by) VALUES (new_code, 'active', p_recipient, 'admin');
+    result := array_append(result, new_code);
+  END LOOP;
+
+  INSERT INTO license_audit_log (license_code, action, admin_user, detail)
+  VALUES(result[1], 'CREATE', '', 'Batch ' || p_count || ' codes');
+
+  RETURN json_build_object('success', true, 'codes', result);
+END;
+$$;
+
+-- ============================================================
+-- 14. RPC: admin_get_stats — Statistik dashboard
+-- ============================================================
+CREATE OR REPLACE FUNCTION admin_get_stats(
+  p_admin_key TEXT
+)
+RETURNS JSON
+LANGUAGE plpgsql
+SECURITY DEFINER
+AS $$
+DECLARE
+  ADMIN_HASH TEXT := '3f235be78e11ac88393a6c2024cf023e220bd097abbb70638a529f7f4c164803';
+  total INT; unused INT; used INT; revoked INT;
+BEGIN
+  IF encode(digest(p_admin_key, 'sha256'), 'hex') <> ADMIN_HASH THEN
+    RETURN json_build_object('success', false, 'reason', 'unauthorized');
+  END IF;
+
+  SELECT COUNT(*) INTO total FROM license_codes;
+  SELECT COUNT(*) INTO unused FROM license_codes WHERE used_by IS NULL;
+  SELECT COUNT(*) INTO used FROM license_codes WHERE used_by IS NOT NULL;
+  SELECT COUNT(*) INTO revoked FROM license_codes WHERE status = 'revoked';
+
+  RETURN json_build_object('success', true, 'total', total, 'unused', unused, 'used', used, 'revoked', revoked);
+END;
+$$;
+
+-- ============================================================
+-- 15. RPC: admin_get_audit_log — Lihat audit log
+-- ============================================================
+CREATE OR REPLACE FUNCTION admin_get_audit_log(
+  p_admin_key TEXT,
+  p_limit INT DEFAULT 50
+)
+RETURNS JSON
+LANGUAGE plpgsql
+SECURITY DEFINER
+AS $$
+DECLARE
+  ADMIN_HASH TEXT := '3f235be78e11ac88393a6c2024cf023e220bd097abbb70638a529f7f4c164803';
+  result JSON;
+BEGIN
+  IF encode(digest(p_admin_key, 'sha256'), 'hex') <> ADMIN_HASH THEN
+    RETURN json_build_object('success', false, 'reason', 'unauthorized');
+  END IF;
+
+  SELECT COALESCE(json_agg(row_to_json(t) ORDER BY t.created_at DESC), '[]'::json)
+  INTO result
+  FROM (
+    SELECT id, license_code, action, admin_user, old_device, new_device, detail, created_at
+    FROM license_audit_log
+    LIMIT p_limit
+  ) t;
+
+  RETURN json_build_object('success', true, 'logs', result);
 END;
 $$;

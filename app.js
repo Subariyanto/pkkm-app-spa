@@ -260,6 +260,12 @@ function syncAuthUI() {
       }
     });
   }
+  // Show/hide admin menu — cek sessionStorage admin key (bukan localStorage role)
+  const adminNav = document.getElementById('navAdminAktivasi');
+  if (adminNav) {
+    const isAdmin = !!sessionStorage.getItem('pkkm_admin_key');
+    adminNav.style.display = isAdmin ? '' : 'none';
+  }
 }
 
 // === Router ====================================================
@@ -3010,6 +3016,11 @@ route('#/pengaturan', (root) => {
 route('#/lisensi', (root) => {
   if (typeof LIC !== 'undefined' && LIC.renderPage) LIC.renderPage(root);
   else root.innerHTML = '<div class="alert alert-warning">Modul lisensi belum termuat. Refresh halaman.</div>';
+});
+
+route('#/admin/aktivasi', (root) => {
+  if (typeof AdminLicense !== 'undefined' && AdminLicense.renderPage) AdminLicense.renderPage(root);
+  else root.innerHTML = '<div class="alert alert-warning">Modul admin belum termuat. Refresh halaman.</div>';
 });
 
 $('#appVersionLabel').textContent = `v${APP_VERSION}`;
