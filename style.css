@@ -36,10 +36,20 @@ body {
   overflow: visible !important;
 }
 .pkkm-nav .dropdown-menu {
+  position: absolute !important;
   z-index: 1050;
+  box-shadow: 0 8px 24px rgba(0,0,0,.15);
+  border-radius: 10px;
+  border: 1px solid #eef2f0;
+  padding: .5rem;
 }
-.pkkm-nav .nav-item.dropdown {
-  position: static;
+.pkkm-nav .dropdown-item {
+  border-radius: 6px;
+  padding: .5rem .75rem;
+  font-size: .85rem;
+}
+.pkkm-nav .dropdown-item:hover {
+  background: #f0f7f2;
 }
 .pkkm-nav-list .nav-link {
   font-size: .82rem;
