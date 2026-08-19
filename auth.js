@@ -32,8 +32,8 @@
   // Secret Salt untuk Offline Checksum Kode Aktivasi
   const ACTIVATION_SALT = 'kbc-pokjawasmad-jember-love-2026';
 
-  // Master Code untuk Admin Bypass / Men-generate Kode Aktivasi
-  const ADMIN_MASTER_CODE = 'POKJAWAS-JEMBER-SUPER-2026';
+  // TAHAP 2: Tidak ada master code di frontend. Aktivasi via Supabase RPC saja.
+  // Admin key tidak disimpan di frontend (hanya di session, diketik user).
 
   // --- CRYPTO UTILS ---
   async function sha256(text) {
@@ -99,21 +99,26 @@
 
   async function verifyActivationCode(code) {
     const cleanCode = code.trim().toUpperCase();
-    if (cleanCode === ADMIN_MASTER_CODE) return true; // Master code bypass
 
-    // Kode FULL-XXXX-XXXX-XXXX dari Supabase (license.js)
+    // TAHAP 2: Semua kode harus diverifikasi via Supabase RPC. Tidak ada bypass.
+    if (!window.SupabaseSync) return 'network_error';
+
+    // Kode FULL-XXXX-XXXX-XXXX → verifikasi via RPC
     if (cleanCode.startsWith('FULL-')) {
-      // Master code lisensi — lokal bypass
-      if (cleanCode === 'FULL-PKKM-POKJAWAS-2026') return true;
-      if (!window.SupabaseSync) return false; // Tidak ada modul sync
       try {
-        const v = await window.SupabaseSync.isCodeValid(cleanCode);
-        if (v.valid === false) return 'used'; // sudah dipakai / dicabut
-        if (v.valid === null) return true; // offline — allow, claim nanti
-        return true;
+        const deviceId = getDeviceId();
+        const v = await window.SupabaseSync.verifyLicense(cleanCode, deviceId);
+        if (v.valid === true) return true; // same_device atau masih available
+        if (v.valid === false) {
+          if (v.reason === 'other_device' || v.reason === 'inactive') return 'used';
+          if (v.reason === 'invalid_code') return false;
+          if (v.reason === 'not_claimed') return true; // belum di-claim, bisa dipakai
+        }
+        // network error → FAIL CLOSED (tidak boleh true)
+        return 'network_error';
       } catch (e) {
-        console.warn('[verifyActivationCode] SupabaseSync error:', e.message);
-        return false;
+        console.warn('[verifyActivationCode] RPC error:', e.message);
+        return 'network_error';
       }
     }
 
@@ -125,19 +130,7 @@
     const expected = fnv1aHash(rand + ':' + ACTIVATION_SALT).substring(0, 4).toUpperCase();
     if (checksum !== expected) return false;
 
-    // Cross-device check: kode sudah dipakai di device lain?
-    if (cleanCode !== TRIAL_CODE && window.SupabaseSync && typeof window.SupabaseSync.isCodeUsed === 'function') {
-      try {
-        const used = await window.SupabaseSync.isCodeUsed(cleanCode);
-        if (used) {
-          console.warn('[verifyActivationCode] kode sudah dipakai di device lain:', cleanCode);
-          return 'used';
-        }
-      } catch (e) {
-        console.warn('[verifyActivationCode] isCodeUsed error:', e.message);
-      }
-    }
-
+    // Format lama: cek hash lokal (offline format)
     return true;
   }
 
@@ -636,31 +629,9 @@
       const storedUser = localStorage.getItem(KEY_USER_USERNAME);
       const storedPassHash = localStorage.getItem(KEY_USER_PASSWORD_HASH);
 
-      // Cek kredensial Admin (Ketua Pokjawas) — bisa login dari mana saja
-      const ADMIN_USER = 'subariyanto';
-      const ADMIN_PASS = '@riyant1970';
-      if (username === ADMIN_USER && fnv1aHash(password) === fnv1aHash(ADMIN_PASS)) {
-        const devId = getDeviceId();
-        const binding = fnv1aHash(devId + ':' + ADMIN_MASTER_CODE);
-        localStorage.setItem(KEY_ACTIVATED, 'true');
-        localStorage.setItem(KEY_ACTIVATION_CODE, ADMIN_MASTER_CODE);
-        localStorage.setItem(KEY_DEVICE_BINDING, binding);
-        localStorage.setItem(KEY_USER_ROLE, 'admin');
-        localStorage.setItem(KEY_USER_USERNAME, ADMIN_USER);
-        localStorage.setItem(KEY_USER_PASSWORD_HASH, fnv1aHash(ADMIN_PASS));
-        localStorage.setItem(KEY_USER_FULLNAME, 'Subariyanto, S.Pd, M.Pd.I.');
-        localStorage.setItem(KEY_USER_MADRASAH, 'Pokjawas Jember');
-        localStorage.removeItem(KEY_TRIAL_START);
-        // Sync lisensi ke license.js (admin = full)
-        if (window.LIC && typeof window.LIC.redeem === 'function') {
-          try { window.LIC.redeem(ADMIN_MASTER_CODE).catch(function(e){ console.warn('[admin login] LIC.redeem failed:', e.message); }); } catch (e) { console.warn('[admin login] LIC.redeem failed:', e.message); }
-        }
-        sessionStorage.setItem(KEY_LOGGED_IN, 'true');
-        location.hash = '#/';
-        overlay.remove();
-        init().then(() => { if (window.rebuildShell) window.rebuildShell(); if (window.render) window.render(); });
-        return;
-      }
+      // TAHAP 2: Tidak ada bypass admin. Semua login pakai akun terdaftar.
+      // Admin (Ketua Pokjawas) sudah registrasi dengan kode aktivasi seperti pengawas lainnya.
+      // Admin panel di halaman lisensi pakai Admin Key terpisah (diketik user, tidak persist).
 
       if (username !== storedUser || fnv1aHash(password) !== storedPassHash) {
         errEl.textContent = 'Username atau Password salah!';
@@ -1279,7 +1250,6 @@
     generateActivationCode, verifyActivationCode,
     viewPengaturanPIN,
     escapeHtml,
-    ADMIN_MASTER_CODE,
     TRIAL_CODE,
     isTrial, isTrialExpired, getTrialDaysLeft, upgradeFromTrial,
     listActivationCodes,

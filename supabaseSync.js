@@ -1,13 +1,15 @@
-// supabaseSync.js - Cross-device license sync via Supabase REST API
-// No SDK needed — direct fetch to Supabase REST endpoints.
+// supabaseSync.js - Server-side license management via Supabase RPC
+// TAHAP 2: Server = Source of Truth. Tidak ada akses langsung ke tabel.
+// Semua operasi via RPC (SECURITY DEFINER) yang bypass RLS.
 (function () {
   'use strict';
 
   var SUPABASE_URL = 'https://jnpstfyexmflbnkwxoqt.supabase.co';
   var SUPABASE_ANON_KEY = 'sb_publishable_y2QVBiY1uEIBPzMgBxIoag_a3d4E7ra';
-  var TABLE = 'license_codes';
-  var TIMEOUT_MS = 8000;
+  var TIMEOUT_MS = 10000;
 
+  // Admin key — tidak disimpan di frontend.
+  // Hanya diketik user saat akses admin (tidak persist).
   function timeoutFetch(url, opts, ms) {
     return Promise.race([
       fetch(url, opts),
@@ -17,144 +19,225 @@
     ]);
   }
 
-  async function supabaseRequest(method, path, body) {
-    var url = SUPABASE_URL + '/rest/v1' + path;
+  // Call Supabase RPC function
+  async function callRpc(fnName, params) {
+    var url = SUPABASE_URL + '/rest/v1/rpc/' + fnName;
     var headers = {
       'apikey': SUPABASE_ANON_KEY,
       'Authorization': 'Bearer ' + SUPABASE_ANON_KEY,
       'Content-Type': 'application/json',
     };
-    if (body) headers['Prefer'] = 'return=representation';
     var res = await timeoutFetch(url, {
-      method: method,
+      method: 'POST',
       headers: headers,
-      body: body ? JSON.stringify(body) : undefined,
+      body: JSON.stringify(params || {}),
     }, TIMEOUT_MS);
     if (!res.ok) {
       var text = await res.text();
-      throw new Error('Supabase ' + res.status + ': ' + text);
+      throw new Error('RPC ' + fnName + ' failed: ' + res.status + ' ' + text);
     }
     return res.json();
   }
 
-  // Check if code exists and is available (not used, not revoked)
-  async function isCodeValid(code) {
-    try {
-      var data = await supabaseRequest('GET', '/' + TABLE + '?code=eq.' + encodeURIComponent(code) + '&limit=1');
-      if (!data || data.length === 0) return { valid: false, reason: 'Kode tidak ditemukan di server.' };
-      var row = data[0];
-      if (row.revoked) return { valid: false, reason: 'Kode telah dicabut admin.' };
-      if (row.used_by) return { valid: false, reason: 'Kode sudah digunakan di perangkat lain.' };
-      return { valid: true, row: row };
-    } catch (e) {
-      console.warn('[SupabaseSync] isCodeValid error:', e.message);
-      return { valid: null, reason: 'Tidak dapat terhubung ke server (offline). Coba lagi nanti.' };
+  // Direct table SELECT (only for public read — RLS allows SELECT only)
+  async function tableSelect(path) {
+    var url = SUPABASE_URL + '/rest/v1/' + path;
+    var headers = {
+      'apikey': SUPABASE_ANON_KEY,
+      'Authorization': 'Bearer ' + SUPABASE_ANON_KEY,
+    };
+    var res = await timeoutFetch(url, {
+      method: 'GET',
+      headers: headers,
+    }, TIMEOUT_MS);
+    if (!res.ok) {
+      var text = await res.text();
+      throw new Error('SELECT failed: ' + res.status + ' ' + text);
     }
+    return res.json();
   }
 
-  // Atomically claim a code for this device (only if not already used)
-  async function claimCode(code, deviceInfo) {
-    try {
-      var updates = {
-        used_by: deviceInfo.deviceId || 'unknown',
-        used_at: new Date().toISOString(),
-        device_info: deviceInfo.userAgent || '',
-      };
-      // Atomic claim: only update WHERE used_by IS NULL
-      var data = await supabaseRequest('PATCH', '/' + TABLE + '?code=eq.' + encodeURIComponent(code) + '&used_by=is.null', updates);
-      if (!data || data.length === 0) {
-        return { ok: false, reason: 'Kode sudah diklaim perangkat lain (race condition). Coba kode lain.' };
-      }
-      return { ok: true };
-    } catch (e) {
-      console.warn('[SupabaseSync] claimCode error:', e.message);
-      return { ok: null, reason: 'Tidak dapat terhubung ke server. Coba lagi nanti.' };
-    }
-  }
+  // ================================================================
+  // PUBLIC API (untuk license.js)
+  // ================================================================
 
-  // Generate + store a new code (admin)
-  async function generateCode(recipient) {
+  // Claim kode aktivasi — atomik via RPC
+  // Returns: { success: true/false, reason: 'claimed'|'same_device'|'other_device'|'invalid_code'|'inactive' }
+  async function claimLicense(code, deviceId, deviceInfo) {
     try {
-      var ch = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
-      var p = function (n) { var s = ''; for (var i = 0; i < n; i++) s += ch[Math.floor(Math.random() * ch.length)]; return s; };
-      var code = 'FULL-' + p(4) + '-' + p(4) + '-' + p(4);
-      var data = await supabaseRequest('POST', '/' + TABLE, {
-        code: code,
-        recipient: recipient || '',
-        created_by: 'admin',
-        revoked: false,
+      var result = await callRpc('claim_license', {
+        p_code: code,
+        p_device_id: deviceId,
+        p_device_info: deviceInfo || '',
       });
-      if (!data || data.length === 0) throw new Error('Insert gagal');
-      return { ok: true, code: code };
+      return result;
     } catch (e) {
-      console.warn('[SupabaseSync] generateCode error:', e.message);
-      return { ok: false, reason: e.message };
+      console.warn('[SupabaseSync] claimLicense error:', e.message);
+      return { success: null, reason: 'network_error' };
     }
   }
 
-  // List all codes (admin)
-  async function listCodes() {
+  // Verifikasi lisensi untuk device ini — via RPC
+  // Returns: { valid: true/false, reason: 'same_device'|'other_device'|'invalid_code'|'inactive'|'not_claimed' }
+  async function verifyLicense(code, deviceId) {
     try {
-      var data = await supabaseRequest('GET', '/' + TABLE + '?order=created_at.desc');
-      return data || [];
+      var result = await callRpc('verify_license', {
+        p_code: code,
+        p_device_id: deviceId,
+      });
+      return result;
     } catch (e) {
-      console.warn('[SupabaseSync] listCodes error:', e.message);
-      return [];
+      console.warn('[SupabaseSync] verifyLicense error:', e.message);
+      return { valid: null, reason: 'network_error' };
     }
   }
 
-  // Revoke a code (admin)
-  async function revokeCode(code) {
-    try {
-      await supabaseRequest('PATCH', '/' + TABLE + '?code=eq.' + encodeURIComponent(code), { revoked: true });
-      return { ok: true };
-    } catch (e) {
-      console.warn('[SupabaseSync] revokeCode error:', e.message);
-      return { ok: false, reason: e.message };
-    }
-  }
-
-  // Update recipient name (admin)
-  async function updateRecipient(code, recipient) {
-    try {
-      await supabaseRequest('PATCH', '/' + TABLE + '?code=eq.' + encodeURIComponent(code), { recipient: recipient });
-      return { ok: true };
-    } catch (e) {
-      console.warn('[SupabaseSync] updateRecipient error:', e.message);
-      return { ok: false, reason: e.message };
-    }
-  }
-
-  // Legacy compat for auth.js
-  async function isCodeUsed(code) {
-    var r = await isCodeValid(code);
-    return r.valid === false && r.reason.indexOf('sudah digunakan') >= 0;
-  }
-
-  // Legacy compat for auth.js reportActivation
-  async function reportActivation(info) {
-    return await claimCode(info.code, { deviceId: info.device_id, userAgent: info.device_info });
-  }
-
-  // Online check
+  // Cek koneksi online
   async function isOnline() {
     try {
-      var data = await supabaseRequest('GET', '/' + TABLE + '?limit=1');
+      await tableSelect('license_codes?limit=1');
       return true;
     } catch (e) {
       return false;
     }
   }
 
+  // ================================================================
+  // ADMIN API (butuh admin key — diketik user, tidak persist)
+  // ================================================================
+
+  // Admin generate kode baru
+  async function adminGenerateCode(adminKey, recipient) {
+    try {
+      var result = await callRpc('admin_generate_code', {
+        p_admin_key: adminKey,
+        p_recipient: recipient || '',
+      });
+      return result;
+    } catch (e) {
+      console.warn('[SupabaseSync] adminGenerateCode error:', e.message);
+      return { success: false, reason: 'network_error' };
+    }
+  }
+
+  // Admin list semua kode
+  async function adminListCodes(adminKey) {
+    try {
+      var result = await callRpc('admin_list_codes', {
+        p_admin_key: adminKey,
+      });
+      if (result && result.success) return result.codes || [];
+      return [];
+    } catch (e) {
+      console.warn('[SupabaseSync] adminListCodes error:', e.message);
+      return [];
+    }
+  }
+
+  // Admin revoke kode
+  async function adminRevokeCode(code, adminKey) {
+    try {
+      var result = await callRpc('admin_revoke_code', {
+        p_code: code,
+        p_admin_key: adminKey,
+      });
+      return result;
+    } catch (e) {
+      console.warn('[SupabaseSync] adminRevokeCode error:', e.message);
+      return { success: false, reason: 'network_error' };
+    }
+  }
+
+  // Admin reset device binding
+  async function adminResetDevice(code, adminKey) {
+    try {
+      var result = await callRpc('admin_reset_device', {
+        p_code: code,
+        p_admin_key: adminKey,
+      });
+      return result;
+    } catch (e) {
+      console.warn('[SupabaseSync] adminResetDevice error:', e.message);
+      return { success: false, reason: 'network_error' };
+    }
+  }
+
+  // Admin update recipient
+  async function adminUpdateRecipient(code, recipient, adminKey) {
+    try {
+      var result = await callRpc('admin_update_recipient', {
+        p_code: code,
+        p_recipient: recipient,
+        p_admin_key: adminKey,
+      });
+      return result;
+    } catch (e) {
+      console.warn('[SupabaseSync] adminUpdateRecipient error:', e.message);
+      return { success: false, reason: 'network_error' };
+    }
+  }
+
+  // ================================================================
+  // LEGACY COMPAT (deprecated — redirect ke API baru)
+  // ================================================================
+  async function isCodeValid(code) {
+    var deviceId = localStorage.getItem('pkkm_v1_device_id') || 'unknown';
+    var v = await verifyLicense(code, deviceId);
+    if (v.valid === true) return { valid: true, row: { used_by: deviceId } };
+    if (v.valid === false) return { valid: false, reason: v.reason };
+    return { valid: null, reason: 'network_error' };
+  }
+
+  async function claimCode(code, deviceInfo) {
+    var r = await claimLicense(code, deviceInfo.deviceId || 'unknown', deviceInfo.userAgent || '');
+    if (r.success === true) return { ok: true };
+    if (r.success === false) return { ok: false, reason: r.reason };
+    return { ok: null, reason: 'network_error' };
+  }
+
+  async function isCodeUsed(code) {
+    var deviceId = localStorage.getItem('pkkm_v1_device_id') || 'unknown';
+    var v = await verifyLicense(code, deviceId);
+    return v.reason === 'other_device';
+  }
+
+  async function reportActivation(info) {
+    return await claimCode(info.code, { deviceId: info.device_id, userAgent: info.device_info });
+  }
+
+  // Public API
   window.SupabaseSync = {
+    // Public
+    claimLicense: claimLicense,
+    verifyLicense: verifyLicense,
+    isOnline: isOnline,
+    // Admin
+    adminGenerateCode: adminGenerateCode,
+    adminListCodes: adminListCodes,
+    adminRevokeCode: adminRevokeCode,
+    adminResetDevice: adminResetDevice,
+    adminUpdateRecipient: adminUpdateRecipient,
+    // Legacy compat
     isCodeValid: isCodeValid,
     claimCode: claimCode,
-    generateCode: generateCode,
-    listCodes: listCodes,
-    revokeCode: revokeCode,
-    updateRecipient: updateRecipient,
     isCodeUsed: isCodeUsed,
     reportActivation: reportActivation,
-    isOnline: isOnline,
+    // Deprecated old admin functions (redirect ke admin API)
+    generateCode: function (recipient) {
+      console.warn('[SupabaseSync] generateCode deprecated, use adminGenerateCode');
+      return { ok: false, reason: 'Deprecated. Admin key required.' };
+    },
+    listCodes: function () {
+      console.warn('[SupabaseSync] listCodes deprecated, use adminListCodes');
+      return [];
+    },
+    revokeCode: function () {
+      console.warn('[SupabaseSync] revokeCode deprecated, use adminRevokeCode');
+      return { ok: false, reason: 'Deprecated. Admin key required.' };
+    },
+    updateRecipient: function () {
+      console.warn('[SupabaseSync] updateRecipient deprecated, use adminUpdateRecipient');
+      return { ok: false, reason: 'Deprecated. Admin key required.' };
+    },
   };
 })();
