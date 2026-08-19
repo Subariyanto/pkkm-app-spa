@@ -260,12 +260,12 @@ function syncAuthUI() {
       }
     });
   }
-  // Show/hide admin menu — cek sessionStorage admin key (bukan localStorage role)
+  // Show/hide admin-only menus — cek sessionStorage admin key (bukan localStorage role)
+  const isAdmin = !!sessionStorage.getItem('pkkm_admin_key');
   const adminNav = document.getElementById('navAdminAktivasi');
-  if (adminNav) {
-    const isAdmin = !!sessionStorage.getItem('pkkm_admin_key');
-    adminNav.style.display = isAdmin ? '' : 'none';
-  }
+  if (adminNav) adminNav.style.display = isAdmin ? '' : 'none';
+  const lisensiNav = document.getElementById('navLisensi');
+  if (lisensiNav) lisensiNav.style.display = isAdmin ? '' : 'none';
 }
 
 // === Router ====================================================
