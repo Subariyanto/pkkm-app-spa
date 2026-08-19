@@ -413,8 +413,8 @@ $$;
 -- ============================================================
 CREATE OR REPLACE FUNCTION admin_batch_create_codes(
   p_count INT,
-  p_recipient TEXT DEFAULT '',
-  p_admin_key TEXT
+  p_admin_key TEXT,
+  p_recipient TEXT DEFAULT ''
 )
 RETURNS JSON
 LANGUAGE plpgsql
