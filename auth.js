@@ -100,6 +100,24 @@
   async function verifyActivationCode(code) {
     const cleanCode = code.trim().toUpperCase();
     if (cleanCode === ADMIN_MASTER_CODE) return true; // Master code bypass
+
+    // Kode FULL-XXXX-XXXX-XXXX dari Supabase (license.js)
+    if (cleanCode.startsWith('FULL-')) {
+      // Master code lisensi — lokal bypass
+      if (cleanCode === 'FULL-PKKM-POKJAWAS-2026') return true;
+      if (!window.SupabaseSync) return false; // Tidak ada modul sync
+      try {
+        const v = await window.SupabaseSync.isCodeValid(cleanCode);
+        if (v.valid === false) return 'used'; // sudah dipakai / dicabut
+        if (v.valid === null) return true; // offline — allow, claim nanti
+        return true;
+      } catch (e) {
+        console.warn('[verifyActivationCode] SupabaseSync error:', e.message);
+        return false;
+      }
+    }
+
+    // Kode PKKM-KBC-XXXXXXXX-XXXX (format lama, lokal hash)
     const match = cleanCode.match(/^PKKM-KBC-([0-9A-F]{8})-([0-9A-F]{4})$/);
     if (!match) return false;
     const rand = match[1];
@@ -108,7 +126,6 @@
     if (checksum !== expected) return false;
 
     // Cross-device check: kode sudah dipakai di device lain?
-    // Trial code dikecualikan (bukan kode random).
     if (cleanCode !== TRIAL_CODE && window.SupabaseSync && typeof window.SupabaseSync.isCodeUsed === 'function') {
       try {
         const used = await window.SupabaseSync.isCodeUsed(cleanCode);
@@ -146,10 +163,27 @@
 
   async function upgradeFromTrial(code) {
     if (!isTrial()) return { ok: false, msg: 'Akun ini bukan akun trial.' };
+    const cleanCode = code.trim().toUpperCase();
 
-    const v = await verifyActivationCode(code);
+    const v = await verifyActivationCode(cleanCode);
     if (v === false) return { ok: false, msg: 'Kode aktivasi tidak valid!' };
     if (v === 'used') return { ok: false, msg: 'Kode aktivasi sudah digunakan di perangkat lain. Hubungi Admin/Ketua Pokjawas.' };
+
+    // Claim kode FULL-* ke Supabase (atomic, cross-device)
+    if (cleanCode.startsWith('FULL-') && cleanCode !== 'FULL-PKKM-POKJAWAS-2026' && window.SupabaseSync) {
+      try {
+        const claim = await window.SupabaseSync.claimCode(cleanCode, {
+          deviceId: getDeviceId(),
+          userAgent: navigator.userAgent || ''
+        });
+        if (claim.ok === false) {
+          return { ok: false, msg: 'Kode sudah digunakan di perangkat lain. Hubungi Admin/Ketua Pokjawas.' };
+        }
+      } catch (e) {
+        console.warn('[upgradeFromTrial] claimCode failed:', e.message);
+        // Lanjutkan — best-effort, sinkronisasi nanti
+      }
+    }
 
     // Hapus key trial, set aktivasi penuh
     localStorage.removeItem(KEY_TRIAL_START);
@@ -167,21 +201,9 @@
       localStorage.setItem(KEY_USER_ROLE, 'pengawas');
     }
 
-    // Report aktivasi ke Supabase (cross-device relay). Best-effort.
-    if (window.SupabaseSync && typeof window.SupabaseSync.reportActivation === 'function') {
-      try {
-        await window.SupabaseSync.reportActivation({
-          code: code,
-          nama: fullname,
-          username: username,
-          madrasah: madrasah,
-          role: 'pengawas',
-          device_id: devId,
-          device_info: navigator.userAgent || ''
-        });
-      } catch (e) {
-        console.warn('[upgradeFromTrial] reportActivation failed:', e.message);
-      }
+    // Sync lisensi ke license.js
+    if (window.LIC && typeof window.LIC.redeem === 'function') {
+      try { await window.LIC.redeem(code); } catch (e) {}
     }
 
     return { ok: true, msg: 'Akun berhasil di-upgrade ke lisensi penuh!' };
@@ -311,7 +333,7 @@
         <div class="auth-err" id="auth-reg-err"></div>
         
         <div class="form-group">
-          <label>Kode Aktivasi (PKKM-KBC-XXXX)</label>
+          <label>Kode Aktivasi (FULL-XXXX / PPKM-KBC-XXXX)</label>
           <input id="reg-code" type="text" placeholder="Masukkan kode dari Admin/Ketua Pokjawas" autocomplete="off" style="text-transform: uppercase;">
         </div>
         
@@ -441,6 +463,22 @@
         codeValid = true;
       }
 
+      // Claim kode FULL-* ke Supabase (atomic, cross-device)
+      if (!isTrialCode && code.toUpperCase().startsWith('FULL-') && code.toUpperCase() !== 'FULL-PKKM-POKJAWAS-2026' && window.SupabaseSync) {
+        try {
+          const claim = await window.SupabaseSync.claimCode(code.toUpperCase(), {
+            deviceId: getDeviceId(),
+            userAgent: navigator.userAgent || ''
+          });
+          if (claim.ok === false) {
+            errEl.textContent = 'Kode sudah digunakan di perangkat lain. Hubungi Admin/Ketua Pokjawas.';
+            return;
+          }
+        } catch (e) {
+          console.warn('[register] claimCode failed:', e.message);
+        }
+      }
+
       // Generate Device Binding
       const devId = getDeviceId();
       const binding = fnv1aHash(devId + ':' + code);
@@ -456,6 +494,11 @@
       localStorage.setItem(KEY_USER_PASSWORD_HASH, passHash);
       localStorage.setItem(KEY_USER_FULLNAME, fullname);
       localStorage.setItem(KEY_USER_MADRASAH, madrasah);
+
+      // Sync lisensi ke license.js
+      if (window.LIC && typeof window.LIC.redeem === 'function') {
+        try { await window.LIC.redeem(code); } catch (e) {}
+      }
 
       // Report aktivasi ke Supabase (cross-device relay). Best-effort.
       if (!isTrialCode && window.SupabaseSync && typeof window.SupabaseSync.reportActivation === 'function') {
@@ -909,7 +952,7 @@
             ? '<p class="text-danger mb-3"><strong>⏰ Masa trial telah berakhir.</strong> Data Anda tetap tersimpan. Input kode aktivasi penuh untuk melanjutkan.</p>'
             : `<p class="mb-3">Sisa masa trial: <strong class="text-warning">${daysLeft} hari</strong>. Dokumen yang dicetak/ekspor memiliki watermark "TRIAL".</p>`}
           <div class="mb-2">
-            <label class="form-label small fw-bold">Kode Aktivasi Penuh (PKKM-KBC-XXXX)</label>
+            <label class="form-label small fw-bold">Kode Aktivasi Penuh (FULL-XXXX / PPKM-KBC-XXXX)</label>
             <input id="trial-upgrade-input" type="text" class="form-control" placeholder="Masukkan kode dari Pengawas" style="text-transform:uppercase;" autocomplete="off">
           </div>
           <div id="trial-upgrade-msg" class="small text-danger mb-2" style="min-height:1.2rem;"></div>
@@ -1090,7 +1133,7 @@
         </div>
         <div class="auth-err" id="auth-trial-err"></div>
         <div class="form-group">
-          <label>Kode Aktivasi Penuh (PKKM-KBC-XXXX)</label>
+          <label>Kode Aktivasi Penuh (FULL-XXXX / PPKM-KBC-XXXX)</label>
           <input id="trial-upgrade-code" type="text" placeholder="Masukkan kode dari Pengawas" autocomplete="off" style="text-transform: uppercase;">
         </div>
         <button class="btn-auth-submit" id="btn-trial-upgrade">Aktivasi Lisensi Penuh</button>
