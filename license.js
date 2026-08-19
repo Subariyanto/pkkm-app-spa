@@ -1,9 +1,9 @@
 // license.js - Trial system 5 hari + Kode FULL untuk Aplikasi PKKM
-// Pattern referensi: supervisi-pm-kbc-jember
+// v2.0: Cross-device license sync via Supabase (supabaseSync.js)
 (function () {
   'use strict';
   const KEY_LICENSE = 'pkkm_v1_license';
-  const KEY_CODES = 'pkkm_v1_activation_codes';
+  const KEY_CODES = 'pkkm_v1_activation_codes'; // local cache fallback
   const TRIAL_DAYS = 5;
   const TRIAL_MAX_PENILAIAN = 10;
   const MASTER_CODE = 'FULL-PKKM-POKJAWAS-2026';
@@ -22,11 +22,6 @@
   function setLicense(l) { save(KEY_LICENSE, l); }
   function getCodes() { return load(KEY_CODES, []); }
   function saveCodes(c) { save(KEY_CODES, c); }
-  function genCode() {
-    var ch = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
-    var p = function (n) { var s = ''; for (var i = 0; i < n; i++) s += ch[Math.floor(Math.random() * ch.length)]; return s; };
-    return 'FULL-' + p(4) + '-' + p(4) + '-' + p(4);
-  }
 
   function getStatus() {
     var l = getLicense();
@@ -56,22 +51,52 @@
     return true;
   }
 
-  function redeem(code) {
+  // === REDEEM (async — cek Supabase untuk kode generate) ===
+  // Master code: lokal bypass, tidak perlu Supabase.
+  // Kode generate (FULL-XXXX-XXXX-XXXX): cek + claim via Supabase.
+  async function redeem(code) {
     var c = String(code || '').trim().toUpperCase();
     if (!c) return { ok: false, reason: 'Kode kosong' };
+
+    // Master code — lokal, unlimited, tidak butuh Supabase
     if (c === MASTER_CODE) {
       setLicense({ tier: 'full', activatedAt: new Date().toISOString(), activatedWith: c });
       return { ok: true };
     }
-    var list = getCodes();
-    var idx = list.findIndex(function (x) { return x.code === c && !x.usedBy && !x.revoked; });
-    if (idx < 0) return { ok: false, reason: 'Kode tidak valid atau sudah dipakai' };
-    list[idx].usedBy = 'device';
-    list[idx].usedAt = new Date().toISOString();
-    saveCodes(list);
+
+    // Kode generate — validasi via Supabase
+    if (!window.SupabaseSync) {
+      return { ok: false, reason: 'Modul sync belum termuat. Refresh halaman.' };
+    }
+
+    var valid = await window.SupabaseSync.isCodeValid(c);
+    if (valid.valid === false) return { ok: false, reason: valid.reason };
+    if (valid.valid === null) {
+      // Offline / tidak bisa connect Supabase — cek local cache
+      var localList = getCodes();
+      var localIdx = localList.findIndex(function (x) { return x.code === c && !x.usedBy && !x.revoked; });
+      if (localIdx < 0) return { ok: false, reason: 'Offline & kode tidak ada di cache lokal. Hubungi admin.' };
+      localList[localIdx].usedBy = 'device-offline';
+      localList[localIdx].usedAt = new Date().toISOString();
+      saveCodes(localList);
+      setLicense({ tier: 'full', activatedAt: new Date().toISOString(), activatedWith: c });
+      return { ok: true, warning: 'Aktivasi offline (cache lokal). Saat online, kode akan di-sync ke server.' };
+    }
+
+    // Claim kode di Supabase (atomic)
+    var deviceId = localStorage.getItem('pkkm_v1_device_id') || 'unknown';
+    var claim = await window.SupabaseSync.claimCode(c, { deviceId: deviceId, userAgent: navigator.userAgent || '' });
+    if (claim.ok === false) return { ok: false, reason: claim.reason };
+    if (claim.ok === null) {
+      // Race: tidak bisa konfirmasi claim — tetap aktifkan lokal, sync nanti
+      setLicense({ tier: 'full', activatedAt: new Date().toISOString(), activatedWith: c });
+      return { ok: true, warning: 'Aktivasi tersimpan lokal. Sinkronisasi server tertunda.' };
+    }
+
     setLicense({ tier: 'full', activatedAt: new Date().toISOString(), activatedWith: c });
     return { ok: true };
   }
+
   function reset() {
     setLicense({ tier: 'trial', startedAt: new Date().toISOString(), trialExpiresAt: new Date(Date.now() + TRIAL_DAYS * 86400000).toISOString(), activatedWith: null });
   }
@@ -86,10 +111,25 @@
     return '<div class="alert ' + cls + ' py-2 px-3 mb-3 d-flex justify-content-between align-items-center flex-wrap gap-2" style="font-size:.85rem"><span>' + icon + ' ' + msg + '</span><a href="#/lisensi" class="btn btn-sm btn-primary">Aktivasi FULL</a></div>';
   }
 
-  function renderPage(root) {
+  // === RENDER PAGE (async — fetch kode dari Supabase) ===
+  async function renderPage(root) {
     var s = getStatus();
     var l = getLicense();
-    var codes = getCodes();
+
+    // Loading state
+    root.innerHTML = '<div class="text-center py-4"><div class="spinner-border text-primary"></div><div class="mt-2 text-muted small">Memuat data lisensi...</div></div>';
+
+    // Fetch codes from Supabase (fallback to local cache)
+    var codes = [];
+    if (window.SupabaseSync) {
+      codes = await window.SupabaseSync.listCodes();
+    }
+    if (!codes || codes.length === 0) {
+      codes = getCodes().map(function (c) {
+        return { code: c.code, recipient: c.recipient || '', used_by: c.usedBy || null, revoked: c.revoked || false, created_at: c.createdAt || '' };
+      });
+    }
+
     var html = '<div class="card shadow-sm mb-3"><div class="card-body">';
     html += '<h5 class="card-title">🔑 Lisensi / Aktivasi</h5>';
     html += '<div class="bg-light p-3 rounded mb-3" style="font-size:.9rem">';
@@ -108,19 +148,25 @@
 
     html += '<div class="card shadow-sm mb-3"><div class="card-body">';
     html += '<h5 class="card-title">🎟️ Generate Kode FULL (Admin)</h5>';
-    html += '<p class="text-muted small">Master code: <code>' + MASTER_CODE + '</code></p>';
+    html += '<p class="text-muted small">Master code: <code>' + MASTER_CODE + '</code> (lokal, unlimited)</p>';
+    html += '<p class="text-muted small">Kode generate disimpan di <b>Supabase</b> (cross-device, 1x pakai per perangkat).</p>';
     html += '<button class="btn btn-primary btn-sm me-1" id="btnGen1">+ 1 Kode</button>';
     html += '<button class="btn btn-outline-primary btn-sm" id="btnGen5">+ 5 Kode</button>';
+    html += ' <button class="btn btn-outline-secondary btn-sm" id="btnRefresh" title="Refresh dari server">🔄 Refresh</button>';
     if (codes.length === 0) html += '<p class="text-muted mt-3">Belum ada kode di-generate.</p>';
     else {
       html += '<table class="table table-sm mt-3" style="font-size:.85rem"><thead><tr><th>Kode</th><th>Penerima</th><th class="text-center">Status</th><th class="text-center">Aksi</th></tr></thead><tbody>';
-      codes.slice().reverse().forEach(function (c) {
+      codes.forEach(function (c) {
         var recipient = c.recipient || '';
         var safeCode = String(c.code).replace(/&/g, '&amp;').replace(/"/g, '&quot;');
-        html += '<tr><td><code>' + safeCode + '</code></td><td>' + (recipient ? '<span>' + recipient.replace(/</g, '&lt;') + '</span>' : '<span class="text-muted">Belum ditentukan</span>') + '</td><td class="text-center">' + (c.usedBy ? '✅ dipakai' : '🆕 baru') + '</td><td class="text-center text-nowrap">' +
-          '<button class="btn btn-sm btn-outline-secondary me-1" data-copy="' + safeCode + '" title="Copy kode">📋</button>' +
-          (!c.usedBy ? '<button class="btn btn-sm btn-outline-primary me-1" data-edit-recipient="' + safeCode + '" title="Edit penerima">✏️</button><button class="btn btn-sm btn-success me-1" data-activate-code="' + safeCode + '" title="Aktifkan di perangkat ini">🔓</button><button class="btn btn-sm btn-outline-danger" data-revoke="' + safeCode + '" title="Hapus">🗑</button>' : '') +
-          '</td></tr>';
+        var statusText = c.revoked ? '⛔ dicabut' : (c.used_by ? '✅ dipakai' : '🆕 baru');
+        var actions = '<button class="btn btn-sm btn-outline-secondary me-1" data-copy="' + safeCode + '" title="Copy kode">📋</button>';
+        if (!c.used_by && !c.revoked) {
+          actions += '<button class="btn btn-sm btn-outline-primary me-1" data-edit-recipient="' + safeCode + '" title="Edit penerima">✏️</button>';
+          actions += '<button class="btn btn-sm btn-success me-1" data-activate-code="' + safeCode + '" title="Aktifkan di perangkat ini">🔓</button>';
+          actions += '<button class="btn btn-sm btn-outline-danger" data-revoke="' + safeCode + '" title="Cabut">🗑</button>';
+        }
+        html += '<tr><td><code>' + safeCode + '</code></td><td>' + (recipient ? '<span>' + recipient.replace(/</g, '&lt;') + '</span>' : '<span class="text-muted">Belum ditentukan</span>') + '</td><td class="text-center">' + statusText + '</td><td class="text-center text-nowrap">' + actions + '</td></tr>';
       });
       html += '</tbody></table>';
     }
@@ -134,15 +180,20 @@
 
     root.innerHTML = html;
     var $ = function (sel) { return root.querySelector(sel); };
-    if ($('#btnRedeem')) $('#btnRedeem').addEventListener('click', function () {
+
+    if ($('#btnRedeem')) $('#btnRedeem').addEventListener('click', async function () {
+      var btn = this;
       var k = $('#redeemKode').value;
-      var r = redeem(k);
+      btn.disabled = true; btn.textContent = '⏳ Memeriksa...';
+      var r = await redeem(k);
+      btn.disabled = false; btn.textContent = '🔓 Aktifkan';
       if (!r.ok) { alert('❌ ' + r.reason); return; }
-      alert('✅ Aktivasi sukses! Sekarang FULL.');
+      alert('✅ Aktivasi sukses! Sekarang FULL.' + (r.warning ? '\n\n⚠️ ' + r.warning : ''));
       if (typeof navigate === 'function') navigate('#/lisensi'); else location.reload();
     });
     if ($('#btnGen1')) $('#btnGen1').addEventListener('click', function () { doGen(1, root); });
     if ($('#btnGen5')) $('#btnGen5').addEventListener('click', function () { doGen(5, root); });
+    if ($('#btnRefresh')) $('#btnRefresh').addEventListener('click', function () { renderPage(root); });
     if ($('#btnResetLic')) $('#btnResetLic').addEventListener('click', function () {
       if (!confirm('Reset lisensi ke TRIAL ' + TRIAL_DAYS + ' hari?')) return;
       reset();
@@ -156,43 +207,57 @@
       });
     });
     root.querySelectorAll('[data-edit-recipient]').forEach(function (btn) {
-      btn.addEventListener('click', function () {
+      btn.addEventListener('click', async function () {
         var code = btn.getAttribute('data-edit-recipient');
+        var recipient = prompt('Nama penerima kode aktivasi:', '');
+        if (recipient === null) return;
+        recipient = recipient.trim();
+        if (window.SupabaseSync) {
+          var r = await window.SupabaseSync.updateRecipient(code, recipient);
+          if (!r.ok) { alert('❌ Gagal update: ' + r.reason); return; }
+        }
+        // Update local cache too
         var list = getCodes();
         var item = list.find(function (x) { return x.code === code; });
-        if (!item) return;
-        var recipient = prompt('Nama penerima kode aktivasi:', item.recipient || '');
-        if (recipient === null) return;
-        item.recipient = recipient.trim();
-        saveCodes(list);
+        if (item) { item.recipient = recipient; saveCodes(list); }
         renderPage(root);
       });
     });
     root.querySelectorAll('[data-activate-code]').forEach(function (btn) {
-      btn.addEventListener('click', function () {
+      btn.addEventListener('click', async function () {
         var code = btn.getAttribute('data-activate-code');
         if (!confirm('Aktifkan kode ini pada perangkat/browser saat ini?')) return;
-        var result = redeem(code);
+        var result = await redeem(code);
         if (!result.ok) { alert('❌ ' + result.reason); return; }
-        alert('✅ Lisensi FULL berhasil diaktifkan pada perangkat ini.');
+        alert('✅ Lisensi FULL berhasil diaktifkan.' + (result.warning ? '\n\n⚠️ ' + result.warning : ''));
         renderPage(root);
       });
     });
     root.querySelectorAll('[data-revoke]').forEach(function (btn) {
-      btn.addEventListener('click', function () {
+      btn.addEventListener('click', async function () {
         var c = btn.getAttribute('data-revoke');
-        if (!confirm('Hapus kode ' + c + '?')) return;
+        if (!confirm('Cabut/hapus kode ' + c + '?')) return;
+        if (window.SupabaseSync) {
+          var r = await window.SupabaseSync.revokeCode(c);
+          if (!r.ok) { alert('❌ Gagal: ' + r.reason); return; }
+        }
         saveCodes(getCodes().filter(function (x) { return x.code !== c; }));
-        if (typeof navigate === 'function') navigate('#/lisensi'); else location.reload();
+        renderPage(root);
       });
     });
   }
-  function doGen(n, root) {
-    var list = getCodes();
+
+  async function doGen(n, root) {
+    if (!window.SupabaseSync) { alert('❌ Modul sync belum termuat.'); return; }
     var made = [];
-    for (var i = 0; i < n; i++) { var k = genCode(); list.push({ code: k, recipient: '', createdAt: new Date().toISOString() }); made.push(k); }
-    saveCodes(list);
-    alert('✅ ' + n + ' kode dibuat:\n\n' + made.join('\n'));
+    var failed = 0;
+    for (var i = 0; i < n; i++) {
+      var r = await window.SupabaseSync.generateCode('');
+      if (r.ok) made.push(r.code);
+      else failed++;
+    }
+    if (made.length) alert('✅ ' + made.length + ' kode dibuat di Supabase:\n\n' + made.join('\n'));
+    if (failed) alert('⚠️ ' + failed + ' kode gagal dibuat (mungkin duplikat, coba lagi).');
     renderPage(root);
   }
 
@@ -212,7 +277,6 @@
       Periode.__licWrapped = true;
     }
     if (typeof Penilaian !== 'undefined' && Penilaian && !Penilaian.__licWrapped) {
-      // PKKM membuat sesi melalui ensure/ensureRole, bukan create.
       var ensureName = typeof Penilaian.ensureRole === 'function' ? 'ensureRole' : (typeof Penilaian.ensure === 'function' ? 'ensure' : null);
       if (ensureName) {
         var ne = Penilaian[ensureName].bind(Penilaian);
@@ -231,7 +295,6 @@
     }
   }
 
-  // Try patching on load + small retries (defer scripts may not all be ready)
   function tryPatch(retries) {
     patchDb();
     if (retries > 0) setTimeout(function () { tryPatch(retries - 1); }, 100);
@@ -244,7 +307,6 @@
 
   // Public API
   window.LIC = { getStatus: getStatus, bannerHtml: bannerHtml, renderPage: renderPage, guard: guard, redeem: redeem, applyTrialPrintMark: function(){try{var s=getStatus();document.body.classList.toggle('is-trial-print', !!(s&&s.isTrial));}catch(e){}} };
-  // Auto-toggle watermark sebelum print + saat boot
   window.addEventListener('beforeprint', function(){try{window.LIC && window.LIC.applyTrialPrintMark && window.LIC.applyTrialPrintMark();}catch(e){}});
   document.addEventListener('DOMContentLoaded', function(){try{window.LIC && window.LIC.applyTrialPrintMark && window.LIC.applyTrialPrintMark();}catch(e){}});
 })();
