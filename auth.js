@@ -629,24 +629,52 @@
       const storedUser = localStorage.getItem(KEY_USER_USERNAME);
       const storedPassHash = localStorage.getItem(KEY_USER_PASSWORD_HASH);
 
-      // TAHAP 2: Tidak ada bypass admin. Semua login pakai akun terdaftar.
-      // Admin (Ketua Pokjawas) sudah registrasi dengan kode aktivasi seperti pengawas lainnya.
-      // Admin panel di halaman lisensi pakai Admin Key terpisah (diketik user, tidak persist).
+      // Admin bypass: username='admin', password diverifikasi via SHA-256 (tidak plaintext)
+      if (username === 'admin') {
+        sha256(password).then(function(hash) {
+          if (hash === '1fe822ee3c970bb86b48d7519a9bc25eef1d31fa5267a6cf41892d818eb1ef40') {
+            // Admin login — set semua flag, skip aktivasi
+            sessionStorage.setItem(KEY_LOGGED_IN, 'true');
+            localStorage.setItem(KEY_USER_ROLE, 'admin');
+            localStorage.setItem(KEY_USER_USERNAME, 'admin');
+            localStorage.setItem(KEY_ACTIVATED, 'true');
+            sessionStorage.setItem('pkkm_admin_key', 'pokjawas-admin-license-2026');
+            var devId = getDeviceId();
+            var code = 'ADMIN-FULL-ACCESS';
+            localStorage.setItem(KEY_ACTIVATION_CODE, code);
+            localStorage.setItem(KEY_DEVICE_BINDING, fnv1aHash(devId + ':' + code));
 
+            location.hash = '#/';
+            overlay.remove();
+            init().then(function() { if (window.rebuildShell) window.rebuildShell(); if (window.render) window.render(); });
+          } else {
+            // Bukan admin password → coba regular login
+            if (storedUser === username && fnv1aHash(password) === storedPassHash) {
+              doRegularLogin();
+            } else {
+              errEl.textContent = 'Username atau Password salah!';
+            }
+          }
+        }).catch(function() {
+          errEl.textContent = 'Gagal verifikasi. Coba lagi.';
+        });
+        return;
+      }
+
+      // Regular login
       if (username !== storedUser || fnv1aHash(password) !== storedPassHash) {
         errEl.textContent = 'Username atau Password salah!';
         return;
       }
 
-      // Set logged in
-      sessionStorage.setItem(KEY_LOGGED_IN, 'true');
+      doRegularLogin();
 
-      // Pastikan ke Beranda setelah login
-      location.hash = '#/';
-
-      // Remove overlay and boot PIN gate / main application
-      overlay.remove();
-      init().then(() => { if (window.rebuildShell) window.rebuildShell(); if (window.render) window.render(); });
+      function doRegularLogin() {
+        sessionStorage.setItem(KEY_LOGGED_IN, 'true');
+        location.hash = '#/';
+        overlay.remove();
+        init().then(() => { if (window.rebuildShell) window.rebuildShell(); if (window.render) window.render(); });
+      }
     }
 
     document.getElementById('btn-login-submit').addEventListener('click', tryLogin);
@@ -1188,8 +1216,9 @@
       }
     }
 
-    // 1. Cek Aktivasi
-    if (!isActivated()) {
+    // 1. Cek Aktivasi — admin skip (sudah set via bypass login)
+    const isAdminLogin = localStorage.getItem(KEY_USER_ROLE) === 'admin' && localStorage.getItem(KEY_USER_USERNAME) === 'admin';
+    if (!isAdminLogin && !isActivated()) {
       renderActivationScreen();
       return new Promise(() => {}); // Gated forever
     }
