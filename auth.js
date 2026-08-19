@@ -1251,6 +1251,17 @@
     // Lolos semua gate
     const overlay = document.getElementById('pkkm-auth-overlay');
     if (overlay) overlay.remove();
+
+    // Tampilkan tombol logout di navbar
+    const btnNavLogout = document.getElementById('btnNavLogout');
+    if (btnNavLogout) {
+      btnNavLogout.style.display = '';
+      btnNavLogout.onclick = function () {
+        if (confirm('Keluar dari aplikasi? Layar akan terkunci.')) {
+          logout();
+        }
+      };
+    }
   }
 
   function logout() {
