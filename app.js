@@ -214,10 +214,52 @@ function openBuktiPreview(bukti) {
 
 
 function setActiveNav(hash) {
-  $$('#mainNav .nav-link').forEach(a => {
-    if (a.getAttribute('href') === hash) a.classList.add('active');
-    else a.classList.remove('active');
+  // Strip query string untuk matching
+  const routeHash = hash.split('?')[0];
+  // Parse query params untuk active menu matching
+  const queryString = hash.includes('?') ? hash.split('?').slice(1).join('?') : '';
+  const queryParams = new URLSearchParams(queryString);
+  const jenis = queryParams.get('jenis');
+
+  $$('#mainNav .nav-link, #mainNav .dropdown-item').forEach(a => {
+    a.classList.remove('active');
+    const href = a.getAttribute('href') || '';
+    // Match exact route
+    if (href === routeHash) {
+      a.classList.add('active');
+    }
+    // Match dengan query param untuk dropdown items
+    if (jenis && href.includes('jenis=' + jenis)) {
+      a.classList.add('active');
+      // Juga activate parent dropdown toggle
+      const parentDropdown = a.closest('.nav-item.dropdown');
+      if (parentDropdown) {
+        const toggle = parentDropdown.querySelector('.nav-link.dropdown-toggle');
+        if (toggle) toggle.classList.add('active');
+      }
+    }
   });
+}
+
+// === Auth UI Sync ==============================================
+// Pastikan tombol logout selalu tampil saat user login, tersembunyi saat belum login
+function syncAuthUI() {
+  const btn = document.getElementById('btnNavLogout');
+  if (!btn) return;
+  const loggedIn = (window.PKKMAuth && typeof window.PKKMAuth.isLoggedIn === 'function')
+    ? window.PKKMAuth.isLoggedIn()
+    : (sessionStorage.getItem('pkkm_v1_logged_in') === 'true');
+  btn.style.display = loggedIn ? '' : 'none';
+  if (loggedIn && !btn.dataset.bound) {
+    btn.dataset.bound = '1';
+    btn.addEventListener('click', function () {
+      if (confirm('Apakah Anda yakin ingin keluar dari aplikasi?')) {
+        if (window.PKKMAuth && typeof window.PKKMAuth.logout === 'function') {
+          window.PKKMAuth.logout();
+        }
+      }
+    });
+  }
 }
 
 // === Router ====================================================
@@ -238,7 +280,8 @@ async function render() {
   const hash = location.hash || '#/';
   const routeHash = hash.split('?')[0];
   const root = $('#appRoot');
-  setActiveNav(routeHash.split('/').slice(0,2).join('/'));
+  setActiveNav(routeHash);
+  syncAuthUI();
   for (const r of routes) {
     const m = routeHash.match(r.re);
     if (m) {
@@ -644,24 +687,44 @@ route('#/import', (root) => {
 
 // --- Penilaian: pilih kamad + periode --------------------------
 route('#/penilaian', (root) => {
+  // Parse query param jenis (tahunan / 4tahunan)
+  const hash = location.hash || '#/penilaian';
+  const queryString = hash.includes('?') ? hash.split('?').slice(1).join('?') : '';
+  const params = new URLSearchParams(queryString);
+  const jenis = params.get('jenis') || 'tahunan';
+  const isFourYear = jenis === '4tahunan';
+
   const kamadList = Kamad.list();
-  const periodeList = Periode.list();
+  const allPeriode = Periode.list();
+
+  // Filter periode berdasarkan jenis
+  // tahunan: tahun_1, tahun_2, tahun_3, formatif, sumatif
+  // 4tahunan: tahun_4
+  const periodeList = isFourYear
+    ? allPeriode.filter(p => p.type === 'tahun_4')
+    : allPeriode.filter(p => p.type !== 'tahun_4');
+
+  const judulHalaman = isFourYear
+    ? 'Penilaian Kinerja Kepala Madrasah 4 Tahunan'
+    : 'Penilaian Kinerja Kepala Madrasah Tahunan';
+
+  const judulIcon = isFourYear ? 'bi-calendar4-week' : 'bi-calendar3';
 
   root.innerHTML = `
     <div class="d-flex justify-content-between align-items-center mb-3">
-      <h5 class="mb-0"><i class="bi bi-clipboard-data"></i> Penilaian Kinerja</h5>
+      <h5 class="mb-0"><i class="bi ${judulIcon}"></i> ${escapeHTML(judulHalaman)}</h5>
       <div class="btn-group">
-        <button class="btn btn-sm btn-outline-primary" id="btnAddPeriode"><i class="bi bi-calendar-plus"></i> Periode Baru</button>
+        <button class="btn btn-sm btn-outline-primary" id="btnAddPeriode"><i class="bi bi-calendar-plus"></i> ${isFourYear ? '+ Buat Penilaian 4 Tahunan' : 'Periode Baru'}</button>
       </div>
     </div>
 
     <div class="row g-3">
       <div class="col-md-3">
         <div class="card h-100">
-          <div class="card-header py-2"><i class="bi bi-calendar3"></i> Periode</div>
+          <div class="card-header py-2"><i class="bi ${judulIcon}"></i> Periode ${isFourYear ? '(4 Tahunan)' : '(Tahunan)'}</div>
           <div class="card-body p-0">
             ${periodeList.length === 0
-              ? `<div class="text-center text-muted py-4 px-2"><span class="text-tiny">Belum ada periode.</span><br><button class="btn btn-sm btn-primary mt-2" id="btnAddPeriode2"><i class="bi bi-plus"></i> Buat Periode</button></div>`
+              ? `<div class="text-center text-muted py-4 px-2"><span class="text-tiny">${isFourYear ? 'Belum ada periode 4 Tahunan.' : 'Belum ada periode.'}</span><br><button class="btn btn-sm btn-primary mt-2" id="btnAddPeriode2"><i class="bi bi-plus"></i> ${isFourYear ? 'Buat Penilaian 4 Tahunan' : 'Buat Periode'}</button></div>`
               : `<ul class="list-group list-group-flush" id="periodeList">
                   ${periodeList.map(p => `
                     <li class="list-group-item d-flex justify-content-between align-items-start cursor-pointer py-2" data-periode="${p.id}">
@@ -757,7 +820,7 @@ route('#/penilaian', (root) => {
 
   $$('[data-action="open-penilaian"]').forEach(b => b.addEventListener('click', () => {
     const pid = selectedPeriodeId();
-    if (!pid) { toast('Buat periode dulu.', 'error'); return; }
+    if (!pid) { toast(isFourYear ? 'Buat periode 4 Tahunan dulu.' : 'Buat periode dulu.', 'error'); return; }
     const kid = Number(b.dataset.kamad);
     openPilihRoleModal(kid, pid);
   }));
@@ -780,7 +843,12 @@ route('#/penilaian', (root) => {
   function bindAdd(btn) {
     if (!btn) return;
     btn.addEventListener('click', () => {
-      openPeriodeModal();
+      // Untuk 4 tahunan, pre-set type=tahun_4
+      if (isFourYear) {
+        openPeriodeModal(null, { type: 'tahun_4' });
+      } else {
+        openPeriodeModal();
+      }
     });
   }
   bindAdd($('#btnAddPeriode'));
@@ -941,11 +1009,11 @@ function openPilihRoleModal(kamad_id, periode_id) {
   });
 }
 
-function openPeriodeModal(id) {
+function openPeriodeModal(id, preset) {
   const editMode = id != null;
   const existing = editMode ? Periode.get(id) : null;
   if (editMode && !existing) { toast('Periode tidak ditemukan.', 'error'); return; }
-  const def = existing || { tahun: new Date().getFullYear(), semester: '1', type: 'sumatif', label: '', tanggal_penilaian: nowLocal().slice(0,10) };
+  const def = existing || { tahun: new Date().getFullYear(), semester: '1', type: (preset?.type || 'sumatif'), label: '', tanggal_penilaian: nowLocal().slice(0,10) };
 
   const html = `
     <div class="modal fade" id="periodeModal" tabindex="-1">

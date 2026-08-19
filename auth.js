@@ -653,7 +653,7 @@
         localStorage.removeItem(KEY_TRIAL_START);
         // Sync lisensi ke license.js (admin = full)
         if (window.LIC && typeof window.LIC.redeem === 'function') {
-          try { await window.LIC.redeem(ADMIN_MASTER_CODE); } catch (e) { console.warn('[admin login] LIC.redeem failed:', e.message); }
+          try { window.LIC.redeem(ADMIN_MASTER_CODE).catch(function(e){ console.warn('[admin login] LIC.redeem failed:', e.message); }); } catch (e) { console.warn('[admin login] LIC.redeem failed:', e.message); }
         }
         sessionStorage.setItem(KEY_LOGGED_IN, 'true');
         location.hash = '#/';
