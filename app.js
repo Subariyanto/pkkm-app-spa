@@ -322,8 +322,8 @@ route('#/', (root) => {
   root.innerHTML = licBanner + `
     <div class="dash-hero">
       <i class="bi bi-mortarboard-fill dash-hero-icon"></i>
-      <h2>Apakah Madrasah</h2>
-      <p>Penilaian Kinerja Kepala Madrasah — Pokjawas Kemenag Kab. Jember</p>
+      <h2>Aplikasi PKKM</h2>
+      <p>Penilaian Kinerja Kepala Madrasah</p>
     </div>
 
     <div class="dash-stats">
@@ -399,8 +399,8 @@ route('#/', (root) => {
 route('#/kamad', (root) => {
   const list = Kamad.list();
   root.innerHTML = `
-    <div class="d-flex justify-content-between align-items-center mb-3">
-      <h5 class="mb-0"><i class="bi bi-people"></i> Data Kepala Madrasah</h5>
+    <div class="page-header">
+      <h5><i class="bi bi-people"></i> Data Kepala Madrasah</h5>
       <button class="btn btn-primary btn-sm" id="btnAddKamad"><i class="bi bi-plus-lg"></i> Tambah</button>
     </div>
     <div class="card">
@@ -459,9 +459,9 @@ route('#/kamad/:id', (root, params) => {
   if (!k) { root.innerHTML = `<div class="alert alert-warning">Kepala madrasah tidak ditemukan.</div>`; return; }
 
   root.innerHTML = `
-    <div class="d-flex justify-content-between align-items-center mb-3">
-      <h5 class="mb-0"><i class="bi bi-person-badge"></i> ${isNew ? 'Tambah' : 'Edit'} Kepala Madrasah</h5>
-      <a href="#/kamad" class="btn btn-sm btn-outline-secondary"><i class="bi bi-arrow-left"></i> Kembali</a>
+    <div class="page-header">
+      <h5><i class="bi bi-person-badge"></i> ${isNew ? 'Tambah' : 'Edit'} Kepala Madrasah</h5>
+      <a href="#/kamad" class="btn btn-sm btn-outline-light"><i class="bi bi-arrow-left"></i> Kembali</a>
     </div>
     <form id="kamadForm" class="card">
       <div class="card-body">
@@ -540,7 +540,7 @@ route('#/kamad/:id', (root, params) => {
 route('#/import', (root) => {
   const ringkas = window.PKKMTools.getRingkasanPkg();
   root.innerHTML = `
-    <h5 class="mb-3"><i class="bi bi-file-earmark-arrow-up"></i> Import Data &amp; Integrasi PKG</h5>
+    <div class="page-header"><h5><i class="bi bi-file-earmark-arrow-up"></i> Import Data &amp; Integrasi PKG</h5></div>
     <div class="row g-3">
       <div class="col-md-6">
         <div class="card h-100">
@@ -698,10 +698,10 @@ route('#/penilaian', (root) => {
   const judulIcon = isFourYear ? 'bi-calendar4-week' : 'bi-calendar3';
 
   root.innerHTML = `
-    <div class="d-flex justify-content-between align-items-center mb-3">
-      <h5 class="mb-0"><i class="bi ${judulIcon}"></i> ${escapeHTML(judulHalaman)}</h5>
+    <div class="page-header">
+      <h5><i class="bi ${judulIcon}"></i> ${escapeHTML(judulHalaman)}</h5>
       <div class="btn-group">
-        <button class="btn btn-sm btn-outline-primary" id="btnAddPeriode"><i class="bi bi-calendar-plus"></i> ${isFourYear ? '+ Buat Penilaian 4 Tahunan' : 'Periode Baru'}</button>
+        <button class="btn btn-sm btn-outline-light" id="btnAddPeriode"><i class="bi bi-calendar-plus"></i> ${isFourYear ? '+ Buat Penilaian 4 Tahunan' : 'Periode Baru'}</button>
       </div>
     </div>
 
@@ -1213,11 +1213,11 @@ route('#/penilaian/:kamadId/:periodeId/:role', (root, params) => {
 
   function fullRender() {
     root.innerHTML = `
-      <div class="d-flex justify-content-between align-items-center mb-2">
+      <div class="page-header">
         <div>
-          <h5 class="mb-0"><i class="bi bi-pencil-square"></i> Penilaian: ${escapeHTML(kamad.nama)}</h5>
-          <div class="text-tiny text-muted">${escapeHTML(kamad.nama_madrasah)} (${escapeHTML(kamad.jenjang||'-')}) &middot; ${escapeHTML(periode.label)}</div>
-          <div class="mt-1"><span class="badge bg-primary"><i class="bi bi-person-badge"></i> Penilai: ${escapeHTML(roleInfo.label||role)}</span> <span class="badge bg-light text-dark border ms-1">Instrumen: ${roleInfo.instrumen === 'gtk' ? 'Guru/Tendik &amp; Komite' : 'Pengawas'}</span></div>
+          <h5><i class="bi bi-pencil-square"></i> Penilaian: ${escapeHTML(kamad.nama)}</h5>
+          <div class="page-header-sub">${escapeHTML(kamad.nama_madrasah)} (${escapeHTML(kamad.jenjang||'-')}) &middot; ${escapeHTML(periode.label)}</div>
+          <div class="mt-1"><span class="badge bg-light text-dark"><i class="bi bi-person-badge"></i> Penilai: ${escapeHTML(roleInfo.label||role)}</span> <span class="badge bg-light text-dark border ms-1">Instrumen: ${roleInfo.instrumen === 'gtk' ? 'Guru/Tendik &amp; Komite' : 'Pengawas'}</span></div>
         </div>
         <div class="btn-group">
           <a href="#/penilaian" class="btn btn-sm btn-outline-secondary"><i class="bi bi-arrow-left"></i></a>
@@ -1470,8 +1470,8 @@ route('#/rekap', (root) => {
   });
 
   root.innerHTML = `
-    <div class="d-flex justify-content-between align-items-center mb-3 flex-wrap gap-2 no-print">
-      <h5 class="mb-0"><i class="bi bi-bar-chart"></i> Rekap Nilai</h5>
+    <div class="page-header flex-wrap gap-2 no-print">
+      <h5><i class="bi bi-bar-chart"></i> Rekap Nilai</h5>
       <div class="d-flex gap-2 align-items-center">
         <label class="text-tiny text-muted mb-0">Periode:</label>
         <select class="form-select form-select-sm" id="periodeSelect" style="min-width: 200px;">
@@ -1591,7 +1591,7 @@ route('#/cetak', (root) => {
   const periodeById = Object.fromEntries(periodeList.map(p => [p.id, p]));
 
   root.innerHTML = `
-    <h5 class="mb-3"><i class="bi bi-printer"></i> Cetak Laporan PKKM</h5>
+    <div class="page-header"><h5><i class="bi bi-printer"></i> Cetak Laporan PKKM</h5></div>
     <div class="card">
       <div class="card-body p-0">
         ${allPen.length === 0
@@ -1771,7 +1771,7 @@ route('#/laporan-lengkap', (root) => {
   }
 
   root.innerHTML = `
-    <h5 class="mb-3"><i class="bi bi-file-earmark-richtext"></i> Cetak Laporan Lengkap PKKM (per KKMA)</h5>
+    <div class="page-header"><h5><i class="bi bi-file-earmark-richtext"></i> Cetak Laporan Lengkap PKKM (per KKMA)</h5></div>
     <div class="alert alert-info text-tiny">
       Laporan lengkap dibuat oleh Pengawas Bina dan mencakup seluruh Kepala Madrasah pada satu KKMA dalam satu periode penilaian.
       Pilih KKMA dan periode di bawah ini.
@@ -1837,7 +1837,7 @@ route('#/agregat/:kamadId/:periodeId', (root, params) => {
   const agg = hitungNilaiAgregat(kamad.id, periode.id);
   if (!agg || !agg.sessions.length) {
     root.innerHTML = `
-      <h5 class="mb-3"><i class="bi bi-graph-up"></i> Rekap Agregat</h5>
+      <div class="page-header"><h5><i class="bi bi-graph-up"></i> Rekap Agregat</h5></div>
       <div class="alert alert-info">Belum ada penilaian untuk ${escapeHTML(kamad.nama)} di periode ${escapeHTML(periode.label)}.
         <a href="#/penilaian" class="btn btn-sm btn-primary ms-2">Mulai Penilaian</a>
       </div>`;
@@ -1851,10 +1851,10 @@ route('#/agregat/:kamadId/:periodeId', (root, params) => {
   const roleLabel = (code) => (ROLES.find(r => r.code === code)?.label || code);
 
   root.innerHTML = `
-    <div class="d-flex justify-content-between align-items-center mb-3">
+    <div class="page-header">
       <div>
-        <h5 class="mb-0"><i class="bi bi-graph-up"></i> Rekap Agregat Multi-Penilai</h5>
-        <div class="text-tiny text-muted">${escapeHTML(kamad.nama)} · ${escapeHTML(kamad.nama_madrasah||'-')} · ${escapeHTML(periode.label)}</div>
+        <h5><i class="bi bi-graph-up"></i> Rekap Agregat Multi-Penilai</h5>
+        <div class="page-header-sub">${escapeHTML(kamad.nama)} · ${escapeHTML(kamad.nama_madrasah||'-')} · ${escapeHTML(periode.label)}</div>
       </div>
       <a href="#/penilaian" class="btn btn-sm btn-outline-secondary"><i class="bi bi-arrow-left"></i> Kembali</a>
     </div>
@@ -2000,10 +2000,10 @@ route('#/riwayat/:kamadId', (root, params) => {
   }));
 
   root.innerHTML = `
-    <div class="d-flex justify-content-between align-items-center mb-3">
+    <div class="page-header">
       <div>
-        <h5 class="mb-0"><i class="bi bi-clock-history"></i> Riwayat Penilaian</h5>
-        <div class="text-tiny text-muted">${escapeHTML(kamad.nama)} — ${escapeHTML(kamad.nama_madrasah||'-')} (${escapeHTML(kamad.jenjang||'-')})${kamad.kkma ? ' · ' + escapeHTML(kamad.kkma) : ''}</div>
+        <h5><i class="bi bi-clock-history"></i> Riwayat Penilaian</h5>
+        <div class="page-header-sub">${escapeHTML(kamad.nama)} — ${escapeHTML(kamad.nama_madrasah||'-')} (${escapeHTML(kamad.jenjang||'-')})${kamad.kkma ? ' · ' + escapeHTML(kamad.kkma) : ''}</div>
       </div>
       <div class="btn-group">
         <a href="#/kamad/${kamad.id}" class="btn btn-sm btn-outline-secondary"><i class="bi bi-pencil"></i> Edit</a>
@@ -2112,8 +2112,8 @@ route('#/rekap-kkma', (root) => {
   }).sort((a,b) => a.kkma.localeCompare(b.kkma));
 
   root.innerHTML = `
-    <div class="d-flex justify-content-between align-items-center mb-3 flex-wrap gap-2 no-print">
-      <h5 class="mb-0"><i class="bi bi-diagram-3"></i> Rekap KKMA</h5>
+    <div class="page-header flex-wrap gap-2 no-print">
+      <h5><i class="bi bi-diagram-3"></i> Rekap KKMA</h5>
       <div class="d-flex gap-2 align-items-center">
         <label class="text-tiny text-muted mb-0">Periode:</label>
         <select class="form-select form-select-sm" id="periodeSelectKkma" style="min-width: 220px;">
@@ -2266,9 +2266,9 @@ route('#/rekap-kkma', (root) => {
 route('#/instrumen', (root) => {
   const totalInd = window.PKKM_TOTAL_INDIKATOR || 0;
   root.innerHTML = `
-    <div class="d-flex justify-content-between align-items-center mb-3">
-      <h5 class="mb-0"><i class="bi bi-list-check"></i> Instrumen PKKM</h5>
-      <span class="text-tiny text-muted">5 komponen · ${window.PKKM_KOMPONEN.reduce((s,k)=>s+k.aspek.length,0)} sub-aspek · ${totalInd} indikator</span>
+    <div class="page-header">
+      <h5><i class="bi bi-list-check"></i> Instrumen PKKM</h5>
+      <span class="page-header-sub">5 komponen · ${window.PKKM_KOMPONEN.reduce((s,k)=>s+k.aspek.length,0)} sub-aspek · ${totalInd} indikator</span>
     </div>
     <div class="alert alert-info py-2 text-tiny"><i class="bi bi-info-circle"></i> Sumber: Aplikasi PKKM Excel v.110820 (Sarjono &amp; Ida Syam, Pengawas Kemenag Lamongan). Klik ℹ️ untuk panduan penggalian data per indikator.</div>
     ${window.PKKM_KOMPONEN.map(k => {
@@ -2407,9 +2407,9 @@ function openPilihKamadPKB() {
 
 route('#/pkb', (root) => {
   root.innerHTML = `
-    <div class="d-flex justify-content-between align-items-center mb-3">
-      <h5 class="mb-0"><i class="bi bi-mortarboard"></i> Analisis PKB</h5>
-      <button class="btn btn-sm btn-outline-primary" id="btnPilihPkb"><i class="bi bi-search"></i> Pilih Kamad / Periode</button>
+    <div class="page-header">
+      <h5><i class="bi bi-mortarboard"></i> Analisis PKB</h5>
+      <button class="btn btn-sm btn-outline-light" id="btnPilihPkb"><i class="bi bi-search"></i> Pilih Kamad / Periode</button>
     </div>
     <div class="alert alert-info py-2 text-tiny">
       <i class="bi bi-info-circle"></i> Halaman ini menetapkan Pengembangan Keprofesian Berkelanjutan berdasarkan 5 sub-aspek dengan nilai terendah dari hasil penilaian kinerja. Pilih kepala madrasah + periode yang sudah punya penilaian.
@@ -2456,8 +2456,8 @@ route('#/pkb/:kamadId/:periodeId', (root, params) => {
     const auto = window.identifikasiPrioritasPKB(kamad.id, periode.id, 5);
     if (!auto.length) {
       root.innerHTML = `
-        <h5 class="mb-3"><i class="bi bi-mortarboard"></i> Analisis PKB</h5>
-        <div class="text-tiny text-muted">${escapeHTML(kamad.nama)} · ${escapeHTML(periode.label)}</div>
+        <div class="page-header"><h5><i class="bi bi-mortarboard"></i> Analisis PKB</h5></div>
+        <div class="text-tiny text-muted mt-2">${escapeHTML(kamad.nama)} · ${escapeHTML(periode.label)}</div>
         <div class="alert alert-warning mt-3">Belum ada penilaian terisi untuk kamad ini di periode ini.
           <a href="#/penilaian" class="btn btn-sm btn-primary ms-2">Mulai Penilaian</a>
         </div>`;
@@ -2483,10 +2483,10 @@ route('#/pkb/:kamadId/:periodeId', (root, params) => {
   function renderPKBForm() {
     const items = window.PKB.forKamadPeriode(kamad.id, periode.id);
     root.innerHTML = `
-      <div class="d-flex justify-content-between align-items-center mb-3">
+      <div class="page-header">
         <div>
-          <h5 class="mb-0"><i class="bi bi-mortarboard"></i> Analisis PKB</h5>
-          <div class="text-tiny text-muted">${escapeHTML(kamad.nama)} · ${escapeHTML(kamad.nama_madrasah||'-')} · ${escapeHTML(periode.label)}</div>
+          <h5><i class="bi bi-mortarboard"></i> Analisis PKB</h5>
+          <div class="page-header-sub">${escapeHTML(kamad.nama)} · ${escapeHTML(kamad.nama_madrasah||'-')} · ${escapeHTML(periode.label)}</div>
         </div>
         <div class="btn-group">
           <a href="#/pkb" class="btn btn-sm btn-outline-secondary"><i class="bi bi-arrow-left"></i></a>
@@ -2670,8 +2670,8 @@ route('#/rekap-tahunan', (root) => {
   const sebutanFinal = rataAgregat != null ? window.getPKKMSebutan(rataAgregat) : null;
 
   root.innerHTML = `
-    <div class="d-flex justify-content-between align-items-center mb-3 flex-wrap gap-2">
-      <h5 class="mb-0"><i class="bi bi-calendar3-range"></i> Rekap 4 Tahunan</h5>
+    <div class="page-header flex-wrap gap-2">
+      <h5><i class="bi bi-calendar3-range"></i> Rekap 4 Tahunan</h5>
       <div class="d-flex gap-2 align-items-center flex-wrap">
         <select class="form-select form-select-sm" id="kamadSelect" style="min-width: 280px;">
           ${kamadList.map(k => `<option value="${k.id}" ${k.id===selKid?'selected':''}>${escapeHTML(k.nama)} · ${escapeHTML(k.nama_madrasah||'-')}</option>`).join('')}
@@ -2776,7 +2776,7 @@ route('#/rekap-tahunan', (root) => {
 // --- Backup / Restore ------------------------------------------
 route('#/backup', (root) => {
   root.innerHTML = `
-    <h5 class="mb-3"><i class="bi bi-cloud-arrow-down"></i> Backup &amp; Restore</h5>
+    <div class="page-header"><h5><i class="bi bi-cloud-arrow-down"></i> Backup &amp; Restore</h5></div>
     <div class="row g-3">
       <div class="col-md-6">
         <div class="card h-100">
@@ -2856,7 +2856,7 @@ route('#/pengaturan', (root) => {
   const KOMP_META = window.PKKM_KOMPONEN_META || window.PKKM_KOMPONEN.map(k => ({ no: k.no, code: k.code, label: k.label, bobot_default: 20 }));
 
   root.innerHTML = `
-    <h5 class="mb-3"><i class="bi bi-gear"></i> Pengaturan</h5>
+    <div class="page-header"><h5><i class="bi bi-gear"></i> Pengaturan</h5></div>
     <div class="row g-3">
       <div class="col-md-6">
         <div class="card h-100">
