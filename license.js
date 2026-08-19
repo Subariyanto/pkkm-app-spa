@@ -7,6 +7,7 @@
   const TRIAL_DAYS = 5;
   const TRIAL_MAX_PENILAIAN = 10;
   const MASTER_CODE = 'FULL-PKKM-POKJAWAS-2026';
+  const ADMIN_MASTER_CODE = 'POKJAWAS-JEMBER-SUPER-2026'; // dari auth.js
 
   function load(k, def) { try { var r = localStorage.getItem(k); return r ? JSON.parse(r) : def; } catch (e) { return def; } }
   function save(k, v) { try { localStorage.setItem(k, JSON.stringify(v)); return true; } catch (e) { return false; } }
@@ -59,7 +60,7 @@
     if (!c) return { ok: false, reason: 'Kode kosong' };
 
     // Master code — lokal, unlimited, tidak butuh Supabase
-    if (c === MASTER_CODE) {
+    if (c === MASTER_CODE || c === ADMIN_MASTER_CODE) {
       setLicense({ tier: 'full', activatedAt: new Date().toISOString(), activatedWith: c });
       return { ok: true };
     }

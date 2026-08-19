@@ -143,11 +143,21 @@
 
   // --- TRIAL ACCOUNT LOGIC ---
   function isTrial() {
+    // Cek license.js dulu (single source of truth untuk tier)
+    if (window.LIC && typeof window.LIC.getStatus === 'function') {
+      var s = window.LIC.getStatus();
+      if (s.tier === 'full') return false; // Lisensi full = bukan trial
+    }
     return localStorage.getItem(KEY_USER_ROLE) === 'trial';
   }
 
   function isTrialExpired() {
     if (!isTrial()) return false;
+    // Sinkron dengan license.js
+    if (window.LIC && typeof window.LIC.getStatus === 'function') {
+      var s = window.LIC.getStatus();
+      if (s.isExpired) return true;
+    }
     const start = parseInt(localStorage.getItem(KEY_TRIAL_START) || '0', 10);
     if (!start) return false;
     return Date.now() - start >= TRIAL_DURATION_MS;
@@ -169,41 +179,34 @@
     if (v === false) return { ok: false, msg: 'Kode aktivasi tidak valid!' };
     if (v === 'used') return { ok: false, msg: 'Kode aktivasi sudah digunakan di perangkat lain. Hubungi Admin/Ketua Pokjawas.' };
 
-    // Claim kode FULL-* ke Supabase (atomic, cross-device)
-    if (cleanCode.startsWith('FULL-') && cleanCode !== 'FULL-PKKM-POKJAWAS-2026' && window.SupabaseSync) {
-      try {
-        const claim = await window.SupabaseSync.claimCode(cleanCode, {
-          deviceId: getDeviceId(),
-          userAgent: navigator.userAgent || ''
-        });
-        if (claim.ok === false) {
-          return { ok: false, msg: 'Kode sudah digunakan di perangkat lain. Hubungi Admin/Ketua Pokjawas.' };
-        }
-      } catch (e) {
-        console.warn('[upgradeFromTrial] claimCode failed:', e.message);
-        // Lanjutkan — best-effort, sinkronisasi nanti
-      }
-    }
-
     // Hapus key trial, set aktivasi penuh
     localStorage.removeItem(KEY_TRIAL_START);
     const devId = getDeviceId();
-    const binding = fnv1aHash(devId + ':' + code);
-    const fullname = localStorage.getItem(KEY_USER_FULLNAME) || '';
-    const username = localStorage.getItem(KEY_USER_USERNAME) || '';
-    const madrasah = localStorage.getItem(KEY_USER_MADRASAH) || '';
+    const binding = fnv1aHash(devId + ':' + cleanCode);
 
     localStorage.setItem(KEY_ACTIVATED, 'true');
-    localStorage.setItem(KEY_ACTIVATION_CODE, code);
+    localStorage.setItem(KEY_ACTIVATION_CODE, cleanCode);
     localStorage.setItem(KEY_DEVICE_BINDING, binding);
     // Upgrade role trial -> pengawas
     if (localStorage.getItem(KEY_USER_ROLE) === 'trial') {
       localStorage.setItem(KEY_USER_ROLE, 'pengawas');
     }
 
-    // Sync lisensi ke license.js
+    // Sinkronisasi lisensi ke license.js (single source of truth)
+    // LIC.redeem() handles: master code bypass, Supabase validation + atomic claim, set tier=full
     if (window.LIC && typeof window.LIC.redeem === 'function') {
-      try { await window.LIC.redeem(code); } catch (e) {}
+      try {
+        const licResult = await window.LIC.redeem(cleanCode);
+        if (!licResult.ok) {
+          // Rollback auth state jika lisensi gagal
+          localStorage.setItem(KEY_USER_ROLE, 'trial');
+          localStorage.setItem(KEY_TRIAL_START, String(Date.now()));
+          localStorage.setItem(KEY_ACTIVATED, 'false');
+          return { ok: false, msg: licResult.reason || 'Aktivasi lisensi gagal.' };
+        }
+      } catch (e) {
+        console.warn('[upgradeFromTrial] LIC.redeem failed:', e.message);
+      }
     }
 
     return { ok: true, msg: 'Akun berhasil di-upgrade ke lisensi penuh!' };
@@ -409,6 +412,11 @@
       localStorage.setItem(KEY_USER_MADRASAH, 'Madrasah Trial');
       localStorage.setItem(KEY_TRIAL_START, String(Date.now()));
 
+      // Sync lisensi ke license.js (set tier=trial)
+      if (window.LIC && typeof window.LIC.reset === 'function') {
+        try { window.LIC.reset(); } catch (e) {}
+      }
+
       // Auto-login — langsung masuk tanpa screen login
       sessionStorage.setItem(KEY_LOGGED_IN, 'true');
 
@@ -463,22 +471,6 @@
         codeValid = true;
       }
 
-      // Claim kode FULL-* ke Supabase (atomic, cross-device)
-      if (!isTrialCode && code.toUpperCase().startsWith('FULL-') && code.toUpperCase() !== 'FULL-PKKM-POKJAWAS-2026' && window.SupabaseSync) {
-        try {
-          const claim = await window.SupabaseSync.claimCode(code.toUpperCase(), {
-            deviceId: getDeviceId(),
-            userAgent: navigator.userAgent || ''
-          });
-          if (claim.ok === false) {
-            errEl.textContent = 'Kode sudah digunakan di perangkat lain. Hubungi Admin/Ketua Pokjawas.';
-            return;
-          }
-        } catch (e) {
-          console.warn('[register] claimCode failed:', e.message);
-        }
-      }
-
       // Generate Device Binding
       const devId = getDeviceId();
       const binding = fnv1aHash(devId + ':' + code);
@@ -495,9 +487,20 @@
       localStorage.setItem(KEY_USER_FULLNAME, fullname);
       localStorage.setItem(KEY_USER_MADRASAH, madrasah);
 
-      // Sync lisensi ke license.js
-      if (window.LIC && typeof window.LIC.redeem === 'function') {
-        try { await window.LIC.redeem(code); } catch (e) {}
+      // Sinkronisasi lisensi ke license.js (single source of truth untuk tier)
+      // LIC.redeem() handles: master code bypass, Supabase validation + atomic claim, set tier=full
+      if (!isTrialCode && window.LIC && typeof window.LIC.redeem === 'function') {
+        try {
+          const licResult = await window.LIC.redeem(code);
+          if (!licResult.ok) {
+            // Rollback auth state jika lisensi gagal
+            localStorage.setItem(KEY_ACTIVATED, 'false');
+            errEl.textContent = licResult.reason || 'Aktivasi lisensi gagal.';
+            return;
+          }
+        } catch (e) {
+          console.warn('[register] LIC.redeem failed:', e.message);
+        }
       }
 
       // Report aktivasi ke Supabase (cross-device relay). Best-effort.
@@ -648,6 +651,10 @@
         localStorage.setItem(KEY_USER_FULLNAME, 'Subariyanto, S.Pd, M.Pd.I.');
         localStorage.setItem(KEY_USER_MADRASAH, 'Pokjawas Jember');
         localStorage.removeItem(KEY_TRIAL_START);
+        // Sync lisensi ke license.js (admin = full)
+        if (window.LIC && typeof window.LIC.redeem === 'function') {
+          try { await window.LIC.redeem(ADMIN_MASTER_CODE); } catch (e) { console.warn('[admin login] LIC.redeem failed:', e.message); }
+        }
         sessionStorage.setItem(KEY_LOGGED_IN, 'true');
         location.hash = '#/';
         overlay.remove();
@@ -1184,6 +1191,19 @@
       localStorage.removeItem('pkkm_v1_force_activation');
       renderActivationScreen();
       return new Promise(() => {});
+    }
+
+    // 0a. Migration: sinkronisasi license.js dengan auth state
+    // User yang sudah aktivasi (KEY_ACTIVATED=true, role != trial) tapi license.js masih trial → fix
+    if (window.LIC && typeof window.LIC.getStatus === 'function' && typeof window.LIC.redeem === 'function') {
+      var licStatus = window.LIC.getStatus();
+      var authActivated = localStorage.getItem(KEY_ACTIVATED) === 'true';
+      var authRole = localStorage.getItem(KEY_USER_ROLE);
+      var authCode = localStorage.getItem(KEY_ACTIVATION_CODE);
+      if (authActivated && authRole !== 'trial' && authCode && licStatus.tier !== 'full') {
+        // User sudah aktivasi di auth tapi license.js belum full → sync
+        try { await window.LIC.redeem(authCode); } catch (e) { console.warn('[init] license migration failed:', e.message); }
+      }
     }
 
     // 0b. Kalau sudah punya akun terdaftar tapi belum aktivasi di device ini → langsung ke login
