@@ -266,6 +266,14 @@ function syncAuthUI() {
   if (adminNav) adminNav.style.display = isAdmin ? '' : 'none';
   const lisensiNav = document.getElementById('navLisensi');
   if (lisensiNav) lisensiNav.style.display = isAdmin ? '' : 'none';
+
+  // Update navbar region label dari setting kabupaten/kota
+  const navRegion = document.getElementById('navRegionLabel');
+  const footerRegion = document.getElementById('footerRegion');
+  let _kabKota = 'Jember';
+  try { _kabKota = JSON.parse(localStorage.getItem('pkkm_v1_meta') || '{}').kabupaten_kota || 'Jember'; } catch(e) {}
+  if (navRegion) navRegion.textContent = 'Pokjawasmad Kab. ' + _kabKota;
+  if (footerRegion) footerRegion.textContent = _kabKota;
 }
 
 // === Router ====================================================
@@ -1731,7 +1739,7 @@ route('#/cetak/:id', (root, params) => {
         <div class="ttd-grid">
           <div class="ttd-box">
             <div class="ttd-tempat">&nbsp;</div>
-            <div class="ttd-jabatan">Mengetahui,<br>Ketua Pokjawas Madrasah Kab. Jember</div>
+            <div class="ttd-jabatan">Mengetahui,<br>Ketua Pokjawas Madrasah Kab. ${escapeHTML(Meta.get('kabupaten_kota','Jember'))}</div>
             <div class="ttd-spacer"></div>
             <div class="ttd-name">${escapeHTML(pokjawas.nama||'..............................')}</div>
             <div class="ttd-nip">NIP. ${escapeHTML(pokjawas.nip||'..............................')}</div>
@@ -2851,6 +2859,7 @@ route('#/pengaturan', (root) => {
   const pengawas = Meta.get('identitas_pengawas', { nama: '', nip: '' });
   const pokjawas = Meta.get('identitas_ketua_pokjawas', { nama: 'SUBARIYANTO, S.Pd, M.Pd.I', nip: '197002122005011004' });
   const tempat = Meta.get('lokasi_ttd', 'Jember');
+  const kabKota = Meta.get('kabupaten_kota', 'Jember');
 
   // Use META komponen list (5 komp) supaya tidak terpengaruh role aktif
   const KOMP_META = window.PKKM_KOMPONEN_META || window.PKKM_KOMPONEN.map(k => ({ no: k.no, code: k.code, label: k.label, bobot_default: 20 }));
@@ -2907,6 +2916,12 @@ route('#/pengaturan', (root) => {
           <div class="card-header">Identitas Tanda Tangan</div>
           <div class="card-body">
             <form id="ttdForm">
+              <div class="mb-2">
+                <label class="form-label text-tiny mb-1">Kabupaten / Kota</label>
+                <input class="form-control form-control-sm" name="kabupaten_kota" value="${escapeHTML(kabKota)}" placeholder="Contoh: Jember, Gorontalo, Banyuwangi...">
+                <div class="text-tiny text-muted mt-1">Nama kabupaten/kota wilayah binaan. Digunakan untuk judul navbar dan kop laporan.</div>
+              </div>
+              <hr>
               <div class="mb-2">
                 <label class="form-label text-tiny mb-1">Lokasi TTD</label>
                 <input class="form-control form-control-sm" name="lokasi_ttd" value="${escapeHTML(tempat)}">
@@ -2986,6 +3001,7 @@ route('#/pengaturan', (root) => {
   $('#ttdForm').addEventListener('submit', (e) => {
     e.preventDefault();
     const fd = new FormData(e.target);
+    Meta.set('kabupaten_kota', fd.get('kabupaten_kota'));
     Meta.set('lokasi_ttd', fd.get('lokasi_ttd'));
     Meta.set('identitas_pengawas', { nama: fd.get('pengawas_nama'), nip: fd.get('pengawas_nip') });
     Meta.set('identitas_ketua_pokjawas', { nama: fd.get('pokjawas_nama'), nip: fd.get('pokjawas_nip') });
