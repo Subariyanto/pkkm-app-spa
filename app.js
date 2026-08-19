@@ -320,90 +320,71 @@ route('#/', (root) => {
   const licBanner = (typeof LIC !== 'undefined' && LIC.bannerHtml) ? LIC.bannerHtml() : '';
 
   root.innerHTML = licBanner + `
+    <div class="dash-hero">
+      <i class="bi bi-mortarboard-fill dash-hero-icon"></i>
+      <h2>Apakah Madrasah</h2>
+      <p>Penilaian Kinerja Kepala Madrasah — Pokjawas Kemenag Kab. Jember</p>
+    </div>
+
+    <div class="dash-stats">
+      <a href="#/kamad" class="dash-stat-card">
+        <i class="bi bi-people dash-stat-icon"></i>
+        <div class="dash-stat-label">Kepala Madrasah</div>
+        <div class="dash-stat-value">${kamadList.length}</div>
+        <div class="dash-stat-sub"><i class="bi bi-person-badge"></i> Data terdaftar</div>
+      </a>
+      <a href="#/penilaian" class="dash-stat-card">
+        <i class="bi bi-calendar3 dash-stat-icon"></i>
+        <div class="dash-stat-label">Periode</div>
+        <div class="dash-stat-value">${periodeList.length}</div>
+        <div class="dash-stat-sub"><i class="bi bi-calendar3"></i> Periode penilaian</div>
+      </a>
+      <a href="#/penilaian" class="dash-stat-card">
+        <i class="bi bi-clipboard-check dash-stat-icon"></i>
+        <div class="dash-stat-label">Total Penilaian</div>
+        <div class="dash-stat-value">${totalPenilaian}</div>
+        <div class="dash-stat-sub"><i class="bi bi-clipboard-check"></i> Tersimpan</div>
+      </a>
+      <a href="#/rekap" class="dash-stat-card">
+        <i class="bi bi-check2-circle dash-stat-icon"></i>
+        <div class="dash-stat-label">Sudah Final</div>
+        <div class="dash-stat-value">${finalCount}</div>
+        <div class="dash-stat-sub"><i class="bi bi-check2-circle"></i> Disahkan</div>
+      </a>
+    </div>
+
     <div class="row g-3">
-      <div class="col-12">
-        <div class="card border-0">
-          <div class="card-body">
-            <h4 class="mb-1"><i class="bi bi-mortarboard-fill text-primary"></i> Aplikasi PKKM</h4>
-            <p class="text-muted mb-0">Penilaian Kinerja Kepala Madrasah - Pokjawas Kemenag Jember</p>
-          </div>
-        </div>
-      </div>
-      <div class="col-md-3 col-6">
-        <a href="#/kamad" class="text-decoration-none">
-          <div class="card kamad-card h-100">
-            <div class="card-body">
-              <div class="text-muted text-tiny">Kepala Madrasah</div>
-              <div class="display-6 text-primary fw-bold">${kamadList.length}</div>
-              <div class="text-tiny"><i class="bi bi-person-badge"></i> Data terdaftar</div>
+      <div class="col-md-7">
+        <div class="dash-panel">
+          <div class="dash-panel-header"><i class="bi bi-lightning-charge"></i> Aksi Cepat</div>
+          <div class="dash-panel-body">
+            <div class="dash-quick-grid">
+              <a href="#/kamad" class="dash-quick-btn"><i class="bi bi-person-plus"></i> Kelola Kepala Madrasah</a>
+              <a href="#/import" class="dash-quick-btn"><i class="bi bi-file-earmark-arrow-up"></i> Import Excel + PKG</a>
+              <a href="#/penilaian" class="dash-quick-btn"><i class="bi bi-clipboard-data"></i> Mulai / Lanjutkan Penilaian</a>
+              <a href="#/rekap" class="dash-quick-btn"><i class="bi bi-bar-chart"></i> Lihat Rekap Nilai</a>
+              <a href="#/rekap-kkma" class="dash-quick-btn"><i class="bi bi-diagram-3"></i> Rekap per KKMA</a>
+              <a href="#/cetak" class="dash-quick-btn"><i class="bi bi-printer"></i> Cetak Laporan</a>
+              <a href="#/laporan-lengkap" class="dash-quick-btn btn-success-soft"><i class="bi bi-file-earmark-richtext"></i> Laporan Lengkap (KKMA)</a>
+              <a href="#/backup" class="dash-quick-btn btn-secondary-soft"><i class="bi bi-cloud-arrow-down"></i> Backup / Restore</a>
             </div>
-          </div>
-        </a>
-      </div>
-      <div class="col-md-3 col-6">
-        <a href="#/penilaian" class="text-decoration-none">
-          <div class="card kamad-card h-100">
-            <div class="card-body">
-              <div class="text-muted text-tiny">Periode</div>
-              <div class="display-6 text-primary fw-bold">${periodeList.length}</div>
-              <div class="text-tiny"><i class="bi bi-calendar3"></i> Periode penilaian</div>
-            </div>
-          </div>
-        </a>
-      </div>
-      <div class="col-md-3 col-6">
-        <a href="#/penilaian" class="text-decoration-none">
-          <div class="card kamad-card h-100">
-            <div class="card-body">
-              <div class="text-muted text-tiny">Total Penilaian</div>
-              <div class="display-6 text-primary fw-bold">${totalPenilaian}</div>
-              <div class="text-tiny"><i class="bi bi-clipboard-check"></i> Tersimpan</div>
-            </div>
-          </div>
-        </a>
-      </div>
-      <div class="col-md-3 col-6">
-        <a href="#/rekap" class="text-decoration-none">
-          <div class="card kamad-card h-100">
-            <div class="card-body">
-              <div class="text-muted text-tiny">Sudah Final</div>
-              <div class="display-6 text-primary fw-bold">${finalCount}</div>
-              <div class="text-tiny"><i class="bi bi-check2-circle"></i> Disahkan</div>
-            </div>
-          </div>
-        </a>
-      </div>
-
-      <div class="col-md-6">
-        <div class="card h-100">
-          <div class="card-header"><i class="bi bi-stars"></i> Aksi Cepat</div>
-          <div class="card-body d-grid gap-2">
-            <a href="#/kamad" class="btn btn-outline-primary"><i class="bi bi-person-plus"></i> Kelola Data Kepala Madrasah</a>
-            <a href="#/import" class="btn btn-outline-primary"><i class="bi bi-file-earmark-arrow-up"></i> Import Excel + Integrasi PKG</a>
-            <a href="#/penilaian" class="btn btn-outline-primary"><i class="bi bi-clipboard-data"></i> Mulai / Lanjutkan Penilaian</a>
-            <a href="#/rekap" class="btn btn-outline-primary"><i class="bi bi-bar-chart"></i> Lihat Rekap Nilai</a>
-            <a href="#/rekap-kkma" class="btn btn-outline-primary"><i class="bi bi-diagram-3"></i> Rekap per KKMA</a>
-            <a href="#/cetak" class="btn btn-outline-primary"><i class="bi bi-printer"></i> Cetak Laporan</a>
-            <a href="#/laporan-lengkap" class="btn btn-outline-success"><i class="bi bi-file-earmark-richtext"></i> Cetak Laporan Lengkap (per KKMA)</a>
-            <a href="#/backup" class="btn btn-outline-secondary"><i class="bi bi-cloud-arrow-down"></i> Backup / Restore</a>
           </div>
         </div>
       </div>
 
-      <div class="col-md-6">
-        <div class="card h-100">
-          <div class="card-header"><i class="bi bi-info-circle"></i> Komponen Penilaian</div>
-          <div class="card-body">
-            <ol class="mb-0 ps-3">
+      <div class="col-md-5">
+        <div class="dash-panel">
+          <div class="dash-panel-header"><i class="bi bi-info-circle"></i> Komponen Penilaian</div>
+          <div class="dash-panel-body">
+            <ul class="dash-komponen-list">
               ${window.PKKM_KOMPONEN.map(k => `
-                <li class="mb-1">
+                <li>
                   <strong>${escapeHTML(k.label)}</strong>
-                  <span class="text-tiny text-muted"> (${k.aspek.length} aspek, bobot default ${k.bobot_default}%)</span>
+                  <span class="text-muted"> (${k.aspek.length} aspek, bobot ${k.bobot_default}%)</span>
                 </li>
               `).join('')}
-            </ol>
-            <hr>
-            <div class="text-tiny text-muted">
+            </ul>
+            <div class="text-tiny text-muted mt-2" style="border-top:1px solid #f0f3f0; padding-top:.6rem;">
               Skor 1-4 per aspek. Nilai komponen = (Σskor / Σmaks) × 100.
               Nilai akhir = Σ(nilai komponen × bobot) / Σbobot.
             </div>
