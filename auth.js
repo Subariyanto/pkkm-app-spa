@@ -285,6 +285,12 @@
       document.body.appendChild(overlay);
     }
 
+    // Isi nama kabupaten/kota dari setting
+    let _kabKota = 'Jember';
+    try { _kabKota = JSON.parse(localStorage.getItem('pkkm_v1_meta') || '{}').kabupaten_kota || 'Jember'; } catch(e) {}
+    const _setRegion = () => overlay.querySelectorAll('.auth-region').forEach(el => el.textContent = _kabKota);
+    setTimeout(_setRegion, 0);
+
     overlay.innerHTML = `
       <style>
         #pkkm-auth-overlay {
@@ -324,7 +330,7 @@
         <div class="auth-logo">
           <i class="bi bi-shield-check"></i>
           <h2>Aktivasi & Registrasi Akun</h2>
-          <p>PKKM Pokjawasmad Kab. Jember (KMA 1503)</p>
+          <p>PKKM Pokjawasmad Kab. <span class="auth-region"></span> (KMA 1503)</p>
         </div>
         <div class="auth-err" id="auth-reg-err"></div>
         
@@ -534,6 +540,12 @@
       document.body.appendChild(overlay);
     }
 
+    // Isi nama kabupaten/kota dari setting
+    let _kabKota = 'Jember';
+    try { _kabKota = JSON.parse(localStorage.getItem('pkkm_v1_meta') || '{}').kabupaten_kota || 'Jember'; } catch(e) {}
+    const _setRegion = () => overlay.querySelectorAll('.auth-region').forEach(el => el.textContent = _kabKota);
+    setTimeout(_setRegion, 0);
+
     const regName = localStorage.getItem(KEY_USER_FULLNAME) || '';
     const regMad = localStorage.getItem(KEY_USER_MADRASAH) || '';
 
@@ -578,7 +590,7 @@
         <div class="auth-logo">
           <i class="bi bi-person-lock"></i>
           <h2>Masuk Aplikasi</h2>
-          <p>PKKM Pokjawasmad Kab. Jember</p>
+          <p>PKKM Pokjawasmad Kab. <span class="auth-region"></span></p>
         </div>
         <div class="user-reg-info">
           Terdaftar: <strong>${escapeHtml(regName)}</strong> (${escapeHtml(regMad)})
@@ -1090,6 +1102,12 @@
       document.body.appendChild(overlay);
     }
 
+    // Isi nama kabupaten/kota dari setting
+    let _kabKota = 'Jember';
+    try { _kabKota = JSON.parse(localStorage.getItem('pkkm_v1_meta') || '{}').kabupaten_kota || 'Jember'; } catch(e) {}
+    const _setRegion = () => overlay.querySelectorAll('.auth-region').forEach(el => el.textContent = _kabKota);
+    setTimeout(_setRegion, 0);
+
     overlay.innerHTML = `
       <style>
         #pkkm-auth-overlay {
@@ -1130,7 +1148,7 @@
         <div class="auth-logo">
           <i class="bi bi-clock-history"></i>
           <h2>Masa Trial Berakhir</h2>
-          <p>PKKM Pokjawasmad Kab. Jember</p>
+          <p>PKKM Pokjawasmad Kab. <span class="auth-region"></span></p>
         </div>
         <div class="trial-warning">
           <strong>⏰ Masa trial 5 hari telah berakhir.</strong><br>
