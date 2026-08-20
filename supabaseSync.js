@@ -1,15 +1,15 @@
-// supabaseSync.js - Server-side license management via Supabase RPC
-// TAHAP 2: Server = Source of Truth. Tidak ada akses langsung ke tabel.
+// supabaseSync.js - Pusat Lisensi Aplikasi (Supabase RPC)
+// Updated: redirect ke Pusat Lisensi terpusat
 // Semua operasi via RPC (SECURITY DEFINER) yang bypass RLS.
 (function () {
   'use strict';
 
-  var SUPABASE_URL = 'https://jnpstfyexmflbnkwxoqt.supabase.co';
-  var SUPABASE_ANON_KEY = 'sb_publishable_y2QVBiY1uEIBPzMgBxIoag_a3d4E7ra';
+  // === PUSAT LISENSI APLIKASI ===
+  var SUPABASE_URL = 'https://llaukzsztguwrtwdubpm.supabase.co';
+  var SUPABASE_ANON_KEY = 'sb_publishable_ueDydfaO-kFcHEmJKM-ClQ_gKVHNdbG';
+  var APP_SLUG = 'pkkm';
   var TIMEOUT_MS = 10000;
 
-  // Admin key — tidak disimpan di frontend.
-  // Hanya diketik user saat akses admin (tidak persist).
   function timeoutFetch(url, opts, ms) {
     return Promise.race([
       fetch(url, opts),
@@ -39,24 +39,6 @@
     return res.json();
   }
 
-  // Direct table SELECT (only for public read — RLS allows SELECT only)
-  async function tableSelect(path) {
-    var url = SUPABASE_URL + '/rest/v1/' + path;
-    var headers = {
-      'apikey': SUPABASE_ANON_KEY,
-      'Authorization': 'Bearer ' + SUPABASE_ANON_KEY,
-    };
-    var res = await timeoutFetch(url, {
-      method: 'GET',
-      headers: headers,
-    }, TIMEOUT_MS);
-    if (!res.ok) {
-      var text = await res.text();
-      throw new Error('SELECT failed: ' + res.status + ' ' + text);
-    }
-    return res.json();
-  }
-
   // ================================================================
   // PUBLIC API (untuk license.js)
   // ================================================================
@@ -67,6 +49,7 @@
     try {
       var result = await callRpc('claim_license', {
         p_code: code,
+        p_app_slug: APP_SLUG,
         p_device_id: deviceId,
         p_device_info: deviceInfo || '',
       });
@@ -83,6 +66,7 @@
     try {
       var result = await callRpc('verify_license', {
         p_code: code,
+        p_app_slug: APP_SLUG,
         p_device_id: deviceId,
       });
       return result;
@@ -92,13 +76,19 @@
     }
   }
 
-  // Cek koneksi online
+  // Cek koneksi online — gunakan verify_license dengan dummy data (aman, tidak ada side effect)
   async function isOnline() {
     try {
-      await tableSelect('license_codes?limit=1');
+      // Pakai admin_get_stats sebagai ping (error jika offline, response jika online)
+      var result = await callRpc('admin_get_stats', { p_admin_key: '__ping__' });
+      // Jika sampai sini berarti server merespon (meskipun key salah)
       return true;
     } catch (e) {
-      return false;
+      // Network error = offline; RPC error lain = online tapi key salah
+      if (e.message && e.message.indexOf('Timeout') >= 0) return false;
+      if (e.message && e.message.indexOf('Failed to fetch') >= 0) return false;
+      // RPC returned error (bukan network) = online
+      return true;
     }
   }
 
@@ -111,6 +101,7 @@
     try {
       var result = await callRpc('admin_generate_code', {
         p_admin_key: adminKey,
+        p_app_slug: APP_SLUG,
         p_recipient: recipient || '',
       });
       return result;
@@ -120,11 +111,12 @@
     }
   }
 
-  // Admin list semua kode
+  // Admin list semua kode (hanya untuk app ini)
   async function adminListCodes(adminKey) {
     try {
       var result = await callRpc('admin_list_codes', {
         p_admin_key: adminKey,
+        p_app_slug: APP_SLUG,
       });
       if (result && result.success) return result.codes || [];
       return [];
@@ -187,23 +179,15 @@
     }
   }
 
-  // Admin delete unused code
-  async function adminDeleteUnusedCode(code, adminKey) {
-    try {
-      return await callRpc('admin_delete_unused_code', { p_code: code, p_admin_key: adminKey });
-    } catch (e) {
-      console.warn('[SupabaseSync] adminDeleteUnusedCode error:', e.message);
-      return { success: false, reason: 'network_error' };
-    }
-  }
-
   // Admin batch create codes
+  // NOTE: Parameter order di Pusat Lisensi: (p_admin_key, p_count, p_app_slug, p_recipient)
   async function adminBatchCreateCodes(count, recipient, adminKey) {
     try {
       return await callRpc('admin_batch_create_codes', {
-        p_count: count,
-        p_recipient: recipient || '',
         p_admin_key: adminKey,
+        p_count: count,
+        p_app_slug: APP_SLUG,
+        p_recipient: recipient || '',
       });
     } catch (e) {
       console.warn('[SupabaseSync] adminBatchCreateCodes error:', e.message);
@@ -211,10 +195,10 @@
     }
   }
 
-  // Admin get stats
+  // Admin get stats (hanya untuk app ini)
   async function adminGetStats(adminKey) {
     try {
-      return await callRpc('admin_get_stats', { p_admin_key: adminKey });
+      return await callRpc('admin_get_stats', { p_admin_key: adminKey, p_app_slug: APP_SLUG });
     } catch (e) {
       console.warn('[SupabaseSync] adminGetStats error:', e.message);
       return { success: false, reason: 'network_error' };
@@ -224,7 +208,7 @@
   // Admin get audit log
   async function adminGetAuditLog(adminKey, limit) {
     try {
-      return await callRpc('admin_get_audit_log', { p_admin_key: adminKey, p_limit: limit || 50 });
+      return await callRpc('admin_get_audit_log', { p_admin_key: adminKey, p_limit: limit || 50, p_app_slug: APP_SLUG });
     } catch (e) {
       console.warn('[SupabaseSync] adminGetAuditLog error:', e.message);
       return { success: false, reason: 'network_error', logs: [] };
@@ -272,7 +256,6 @@
     adminResetDevice: adminResetDevice,
     adminUpdateRecipient: adminUpdateRecipient,
     adminReactivateCode: adminReactivateCode,
-    adminDeleteUnusedCode: adminDeleteUnusedCode,
     adminBatchCreateCodes: adminBatchCreateCodes,
     adminGetStats: adminGetStats,
     adminGetAuditLog: adminGetAuditLog,
@@ -281,7 +264,7 @@
     claimCode: claimCode,
     isCodeUsed: isCodeUsed,
     reportActivation: reportActivation,
-    // Deprecated old admin functions (redirect ke admin API)
+    // Deprecated old admin functions
     generateCode: function (recipient) {
       console.warn('[SupabaseSync] generateCode deprecated, use adminGenerateCode');
       return { ok: false, reason: 'Deprecated. Admin key required.' };
