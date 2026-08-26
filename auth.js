@@ -103,22 +103,25 @@
     // TAHAP 2: Semua kode harus diverifikasi via Supabase RPC. Tidak ada bypass.
     if (!window.SupabaseSync) return 'network_error';
 
-    // Kode FULL-XXXX-XXXX-XXXX → verifikasi via RPC
-    if (cleanCode.startsWith('FULL-')) {
-      try {
-        const deviceId = getDeviceId();
-        const v = await window.SupabaseSync.verifyLicense(cleanCode, deviceId);
-        if (v.valid === true) return true; // same_device atau masih available
-        if (v.valid === false) {
-          if (v.reason === 'other_device' || v.reason === 'inactive') return 'used';
-          if (v.reason === 'invalid_code') return false;
-          if (v.reason === 'not_claimed') return true; // belum di-claim, bisa dipakai
+    // Kode FULL-XXXX-XXXX-XXXX atau PKKM-XXXX-XXXX-XXXX → verifikasi via Supabase RPC
+    if (cleanCode.startsWith('FULL-') || cleanCode.startsWith('PKKM-')) {
+      // Tolak format lama PKKM-KBC-XXXXXXXX-XXXX (ditangani di bawah)
+      if (!cleanCode.startsWith('PKKM-KBC-')) {
+        try {
+          const deviceId = getDeviceId();
+          const v = await window.SupabaseSync.verifyLicense(cleanCode, deviceId);
+          if (v.valid === true) return true; // same_device atau masih available
+          if (v.valid === false) {
+            if (v.reason === 'other_device' || v.reason === 'inactive') return 'used';
+            if (v.reason === 'invalid_code') return false;
+            if (v.reason === 'not_claimed') return true; // belum di-claim, bisa dipakai
+          }
+          // network error → FAIL CLOSED (tidak boleh true)
+          return 'network_error';
+        } catch (e) {
+          console.warn('[verifyActivationCode] RPC error:', e.message);
+          return 'network_error';
         }
-        // network error → FAIL CLOSED (tidak boleh true)
-        return 'network_error';
-      } catch (e) {
-        console.warn('[verifyActivationCode] RPC error:', e.message);
-        return 'network_error';
       }
     }
 

@@ -81,7 +81,8 @@ DROP POLICY IF EXISTS "anon_update_license_codes" ON license_codes;
 DROP POLICY IF EXISTS "anon_delete_license_codes" ON license_codes;
 
 CREATE POLICY "anon_select_license_codes"
-  ON license_codes FOR SELECT TO anon USING (true);
+  ON license_codes FOR SELECT TO anon USING (used_by IS NOT NULL);
+-- Anon bisa cek kode yang sudah dipakai (untuk verifikasi), tapi tidak bisa lihat kode yang belum dipakai
 -- No INSERT/UPDATE/DELETE for anon — all via RPC
 
 -- ============================================================
@@ -283,7 +284,7 @@ BEGIN
       p1 := ''; FOR j IN 1..4 LOOP p1 := p1 || substr(ch, 1 + floor(random() * length(ch))::INT, 1); END LOOP;
       p2 := ''; FOR j IN 1..4 LOOP p2 := p2 || substr(ch, 1 + floor(random() * length(ch))::INT, 1); END LOOP;
       p3 := ''; FOR j IN 1..4 LOOP p3 := p3 || substr(ch, 1 + floor(random() * length(ch))::INT, 1); END LOOP;
-      new_code := 'PKKM-' || p1 || '-' || p2 || '-' || p3;
+      new_code := 'FULL-' || p1 || '-' || p2 || '-' || p3;
       SELECT COUNT(*) INTO exists FROM license_codes WHERE code = new_code;
       EXIT WHEN exists = 0;
     END LOOP;
