@@ -653,7 +653,7 @@
             localStorage.setItem(KEY_USER_ROLE, 'admin');
             localStorage.setItem(KEY_USER_USERNAME, 'admin');
             localStorage.setItem(KEY_ACTIVATED, 'true');
-            sessionStorage.setItem('pkkm_admin_key', 'pokjawas-admin-license-2026');
+            sessionStorage.setItem('pkkm_admin_key', 'pokjawas-admin-2026');
             var devId = getDeviceId();
             var code = 'ADMIN-FULL-ACCESS';
             localStorage.setItem(KEY_ACTIVATION_CODE, code);
