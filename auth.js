@@ -647,7 +647,7 @@
       // Admin bypass: username='admin', password diverifikasi via SHA-256 (tidak plaintext)
       if (username === 'admin') {
         sha256(password).then(function(hash) {
-          if (hash === '1fe822ee3c970bb86b48d7519a9bc25eef1d31fa5267a6cf41892d818eb1ef40') {
+          if (hash === '6051fc84a7a0d74c225fb18a496b09952da5642e60723ecae543298edd7d82d6') {
             // Admin login — set semua flag, skip aktivasi
             sessionStorage.setItem(KEY_LOGGED_IN, 'true');
             localStorage.setItem(KEY_USER_ROLE, 'admin');
