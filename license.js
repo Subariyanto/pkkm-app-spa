@@ -52,6 +52,10 @@
   function setLicense(l) { save(KEY_LICENSE, l); }
 
   function getStatus() {
+    // Admin bypass — admin selalu full access (admin key di sessionStorage)
+    if (sessionStorage.getItem('pkkm_admin_key')) {
+      return { tier: 'full', isTrial: false, isExpired: false, daysLeft: Infinity, count: 0, limitReached: false };
+    }
     var l = getLicense();
     if (l.tier === 'full') return { tier: 'full', isTrial: false, isExpired: false, daysLeft: Infinity, count: 0, limitReached: false };
     var ms = new Date(l.trialExpiresAt).getTime() - Date.now();
@@ -402,6 +406,8 @@
     if (_verifyTimer) clearTimeout(_verifyTimer);
     // Cek setiap 30 menit
     _verifyTimer = setTimeout(async function () {
+      // Skip verification untuk admin (tidak perlu verify ke server)
+      if (sessionStorage.getItem('pkkm_admin_key')) { scheduleVerification(); return; }
       var l = getLicense();
       if (l.tier !== 'full' || !l.activatedWith) { scheduleVerification(); return; }
       // Hanya verifikasi jika online

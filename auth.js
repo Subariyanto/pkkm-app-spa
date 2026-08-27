@@ -716,6 +716,19 @@
             localStorage.setItem(KEY_ACTIVATION_CODE, code);
             localStorage.setItem(KEY_DEVICE_BINDING, fnv1aHash(devId + ':' + code));
 
+            // Sinkron license.js — set tier=full untuk admin
+            try {
+              localStorage.setItem('pkkm_v1_license', JSON.stringify({
+                tier: 'full',
+                startedAt: new Date().toISOString(),
+                trialExpiresAt: null,
+                activatedWith: 'ADMIN-FULL-ACCESS',
+                deviceId: devId,
+                activatedAt: new Date().toISOString(),
+                lastVerifiedAt: new Date().toISOString()
+              }));
+            } catch(e) {}
+
             location.hash = '#/';
             overlay.remove();
             init().then(function() { if (window.rebuildShell) window.rebuildShell(); if (window.render) window.render(); });
