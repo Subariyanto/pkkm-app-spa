@@ -179,6 +179,26 @@
     }
   }
 
+  // Admin hapus kode yang belum pernah dipakai
+  async function adminDeleteUnusedCode(code, adminKey) {
+    try {
+      return await callRpc('admin_delete_unused_code', { p_code: code, p_admin_key: adminKey });
+    } catch (e) {
+      console.warn('[SupabaseSync] adminDeleteUnusedCode error:', e.message);
+      return { success: false, reason: 'network_error' };
+    }
+  }
+
+  // Admin hapus kode APA PUN (termasuk yang sudah terpakai) — akses permanen dicabut
+  async function adminDeleteCode(code, adminKey) {
+    try {
+      return await callRpc('admin_delete_code', { p_code: code, p_admin_key: adminKey });
+    } catch (e) {
+      console.warn('[SupabaseSync] adminDeleteCode error:', e.message);
+      return { success: false, reason: 'network_error' };
+    }
+  }
+
   // Admin batch create codes
   // NOTE: Parameter order di Pusat Lisensi: (p_admin_key, p_count, p_app_slug, p_recipient)
   async function adminBatchCreateCodes(count, recipient, adminKey) {
@@ -256,6 +276,8 @@
     adminResetDevice: adminResetDevice,
     adminUpdateRecipient: adminUpdateRecipient,
     adminReactivateCode: adminReactivateCode,
+    adminDeleteUnusedCode: adminDeleteUnusedCode,
+    adminDeleteCode: adminDeleteCode,
     adminBatchCreateCodes: adminBatchCreateCodes,
     adminGetStats: adminGetStats,
     adminGetAuditLog: adminGetAuditLog,

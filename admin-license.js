@@ -320,6 +320,9 @@
     // Detail
     btns += '<button class="btn btn-sm btn-outline-info" data-detail="' + safeCode + '" title="Detail"><i class="bi bi-info-circle"></i>' + (isCard ? ' Detail' : '') + '</button>';
 
+    // Edit catatan/penerima (semua kode)
+    btns += '<button class="btn btn-sm btn-outline-primary" data-edit="' + safeCode + '" title="Edit Catatan"><i class="bi bi-pencil"></i>' + (isCard ? ' Edit' : '') + '</button>';
+
     // Reset device (hanya jika used_by ada dan status active)
     if (c.used_by && c.status === 'active') {
       btns += '<button class="btn btn-sm btn-outline-warning" data-reset="' + safeCode + '" title="Reset Perangkat"><i class="bi bi-unlock"></i>' + (isCard ? ' Reset' : '') + '</button>';
@@ -335,10 +338,8 @@
       btns += '<button class="btn btn-sm btn-outline-success" data-reactivate="' + safeCode + '" title="Aktifkan Kembali"><i class="bi bi-arrow-clockwise"></i>' + (isCard ? ' Aktifkan' : '') + '</button>';
     }
 
-    // Hapus (hanya jika belum pernah dipakai)
-    if (!c.used_by) {
-      btns += '<button class="btn btn-sm btn-outline-danger" data-delete="' + safeCode + '" title="Hapus"><i class="bi bi-trash"></i>' + (isCard ? ' Hapus' : '') + '</button>';
-    }
+    // Hapus (semua kode — konfirmasi ketat untuk yang sudah dipakai)
+    btns += '<button class="btn btn-sm btn-outline-danger" data-delete="' + safeCode + '" title="Hapus"><i class="bi bi-trash"></i>' + (isCard ? ' Hapus' : '') + '</button>';
 
     return btns;
   }
@@ -444,6 +445,14 @@
       });
     });
 
+    container.querySelectorAll('[data-edit]').forEach(function (btn) {
+      btn.addEventListener('click', function () {
+        var code = btn.getAttribute('data-edit');
+        var c = allCodes.find(function (x) { return x.code === code; });
+        if (c) showEditModal(c);
+      });
+    });
+
     container.querySelectorAll('[data-reset]').forEach(function (btn) {
       btn.addEventListener('click', async function () {
         var code = btn.getAttribute('data-reset');
@@ -495,9 +504,17 @@
     container.querySelectorAll('[data-delete]').forEach(function (btn) {
       btn.addEventListener('click', async function () {
         var code = btn.getAttribute('data-delete');
-        if (!confirm('Kode ' + code + ' belum pernah digunakan. Apakah Anda yakin ingin menghapusnya secara permanen?')) return;
+        var c = allCodes.find(function (x) { return x.code === code; });
+        var isUsed = c && c.used_by;
+        var msg = isUsed
+          ? 'PERINGATAN: Kode ' + code + ' SUDAH DIGUNAKAN oleh perangkat ' + shortDevice(c.used_by) + '.\n\nMenghapus kode yang sudah terpakai akan mencabut akses permanen. Perangkat tersebut tidak akan bisa validasi lagi. Tindakan ini TIDAK DAPAT DIBATALKAN.\n\nKetik HAPUS untuk konfirmasi:'
+          : 'Kode ' + code + ' belum pernah digunakan. Hapus secara permanen?\n\nKetik HAPUS untuk konfirmasi:';
+        var input = prompt(msg);
+        if (input !== 'HAPUS') { if (input !== null) toast('Penghapusan dibatalkan — input tidak cocok.', 'info'); return; }
         btn.disabled = true; btn.innerHTML = '<span class="spinner-border spinner-border-sm"></span>';
-        var r = await window.SupabaseSync.adminDeleteUnusedCode(code, key);
+        var r = isUsed
+          ? await window.SupabaseSync.adminDeleteCode(code, key)
+          : await window.SupabaseSync.adminDeleteUnusedCode(code, key);
         if (r.success) {
           toast('Kode berhasil dihapus.', 'success');
           await reloadCodes(document.getElementById('appRoot') || document.body);
@@ -606,6 +623,63 @@
 
     overlay.querySelector('#closeDetail').addEventListener('click', function () { overlay.remove(); });
     overlay.addEventListener('click', function (e) { if (e.target === overlay) overlay.remove(); });
+  }
+
+  // ================================================================
+  // MODAL: EDIT CATATAN/PENERIMA
+  // ================================================================
+  function showEditModal(c) {
+    var overlay = document.createElement('div');
+    overlay.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:9998;display:flex;align-items:center;justify-content:center;padding:16px;';
+    var html = '<div class="card shadow" style="max-width:450px;width:100%;">';
+    html += '<div class="card-header d-flex justify-content-between align-items-center"><h6 class="mb-0"><i class="bi bi-pencil"></i> Edit Kode Aktivasi</h6><button class="btn-close" id="closeEdit"></button></div>';
+    html += '<div class="card-body" style="font-size:.9rem;">';
+    html += '<div class="mb-2"><b>Kode:</b><br><code class="user-select-all">' + esc(c.code) + '</code></div>';
+    html += '<div class="mb-2"><b>Status:</b><br>' + statusBadge(c) + '</div>';
+    html += '<div class="mb-3"><label class="form-label"><b>Catatan / Penerima</b></label>';
+    html += '<input type="text" id="editRecipient" class="form-control" value="' + esc(c.recipient || c.note || '') + '" placeholder="Contoh: MTs Negeri 1 Jember">';
+    html += '<div class="form-text small">Catatan untuk identifikasi penerima kode (opsional).</div></div>';
+    html += '<button class="btn btn-primary w-100" id="btnSaveEdit"><i class="bi bi-check-circle"></i> Simpan Perubahan</button>';
+    html += '<div id="editError" class="text-danger mt-2 small" style="display:none;"></div>';
+    html += '</div></div>';
+    overlay.innerHTML = html;
+    document.body.appendChild(overlay);
+
+    var closeBtn = overlay.querySelector('#closeEdit');
+    closeBtn.addEventListener('click', function () { overlay.remove(); });
+    overlay.addEventListener('click', function (e) { if (e.target === overlay) overlay.remove(); });
+
+    var input = overlay.querySelector('#editRecipient');
+    input.focus();
+    input.select();
+
+    var saveBtn = overlay.querySelector('#btnSaveEdit');
+    var errEl = overlay.querySelector('#editError');
+
+    var doSave = async function () {
+      var recipient = input.value.trim();
+      var key = sessionStorage.getItem(ADMIN_KEY_STORAGE);
+      saveBtn.disabled = true; saveBtn.innerHTML = '<span class="spinner-border spinner-border-sm"></span> Menyimpan...';
+      try {
+        var r = await window.SupabaseSync.adminUpdateRecipient(c.code, recipient, key);
+        if (r.success) {
+          toast('Catatan berhasil diperbarui.', 'success');
+          overlay.remove();
+          await reloadCodes(document.getElementById('appRoot') || document.body);
+        } else {
+          errEl.textContent = 'Gagal: ' + (r.reason || 'unknown');
+          errEl.style.display = '';
+          saveBtn.disabled = false; saveBtn.innerHTML = '<i class="bi bi-check-circle"></i> Simpan Perubahan';
+        }
+      } catch (e) {
+        errEl.textContent = 'Terjadi kesalahan: ' + e.message;
+        errEl.style.display = '';
+        saveBtn.disabled = false; saveBtn.innerHTML = '<i class="bi bi-check-circle"></i> Simpan Perubahan';
+      }
+    };
+
+    saveBtn.addEventListener('click', doSave);
+    input.addEventListener('keypress', function (e) { if (e.key === 'Enter') doSave(); });
   }
 
   // ================================================================
