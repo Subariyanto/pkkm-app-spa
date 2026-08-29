@@ -336,12 +336,14 @@
       var safeCode = String(c.code).replace(/&/g, '&amp;').replace(/"/g, '&quot;');
       var statusText = c.status === 'revoked' ? '⛔ dicabut' : (c.used_by ? '✅ dipakai' : '🆕 baru');
       var actions = '<button class="btn btn-sm btn-outline-secondary me-1" data-copy="' + safeCode + '" title="Copy">📋</button>';
+      actions += '<button class="btn btn-sm btn-outline-primary me-1" data-edit="' + safeCode + '" title="Edit catatan/penerima">✏️</button>';
       if (c.used_by && c.status === 'active') {
         actions += '<button class="btn btn-sm btn-outline-warning me-1" data-reset="' + safeCode + '" title="Reset device">🔓</button>';
       }
       if (c.status === 'active') {
-        actions += '<button class="btn btn-sm btn-outline-danger" data-revoke="' + safeCode + '" title="Cabut">🗑</button>';
+        actions += '<button class="btn btn-sm btn-outline-danger me-1" data-revoke="' + safeCode + '" title="Nonaktifkan / Cabut">🚫</button>';
       }
+      actions += '<button class="btn btn-sm btn-danger" data-delete="' + safeCode + '" title="Hapus permanen">🗑️</button>';
       html += '<tr><td><code>' + safeCode + '</code></td><td>' + (c.recipient ? '<span>' + String(c.recipient).replace(/</g, '&lt;') + '</span>' : '<span class="text-muted">-</span>') + '</td><td class="text-center">' + statusText + '</td><td class="text-center text-nowrap">' + actions + '</td></tr>';
     });
     html += '</tbody></table>';
@@ -372,6 +374,37 @@
         var r = await window.SupabaseSync.adminRevokeCode(c, adminKey);
         if (!r.success) { alert('❌ Gagal: ' + (r.reason || 'unknown')); return; }
         alert('✅ Kode dicabut.');
+        renderCodesTable(root, adminKey);
+      });
+    });
+    container.querySelectorAll('[data-edit]').forEach(function (btn) {
+      btn.addEventListener('click', async function () {
+        var code = btn.getAttribute('data-edit');
+        var cur = codes.find(function (x) { return x.code === code; });
+        var curNote = (cur && cur.recipient) ? cur.recipient : '';
+        var val = prompt('Edit catatan/penerima untuk kode ' + code + ':', curNote);
+        if (val === null) return;
+        var r = await window.SupabaseSync.adminUpdateRecipient(code, val.trim(), adminKey);
+        if (!r.success) { alert('❌ Gagal: ' + (r.reason || 'unknown')); return; }
+        alert('✅ Catatan berhasil diperbarui.');
+        renderCodesTable(root, adminKey);
+      });
+    });
+    container.querySelectorAll('[data-delete]').forEach(function (btn) {
+      btn.addEventListener('click', async function () {
+        var code = btn.getAttribute('data-delete');
+        var cur = codes.find(function (x) { return x.code === code; });
+        var isUsed = cur && cur.used_by;
+        var msg = isUsed
+          ? 'PERINGATAN: kode ' + code + ' SUDAH DIPAKAI. Hapus permanen akan mencabut akses perangkat tersebut dan TIDAK BISA DIBATALKAN.\n\nKetik HAPUS untuk konfirmasi:'
+          : 'Kode ' + code + ' belum pernah dipakai. Hapus secara permanen?\n\nKetik HAPUS untuk konfirmasi:';
+        var input = prompt(msg);
+        if (input !== 'HAPUS') { if (input !== null) alert('Dibatalkan — input tidak cocok.'); return; }
+        var r = isUsed
+          ? await window.SupabaseSync.adminDeleteCode(code, adminKey)
+          : await window.SupabaseSync.adminDeleteUnusedCode(code, adminKey);
+        if (!r.success) { alert('❌ Gagal: ' + (r.reason || 'unknown')); return; }
+        alert('✅ Kode berhasil dihapus.');
         renderCodesTable(root, adminKey);
       });
     });
