@@ -248,25 +248,44 @@ const Meta = {
   setBobot(map) { this.set('bobot_overrides', map); },
 };
 
+// === Helper RA: cek apakah penilaian ini untuk kepala madrasah jenjang RA ===
+// Indikator yang tidak relevan untuk RA (mis. laboratorium) tidak dihitung di penyebut.
+function isRAPenilaian(penilaian_id) {
+  try {
+    const pen = Penilaian.get(penilaian_id);
+    if (!pen) return false;
+    const kamad = Kamad.get(pen.kamad_id);
+    return !!(kamad && kamad.jenjang === 'RA');
+  } catch (e) { return false; }
+}
+
+function isRAIndikatorSkip(indikator_id) {
+  const skip = window.PKKM_RA_SKIP || [];
+  return skip.indexOf(indikator_id) !== -1;
+}
+
 // === Hitung Nilai (per sub-aspek dari indikator, lalu rata komponen) ===
 function hitungNilaiAspek(penilaian_id, komponenCode, aspekKode) {
   const k = window.PKKM_KOMPONEN.find(x => x.code === komponenCode);
   if (!k) return { nilai: 0, total: 0, terisi: 0, sumSkor: 0 };
   const a = k.aspek.find(x => x.kode === aspekKode);
   if (!a) return { nilai: 0, total: 0, terisi: 0, sumSkor: 0 };
+  const raSkip = isRAPenilaian(penilaian_id);
   const skorRows = Skor.forPenilaian(penilaian_id);
-  let sum = 0, terisi = 0;
+  let sum = 0, terisi = 0, totalEff = 0;
   for (const ind of a.indikator) {
     const id = `${k.code}_${a.kode}_${ind.no}`;
+    if (raSkip && isRAIndikatorSkip(id)) continue; // indikator RA-skip tidak masuk penyebut
+    totalEff++;
     const row = skorRows.find(s => s.indikator_id === id);
     if (row && typeof row.skor === 'number' && row.skor > 0) {
       sum += row.skor;
       terisi++;
     }
   }
-  const max = a.indikator.length * 4;
+  const max = totalEff * 4;
   const nilai = max > 0 ? (sum / max) * 100 : 0;
-  return { nilai, total: a.indikator.length, terisi, sumSkor: sum, max };
+  return { nilai, total: totalEff, totalAsli: a.indikator.length, terisi, sumSkor: sum, max };
 }
 
 function hitungNilaiKomponen(penilaian_id, komponenCode) {
@@ -334,6 +353,8 @@ function progressPenilaian(penilaian_id) {
     }
   } catch (e) { /* fallback */ }
 
+  const raSkip = isRAPenilaian(penilaian_id);
+
   let total = window.PKKM_TOTAL_INDIKATOR || 0;
   if (skipHK) {
     // Kurangi total indikator komponen HK
@@ -343,10 +364,16 @@ function progressPenilaian(penilaian_id) {
       total = Math.max(0, total - hkCount);
     }
   }
+  if (raSkip) {
+    // Kurangi total indikator yang tidak relevan untuk jenjang RA
+    const raSkipIds = window.PKKM_RA_SKIP || [];
+    total = Math.max(0, total - raSkipIds.length);
+  }
   const skorRows = Skor.forPenilaian(penilaian_id);
   const terisi = skorRows.filter(s => {
     if (!s.indikator_id || typeof s.skor !== 'number' || s.skor <= 0) return false;
     if (skipHK && s.indikator_id.startsWith('HK_')) return false;
+    if (raSkip && isRAIndikatorSkip(s.indikator_id)) return false;
     return true;
   }).length;
   return { terisi, total, persen: total > 0 ? (terisi/total)*100 : 0 };

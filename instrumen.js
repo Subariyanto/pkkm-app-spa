@@ -1868,6 +1868,11 @@ window.PKKM_TOTAL_INDIKATOR = window.PKKM_KOMPONEN.reduce(
 
 window.PKKM_JENJANG = ['MI', 'MTs', 'MA', 'RA'];
 
+// Indikator yang TIDAK WAJIB diisi untuk jenjang RA (Raudhatul Athfal).
+// Indikator ini dikeluarkan dari penyebut nilai & progress secara otomatis
+// ketika kepala madrasah yang dinilai berjenjang RA (skor kosong tidak jadi penalti).
+window.PKKM_RA_SKIP = ['PM_1.5_1', 'MJ_2.5_3'];
+
 window.PKKM_PERIODE_TYPES = [
   { code: 'tahun_1', label: 'Tahun Pertama' },
   { code: 'tahun_2', label: 'Tahun Kedua' },
