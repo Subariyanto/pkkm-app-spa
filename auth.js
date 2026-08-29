@@ -390,7 +390,7 @@
         <div class="auth-logo">
           <i class="bi bi-shield-check"></i>
           <h2>Aktivasi & Registrasi Akun</h2>
-          <p>PKKM Pokjawasmad Kab. <span class="auth-region"></span> (KMA 1503)</p>
+          <p>Penilaian Kinerja Kepala Madrasah (KMA 1503)</p>
         </div>
         <div class="auth-err" id="auth-reg-err"></div>
         
@@ -650,7 +650,7 @@
         <div class="auth-logo">
           <i class="bi bi-person-lock"></i>
           <h2>Masuk Aplikasi</h2>
-          <p>PKKM Pokjawasmad Kab. <span class="auth-region"></span></p>
+          <p>Penilaian Kinerja Kepala Madrasah</p>
         </div>
         <div class="user-reg-info">
           Terdaftar: <strong>${escapeHtml(regName)}</strong> (${escapeHtml(regMad)})
