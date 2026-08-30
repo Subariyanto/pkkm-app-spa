@@ -1873,6 +1873,76 @@ window.PKKM_JENJANG = ['MI', 'MTs', 'MA', 'RA'];
 // ketika kepala madrasah yang dinilai berjenjang RA (skor kosong tidak jadi penalti).
 window.PKKM_RA_SKIP = ['PM_1.5_1', 'MJ_2.5_3'];
 
+// Varian redaksi khusus jenjang RA (Raudhatul Athfal).
+// HANYA mengubah tampilan redaksi indikator/data/bukti agar kontekstual dengan RA
+// (asesmen perkembangan anak, KKG RA, pojok baca, sentra bermain, dst).
+// Struktur, nomor, dan perhitungan skor TIDAK berubah sama sekali.
+window.PKKM_RA_VARIAN = {
+  'PM_1.2_1': {
+    bukti: 'Melalui studi dokumen: (1) visi dan Misi RA; (2) data prestasi RA; (3) data hasil asesmen perkembangan anak (STPPD) 3 tahun terakhir; (4) Data Alumni'
+  },
+  'PM_1.2_2': {
+    bukti: 'Melalui observasi dan studi dokumen: (1) bagan/struktur organisasi; (2) SK; (3) tugas dan fungsi; (4) Terbentuknya KKG RA (gugus RA); (5) Program KKG RA; dan (6) Laporan kegiatan KKG RA'
+  },
+  'PM_1.2_3': {
+    bukti: 'Melalui studi dokumen: (1) kurikulum operasional RA (KOP); (2) kalender pendidikan; (3) RPPM/RPPH (rencana pembelajaran mingguan/harian); (4) penilaian perkembangan anak; dan (5) peraturan RA'
+  },
+  'PM_1.2_4': {
+    bukti: 'Melalui studi dokumen: (1) data prestasi RA 1 tahun terakhir; (2) data hasil asesmen perkembangan anak (STPPD) 1 tahun terakhir; (3) Dokumen Akreditasi; dan (4) Program kegiatan pengembangan diri anak (seni, motorik, keagamaan, bahasa)'
+  },
+  'PM_1.4_1': {
+    data: 'Dokumen analisis standar dalam pengembangan kurikulum RA yang sesuai dengan capaian perkembangan anak',
+    bukti: 'Melalui studi dokumen: (1) kurikulum operasional RA; (2) kalender pendidikan; (3) RPPM/RPPH; (4) instrumen penilaian perkembangan anak; (5) peraturan RA; dan (6) Catatan Anekdot, Check List, dan Portofolio Anak.'
+  },
+  'PM_1.5_2': {
+    indikator: 'Mampu mengelola pojok baca/perpustakaan RA dalam menyiapkan sumber belajar yang diperlukan oleh peserta didik.',
+    data: 'Adanya bukti pemanfaatan pojok baca dalam pembelajaran, jadwal, kegiatan, dll',
+    bukti: 'Observasi dan studi dokumen: (1) luas memenuhi sesuai standar; (2) sarana pendukung; (3) daftar buku induk pojok baca (didominasi buku cerita anak); dan (4) laporan/statistik pemanfaatan pojok baca.'
+  },
+  'PM_1.7_3': {
+    indikator: 'Mampu mengembangkan sistem pengelolaan pojok baca dan administrasi RA secara efektif dengan dukungan penerapan teknologi informasi dan komunikasi.',
+    data: 'Model pemanfaatan TIK dalam sistem administrasi dan layanan RA berbasis komputer atau internet.',
+    bukti: 'Observasi dan studi dokumen: (1) katalog buku cerita anak; (2) komputer/laptop untuk administrasi RA; (3) akses internet; dan (4) dokumen aplikasi administrasi/PPDB online RA.'
+  },
+  'MJ_2.3_1': {
+    data: 'Dokumen target capaian perkembangan anak, hasil asesmen perkembangan (STPPD), dan target keunggulan nonakademik (seni, motorik, keagamaan) yang terprogram, terlaksana, dan meningkat hasilnya',
+    bukti: 'Wawancara dan studi dokumen: (1) hasil asesmen perkembangan anak (STPPD); (2) program keunggulan dan inovasi kegiatan anak; dan (3) data prestasi anak dan RA.'
+  },
+  'MJ_2.3_3': {
+    data: 'Data kunjungan pojok baca, peminjaman buku cerita oleh anak, pembaharuan buku dan bahan bacaan anak, ketersediaan sumber belajar berbasis TIK, dan sarana pajangan karya anak, serta pengembangan kompetisi karya anak tingkat RA.',
+    bukti: 'Observasi, wawancara dan studi dokumen: (1) rencana dan laporan pelaksanaan kegiatan literasi anak; (2) dokumen kegiatan pengembangan budaya baca; dan (3) dokumen/ pajangan hasil karya anak.'
+  },
+  'MJ_2.5_2': {
+    indikator: 'Mampu mengelola pojok baca/perpustakaan RA',
+    data: 'Data pojok baca dikelola dengan baik',
+    bukti: 'Observasi fisik dan studi dokumen: (1) buku induk pojok baca; dan (2) buku/data/grafik pemanfaatan pojok baca.'
+  },
+  'MJ_2.7_1': {
+    indikator: 'Mampu mengarahkan secara efektif dalam menerapkan prinsip-prinsip pengembangan kurikulum operasional RA dalam kegiatan IHT, Workshop, Rapat Koordinasi, dan kegiatan KKG RA.',
+    data: 'Dokumen hasil pengembangan kurikulum RA yang disusun melalui rapat kerja, IHT, Workshop, Rakor, atau kegiatan KKG RA',
+    bukti: 'Studi dokumen: (1) dokumen kurikulum operasional RA yang berlaku; (2) SK tim pengembang kurikulum RA; dan (3) dokumen penyusunan kurikulum (daftar hadir, berita acara, notulen).'
+  },
+  'MJ_2.7_2': {
+    indikator: 'Mampu mengendalikan pelaksanaan kurikulum operasional RA berlandaskan kalender pendidikan, menerbitkan surat keputusan pembagian tugas mendidik, dan menerapkan aturan RA.',
+    data: 'Pelaksanaan kurikulum RA sesuai dengan kalender pendidikan, surat keputusan pembagian tugas mendidik (pendamping kelompok usia), dan aturan RA.',
+    bukti: 'Studi dokumen: (1) struktur kurikulum RA; (2) jadwal kegiatan mingguan; (3) daftar hadir guru; dan (4) peraturan RA'
+  },
+  'MJ_2.7_3': {
+    bukti: 'Studi dokumen: (1) program KKG RA / gugus RA; dan (2) laporan pelaksanaan KKG RA.'
+  }
+};
+
+// Helper: ambil redaksi indikator sesuai jenjang. Untuk RA, merge dengan varian RA.
+// Mengembalikan salinan {indikator, data, bukti} — objek master tidak diubah.
+window.getIndikatorTampil = function(ind, indikator_id, jenjang) {
+  const base = { indikator: ind.indikator, data: ind.data, bukti: ind.bukti };
+  if (jenjang === 'RA' && window.PKKM_RA_VARIAN) {
+    const v = window.PKKM_RA_VARIAN[indikator_id];
+    if (v) return Object.assign({}, base, v);
+  }
+  return base;
+};
+
 window.PKKM_PERIODE_TYPES = [
   { code: 'tahun_1', label: 'Tahun Pertama' },
   { code: 'tahun_2', label: 'Tahun Kedua' },

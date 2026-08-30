@@ -124,8 +124,11 @@ function openPenggalianModal(indikator_id) {
     return;
   }
   const k = info.komponen, a = info.aspek, ind = info.indikator;
-  const buktiText = (ind.bukti||'').trim();
-  const dataText = (ind.data||'').trim();
+  // Varian redaksi RA: cek jenjang dari penilaian aktif (kamus via router global)
+  let jenjangAktif = window.PKKM_JENJANG_AKTIF || null;
+  const redaksi = window.getIndikatorTampil ? window.getIndikatorTampil(ind, indikator_id, jenjangAktif) : ind;
+  const buktiText = (redaksi.bukti||'').trim();
+  const dataText = (redaksi.data||'').trim();
   const buktiHtml = buktiText
     ? `<pre class="bukti-fisik mb-0 p-2 bg-light rounded" style="white-space:pre-wrap;font-family:inherit;font-size:0.9rem">${escapeHTML(buktiText)}</pre>`
     : `<div class="text-muted text-tiny"><i class="bi bi-info-circle"></i> Belum ada panduan bukti fisik untuk indikator ini.</div>`;
@@ -143,7 +146,7 @@ function openPenggalianModal(indikator_id) {
           </div>
           <div class="modal-body">
             <div class="alert alert-primary py-2 mb-3">
-              <strong>Indikator Kinerja:</strong><br>${escapeHTML(ind.indikator||'-')}
+              <strong>Indikator Kinerja:</strong><br>${escapeHTML(redaksi.indikator||'-')}
             </div>
             <div class="mb-3">
               <div class="fw-semibold mb-1"><i class="bi bi-clipboard-data text-success"></i> Data Yang Diharapkan</div>
@@ -1101,6 +1104,8 @@ route('#/penilaian/:kamadId/:periodeId/:role', (root, params) => {
   // Switch instrumen sesuai role
   const roleInfo = (window.PKKM_ROLES||[]).find(x => x.code === role) || { instrumen: 'pengawas', label: role };
   if (typeof window.setInstrumenRole === 'function') window.setInstrumenRole(roleInfo.instrumen);
+  // Simpan jenjang kamad aktif agar modal penggalian data bisa pakai redaksi RA
+  window.PKKM_JENJANG_AKTIF = kamad.jenjang || null;
   const pen = Penilaian.ensureRole(kamad.id, periode.id, role);
   const isFinal = pen.status === 'final';
 
@@ -1149,6 +1154,12 @@ route('#/penilaian/:kamadId/:periodeId/:role', (root, params) => {
                       const cur = skorMap[id] || {};
                       const skor = cur.skor;
                       const buktiList = Array.isArray(cur.bukti) ? cur.bukti : [];
+                      // Redaksi indikator (varian RA jika kamad berjenjang RA)
+                      const redaksi = window.getIndikatorTampil
+                        ? window.getIndikatorTampil(ind, id, kamad.jenjang)
+                        : ind;
+                      // Indikator tidak wajib utk jenjang RA (mis. laboratorium)
+                      const raSkip = kamad.jenjang === 'RA' && (window.PKKM_RA_SKIP||[]).indexOf(id) !== -1;
                       // PKG suggestion (only on aspek 5.4 ind 1 = HK Capaian Mutu)
                       let suggestionHtml = '';
                       if (k.code === 'HK' && a.kode === '5.4' && ind.no === 1) {
@@ -1164,7 +1175,10 @@ route('#/penilaian/:kamadId/:periodeId/:role', (root, params) => {
                           <div class="flex-grow-1">
                             <div class="d-flex align-items-start gap-2">
                               <span class="text-muted text-tiny pt-1" style="min-width:24px">${ind.no}.</span>
-                              <span class="flex-grow-1">${escapeHTML(ind.indikator||'')}</span>
+                              <span class="flex-grow-1">
+                                ${escapeHTML(redaksi.indikator||'')}
+                                ${raSkip ? `<div class="text-tiny text-muted mt-1"><i class="bi bi-slash-circle"></i> <em>Tidak wajib untuk jenjang RA — boleh dikosongkan, tidak dihitung dalam nilai.</em></div>` : ''}
+                              </span>
                               <button type="button" class="btn btn-sm btn-link p-0 text-primary" data-action="open-penggalian" data-indikator-id="${id}" title="Catatan penggalian data"><i class="bi bi-info-circle"></i></button>
                             </div>
                             ${suggestionHtml}
@@ -1721,9 +1735,12 @@ route('#/cetak/:id', (root, params) => {
                   ${a.indikator.map(ind => {
                     const id = `${k.code}_${a.kode}_${ind.no}`;
                     const s = skorMap[id];
+                    const redaksiCetak = window.getIndikatorTampil
+                      ? window.getIndikatorTampil(ind, id, kamad?.jenjang)
+                      : ind;
                     return `<tr>
                       <td class="text-center">${a.kode}.${ind.no}</td>
-                      <td class="text-tiny">${escapeHTML(ind.indikator||'')}</td>
+                      <td class="text-tiny">${escapeHTML(redaksiCetak.indikator||'')}</td>
                       <td class="text-center">${s && s.skor != null ? s.skor : '-'}</td>
                       <td class="text-tiny">${escapeHTML(s?.catatan||'')}</td>
                     </tr>`;
@@ -2301,7 +2318,7 @@ route('#/instrumen', (root) => {
                     <tr>
                       <td class="text-center text-muted" width="60">${a.kode}.${ind.no}</td>
                       <td>
-                        ${escapeHTML(ind.indikator||'')}
+                        ${escapeHTML((window.getIndikatorTampil ? window.getIndikatorTampil(ind, `${k.code}_${a.kode}_${ind.no}`, 'RA') : ind).indikator||'')}
                         <button type="button" class="btn btn-sm btn-link p-0 ms-1 text-primary" data-action="open-penggalian" data-indikator-id="${k.code}_${a.kode}_${ind.no}" title="Panduan penggalian data"><i class="bi bi-info-circle"></i></button>
                         <div class="text-tiny text-muted"><i class="bi bi-clipboard-data"></i> ${escapeHTML(ind.data||'-')}</div>
                       </td>
