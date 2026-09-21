@@ -1706,8 +1706,6 @@ route('#/cetak/:id', (root, params) => {
   const roleInfoCetak = (window.PKKM_ROLES || []).find(r => r.code === (pen.role || 'pengawas_1'));
   const penilaiNama = pen.penilai_nama || ((pen.role || '').startsWith('pengawas') ? pengawas.nama : '');
   const penilaiNip = pen.penilai_nip || ((pen.role || '').startsWith('pengawas') ? pengawas.nip : '');
-  const penilaiJabatan = pen.penilai_jabatan || ((pen.role || '').startsWith('pengawas') ? (pengawas.jabatan || 'Pengawas Madrasah') : (roleInfoCetak?.label || 'Penilai'));
-  const penilaiUnit = pen.penilai_unit || ((pen.role || '').startsWith('pengawas') ? (pengawas.unit || `Kemenag Kabupaten ${Meta.get('kabupaten_kota', 'Jember')}`) : '');
   // Label penilai pada kolom tanda tangan: Penilai I / Penilai II (mengikuti urutan pengawas)
   const penRole = pen.role || 'pengawas_1';
   const penilaiLabel = penRole === 'pengawas_1' ? 'Penilai I'
@@ -1815,6 +1813,7 @@ route('#/cetak/:id', (root, params) => {
         <div class="ttd-grid">
           <div class="ttd-box">
             <div class="ttd-tempat">&nbsp;</div>
+            <div class="ttd-tempat">&nbsp;</div>
             <div class="ttd-jabatan">Mengetahui,<br>${escapeHTML(jabatanKamad)} ${escapeHTML(kamad?.nama_madrasah||'')}</div>
             <div class="ttd-spacer"></div>
             <div class="ttd-name">${escapeHTML(kamad?.nama||'..............................')}</div>
@@ -1827,7 +1826,6 @@ route('#/cetak/:id', (root, params) => {
             <div class="ttd-spacer"></div>
             <div class="ttd-name">${escapeHTML(penilaiNama||'..............................')}</div>
             <div class="ttd-nip">NIP/ID. ${escapeHTML(penilaiNip||'..............................')}</div>
-            ${(penilaiJabatan || penilaiUnit) ? `<div class="text-tiny">${escapeHTML(penilaiJabatan)}${penilaiJabatan && penilaiUnit ? ' &middot; ' : ''}${escapeHTML(penilaiUnit)}</div>` : ''}
           </div>
         </div>
       </div>
