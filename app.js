@@ -2377,55 +2377,212 @@ route('#/rekap-kkma', (root) => {
 });
 
 // --- Instrumen viewer ------------------------------------------
+// --- Instrumen viewer + editor ---------------------------------
+// Halaman Instrumen: menampilkan instrumen per jenjang (MI/MTs/MA/RA) dan
+// menyediakan mode Edit + tombol Simpan untuk menyesuaikan redaksi indikator
+// (indikator/fokus penggalian/data/bukti/rubrik). Perubahan disimpan lokal
+// (localStorage: pkkm_v1_instrumen_overrides) dan otomatis dipakai di form
+// penilaian, cetak, excel, dan laporan. Jenjang RA memakai dataset terpisah
+// (read-only di sini).
+window.__instrumenJenjang = window.__instrumenJenjang || null;
+window.__instrumenEdit = window.__instrumenEdit || false;
+
+// --- Instrumen viewer + editor ---------------------------------
+// Halaman Instrumen: menampilkan instrumen per jenjang (MI/MTs/MA/RA) dan
+// menyediakan mode Edit + tombol Simpan untuk menyesuaikan redaksi indikator
+// (indikator/fokus penggalian/data/bukti/rubrik). Perubahan disimpan lokal
+// (localStorage: pkkm_v1_instrumen_overrides) dan otomatis dipakai di form
+// penilaian, cetak, excel, dan laporan. Jenjang RA memakai dataset terpisah
+// (read-only di halaman ini).
+window.__instrumenJenjang = window.__instrumenJenjang || null;
+window.__instrumenEdit = window.__instrumenEdit || false;
+
 route('#/instrumen', (root) => {
-  const totalInd = window.PKKM_TOTAL_INDIKATOR || 0;
-  root.innerHTML = `
+  const JENJANG = (window.PKKM_JENJANG || ['MI', 'MTs', 'MA', 'RA']);
+  if (!window.__instrumenJenjang || JENJANG.indexOf(window.__instrumenJenjang) < 0) {
+    window.__instrumenJenjang = JENJANG[0];
+  }
+  let dirty = false;
+
+  const editField = (id, field, label, value, opts) => {
+    opts = opts || {};
+    const val = escapeHTML(value || '');
+    const common = `class="form-control form-control-sm" data-edit-id="${id}" data-edit-field="${field}"`;
+    if (opts.textarea) return `<textarea ${common} rows="${opts.rows || 2}" placeholder="${escapeHTML(label)}">${val}</textarea>`;
+    return `<input type="text" ${common} value="${val}" placeholder="${escapeHTML(label)}">`;
+  };
+
+  const readCell = (id, ind, jenjang) => {
+    const r = (window.getIndikatorTampil ? window.getIndikatorTampil(ind, id, jenjang) : ind);
+    const rub = r.rubrik || null;
+    const rubHtml = (rub && (rub[1] || rub[2] || rub[3] || rub[4]))
+      ? `<div class="text-tiny mt-1">${[4, 3, 2, 1].map(v => `<div><span class="badge bg-${v === 4 ? 'success' : v === 3 ? 'primary' : v === 2 ? 'warning' : 'danger'} me-1">${v}</span> ${escapeHTML(rub[v] || '')}</div>`).join('')}</div>`
+      : '';
+    const pg = (r.penggalian || '').trim();
+    return `
+      <td>
+        ${escapeHTML(r.indikator || '')}
+        <button type="button" class="btn btn-sm btn-link p-0 ms-1 text-primary" data-action="open-penggalian" data-indikator-id="${id}" title="Panduan penggalian data"><i class="bi bi-info-circle"></i></button>
+        <div class="text-tiny text-muted mt-1"><i class="bi bi-clipboard-data"></i> ${escapeHTML(r.data || '-')}</div>
+        ${pg ? `<div class="text-tiny text-muted"><i class="bi bi-search"></i> ${escapeHTML(pg)}</div>` : ''}
+        ${rubHtml}
+      </td>`;
+  };
+
+  const editCell = (id, ind, jenjang) => {
+    const ov = window.InstrumenOverride ? window.InstrumenOverride.get(id) : null;
+    const r = (window.getIndikatorTampil ? window.getIndikatorTampil(ind, id, jenjang) : ind);
+    const rub = r.rubrik || {};
+    return `
+      <td>
+        <label class="form-label text-tiny mb-0">Indikator</label>
+        ${editField(id, 'indikator', 'Redaksi indikator', r.indikator, { textarea: true, rows: 2 })}
+        <label class="form-label text-tiny mb-0 mt-2">Fokus Penggalian</label>
+        ${editField(id, 'penggalian', 'Fokus penggalian', r.penggalian, { textarea: true, rows: 2 })}
+        <label class="form-label text-tiny mb-0 mt-2">Data Yang Diharapkan</label>
+        ${editField(id, 'data', 'Data yang diharapkan', r.data, { textarea: true, rows: 2 })}
+        <label class="form-label text-tiny mb-0 mt-2">Bukti / Cara Penggalian</label>
+        ${editField(id, 'bukti', 'Bukti / cara penggalian', r.bukti, { textarea: true, rows: 3 })}
+        <label class="form-label text-tiny mb-0 mt-2">Rubrik Skor</label>
+        <div class="row g-1">
+          ${[1, 2, 3, 4].map(v => `<div class="col-12"><div class="input-group input-group-sm">
+            <span class="input-group-text" style="width:72px">Skor ${v}</span>
+            ${editField(id, 'rubrik.' + v, 'Deskriptor skor ' + v, rub[v] || '', {})}
+          </div></div>`).join('')}
+        </div>
+        ${ov ? `<button type="button" class="btn btn-sm btn-outline-danger mt-2" data-action="reset-override" data-indikator-id="${id}"><i class="bi bi-arrow-counterclockwise"></i> Reset ke bawaan</button>` : ''}
+      </td>`;
+  };
+
+  function draw() {
+    const jenjang = window.__instrumenJenjang;
+    const isRA = jenjang === 'RA';
+    if (isRA) window.__instrumenEdit = false;
+    const editMode = !!window.__instrumenEdit && !isRA;
+
+    const list = (window.getInstrumenByJenjang ? window.getInstrumenByJenjang(jenjang) : null) || window.PKKM_KOMPONEN || [];
+    const totalInd = list.reduce((s, k) => s + k.aspek.reduce((x, a) => x + a.indikator.length, 0), 0);
+    const totalAspek = list.reduce((s, k) => s + k.aspek.length, 0);
+    const overrideCount = window.InstrumenOverride ? window.InstrumenOverride.count() : 0;
+
+    root.innerHTML = `
     <div class="page-header">
-      <h5><i class="bi bi-list-check"></i> Instrumen PKKM</h5>
-      <span class="page-header-sub">5 komponen · ${window.PKKM_KOMPONEN.reduce((s,k)=>s+k.aspek.length,0)} sub-aspek · ${totalInd} indikator</span>
+      <div>
+        <h5><i class="bi bi-list-check"></i> Instrumen PKKM</h5>
+        <span class="page-header-sub">${totalAspek} sub-aspek · ${totalInd} indikator</span>
+      </div>
+      <div class="d-flex gap-2 align-items-center">
+        <div class="input-group input-group-sm" style="width:auto">
+          <span class="input-group-text"><i class="bi bi-mortarboard"></i> Jenjang</span>
+          <select class="form-select form-select-sm" id="instrumenJenjang">
+            ${JENJANG.map(j => `<option value="${j}" ${j === jenjang ? 'selected' : ''}>${j}</option>`).join('')}
+          </select>
+        </div>
+        <button class="btn btn-sm ${editMode ? 'btn-secondary' : 'btn-outline-primary'}" id="btnEditInstrumen" ${isRA ? 'disabled title="Instrumen RA belum mendukung edit"' : ''}>
+          <i class="bi ${editMode ? 'bi-x-lg' : 'bi-pencil-square'}"></i> ${editMode ? 'Selesai Edit' : 'Edit'}
+        </button>
+        <button class="btn btn-sm btn-primary" id="btnSimpanInstrumen" ${editMode ? '' : 'disabled'}>
+          <i class="bi bi-save"></i> Simpan
+        </button>
+      </div>
     </div>
-    <div class="alert alert-info py-2 text-tiny"><i class="bi bi-info-circle"></i> Sumber: Aplikasi PKKM Excel v.110820 (Sarjono &amp; Ida Syam, Pengawas Kemenag Lamongan). Klik ℹ️ untuk panduan penggalian data per indikator.</div>
-    ${window.PKKM_KOMPONEN.map(k => {
-      const totalIndK = k.aspek.reduce((s,a)=>s+a.indikator.length,0);
-      const meta = (window.PKKM_KOMPONEN_META||[]).find(x=>x.code===k.code);
+    ${editMode
+      ? `<div class="alert alert-warning py-2 text-tiny"><i class="bi bi-pencil-square"></i> <strong>Mode Edit.</strong> Ubah redaksi indikator / fokus penggalian / data / bukti / rubrik lalu klik <strong>Simpan</strong>. Perubahan tersimpan per perangkat (localStorage) dan langsung dipakai di form penilaian, cetak, serta laporan.${overrideCount ? ` Saat ini ada <strong>${overrideCount}</strong> indikator ter-override.` : ''}</div>`
+      : `<div class="alert alert-info py-2 text-tiny"><i class="bi bi-info-circle"></i> ${isRA ? 'Instrumen RA bersifat baku (read-only).' : 'Klik <strong>Edit</strong> untuk menyesuaikan redaksi indikator. Klik ℹ️ untuk panduan penggalian data.'}${overrideCount ? ` <span class="badge bg-warning text-dark">${overrideCount} override aktif</span>` : ''}</div>`}
+    <div id="instrumenBody">
+    ${list.map(k => {
+      const totalIndK = k.aspek.reduce((s, a) => s + a.indikator.length, 0);
+      const meta = (window.PKKM_KOMPONEN_META || []).find(x => x.code === k.code);
       return `
       <div class="card mb-3 komponen-card">
         <div class="card-header">
           <strong>${k.no}. ${escapeHTML(k.label)}</strong>
-          <span class="text-tiny text-muted ms-2">(${k.aspek.length} sub-aspek · ${totalIndK} indikator · bobot default ${meta?.bobot_default ?? 20}%)</span>
+          <span class="text-tiny text-muted ms-2">(${k.aspek.length} sub-aspek · ${totalIndK} indikator${editMode ? '' : ` · bobot default ${meta?.bobot_default ?? 20}%`})</span>
         </div>
         <div class="card-body p-0">
           ${k.aspek.map(a => `
             <div class="border-bottom">
               <div class="bg-light px-3 py-2">
-                <strong>${escapeHTML(a.kode)}</strong> · ${escapeHTML(a.unsur||'')}
+                <strong>${escapeHTML(a.kode)}</strong> · ${escapeHTML(a.unsur || '')}
                 <span class="text-tiny text-muted ms-2">(${a.indikator.length} indikator)</span>
               </div>
               <table class="table mb-0 table-sm">
                 <tbody>
-                  ${a.indikator.map(ind => `
-                    <tr>
-                      <td class="text-center text-muted" width="60">${a.kode}.${ind.no}</td>
-                      <td>
-                        ${escapeHTML((window.getIndikatorTampil ? window.getIndikatorTampil(ind, `${k.code}_${a.kode}_${ind.no}`, 'RA') : ind).indikator||'')}
-                        <button type="button" class="btn btn-sm btn-link p-0 ms-1 text-primary" data-action="open-penggalian" data-indikator-id="${k.code}_${a.kode}_${ind.no}" title="Panduan penggalian data"><i class="bi bi-info-circle"></i></button>
-                        <div class="text-tiny text-muted"><i class="bi bi-clipboard-data"></i> ${escapeHTML(ind.data||'-')}</div>
-                      </td>
-                    </tr>`).join('')}
+                  ${a.indikator.map(ind => {
+                    const id = `${k.code}_${a.kode}_${ind.no}`;
+                    return `<tr>
+                      <td class="text-center text-muted" width="60" style="vertical-align:top">${a.kode}.${ind.no}</td>
+                      ${editMode ? editCell(id, ind, jenjang) : readCell(id, ind, jenjang)}
+                    </tr>`;
+                  }).join('')}
                 </tbody>
               </table>
             </div>`).join('')}
         </div>
       </div>`;
     }).join('')}
-    <div class="text-tiny text-muted">
-      Skor 1=Kurang, 2=Cukup, 3=Baik, 4=Amat Baik. Bobot komponen dapat diubah di <a href="#/pengaturan">Pengaturan</a>.
     </div>
-  `;
-  root.addEventListener('click', (ev) => {
-    const b = ev.target.closest('[data-action="open-penggalian"]');
-    if (b) { ev.preventDefault(); openPenggalianModal(b.dataset.indikatorId || b.dataset.aspekId); }
-  });
+    <div class="text-tiny text-muted">
+      Sumber: Aplikasi PKKM Excel v.110820 (Sarjono &amp; Ida Syam, Pengawas Kemenag Lamongan). Skor 1=Kurang, 2=Cukup, 3=Baik, 4=Amat Baik. Bobot komponen dapat diubah di <a href="#/pengaturan">Pengaturan</a>.
+    </div>`;
+
+    // Listener ditempel ke elemen yang dibuat ulang tiap draw (tidak menumpuk).
+    $('#instrumenBody', root).addEventListener('input', () => { dirty = true; });
+    $('#instrumenJenjang', root)?.addEventListener('change', (ev) => {
+      if (dirty && editMode && !confirmAction('Perubahan yang belum disimpan akan hilang. Lanjutkan pindah jenjang?')) {
+        ev.target.value = jenjang; return;
+      }
+      window.__instrumenJenjang = ev.target.value;
+      window.__instrumenEdit = false;
+      dirty = false;
+      draw();
+    });
+    $('#btnEditInstrumen', root)?.addEventListener('click', () => {
+      if (isRA) { toast('Instrumen RA belum mendukung mode edit.', 'info'); return; }
+      if (editMode && dirty && !confirmAction('Keluar dari mode edit tanpa menyimpan?')) return;
+      window.__instrumenEdit = !editMode;
+      dirty = false;
+      draw();
+    });
+    $('#btnSimpanInstrumen', root)?.addEventListener('click', () => {
+      if (!window.InstrumenOverride) { toast('Modul penyimpanan belum siap. Refresh halaman.', 'error'); return; }
+      if (!editMode) { toast('Klik Edit terlebih dahulu untuk mengubah instrumen.', 'info'); return; }
+      const map = {};
+      root.querySelectorAll('#instrumenBody [data-edit-id]').forEach(el => {
+        const id = el.dataset.editId, field = el.dataset.editField;
+        if (!id || !field) return;
+        map[id] = map[id] || {};
+        if (field.indexOf('rubrik.') === 0) {
+          const v = field.split('.')[1];
+          map[id].rubrik = map[id].rubrik || {};
+          map[id].rubrik[v] = el.value;
+        } else {
+          map[id][field] = el.value;
+        }
+      });
+      const n = Object.keys(map).length;
+      for (const id of Object.keys(map)) window.InstrumenOverride.set(id, map[id]);
+      dirty = false;
+      toast(`Tersimpan: ${n} indikator (jenjang ${jenjang}).`);
+      draw();
+    });
+    $('#instrumenBody', root).addEventListener('click', (ev) => {
+      const b = ev.target.closest('[data-action="open-penggalian"]');
+      if (b) { ev.preventDefault(); openPenggalianModal(b.dataset.indikatorId || b.dataset.aspekId); return; }
+      const rst = ev.target.closest('[data-action="reset-override"]');
+      if (rst) {
+        ev.preventDefault();
+        const id = rst.dataset.indikatorId;
+        if (window.InstrumenOverride && confirmAction('Kembalikan indikator ini ke redaksi bawaan?')) {
+          window.InstrumenOverride.remove(id);
+          toast('Override indikator dihapus.');
+          draw();
+        }
+      }
+    });
+  }
+
+  draw();
 });
 
 // --- Analisis PKB (Pengembangan Keprofesian Berkelanjutan) ----

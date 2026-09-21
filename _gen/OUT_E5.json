@@ -1,0 +1,271 @@
+[
+ {
+  "kode": "3.1",
+  "no": 1,
+  "unsur": "Menciptakan inovasi yang bermanfaat dan tepat bagi pengembangan madrasah",
+  "indikator": [
+   {
+    "no": 1,
+    "indikator": "Memahami dan menghayati arti serta tujuan inovasi madrasah sebagai perwujudan kepemimpinan transformasional",
+    "penggalian": "Pengawas menggali pemahaman kepala madrasah tentang hakikat perubahan/inovasi sebagai wujud kepemimpinan transformasional, serta komitmennya menjadikan madrasah organisasi pembelajar yang berdampak pada peserta didik.",
+    "data": "Program pengembangan kewirausahaan/inovasi madrasah, dokumen visi-misi dan rencana perubahan, serta bukti perkembangan madrasah dari tahun ke tahun.",
+    "bukti": "Studi dokumen dan wawancara: (1) dokumen program pengembangan kewirausahaan/inovasi madrasah; (2) rencana aksi perubahan yang memuat tujuan dan tahapan; (3) catatan refleksi kepala madrasah atas capaian inovasi.",
+    "rubrik": {
+     "1": "Tidak ada pemahaman dan penghayatan tentang arti serta tujuan inovasi madrasah.",
+     "2": "Ada pemahaman dasar tentang arti dan tujuan inovasi, namun belum dituangkan dalam dokumen rencana perubahan yang jelas.",
+     "3": "Pemahaman arti dan tujuan inovasi tertuang dalam program pengembangan, sebagian besar terlaksana namun refleksi/review belum optimal.",
+     "4": "Pemahaman mendalam tertuang dalam rencana perubahan partisipatif, terlaksana konsisten, dievaluasi/refleksi secara berkala, dan berdampak terukur pada kemajuan madrasah serta peserta didik."
+    }
+   },
+   {
+    "no": 2,
+    "indikator": "Menggunakan metode, teknik, dan proses perubahan madrasah yang terencana dan berbasis data",
+    "penggalian": "Pengawas menggali strategi dan tahapan perubahan yang digunakan kepala madrasah, termasuk pemanfaatan data untuk menentukan arah inovasi dan pembudayaan hasil inovasi di lingkungan madrasah.",
+    "data": "Bukti strategi dan tahapan perubahan madrasah, data pendukung keputusan inovasi, serta bukti pembudayaan hasil inovasi dan kreativitas.",
+    "bukti": "Observasi dan studi dokumen: (1) pemanfaatan hasil inovasi dan kreativitas; (2) upaya membudayakan hasil inovasi dan kreativitas; (3) pengembangan pembudayaan inovasi dan kreativitas warga madrasah.",
+    "rubrik": {
+     "1": "Tidak ada metode, teknik, atau proses perubahan madrasah yang diterapkan.",
+     "2": "Ada metode/teknik perubahan tetapi bersifat administratif dan implementasinya terbatas.",
+     "3": "Metode, teknik, dan proses perubahan terlaksana dan terdokumentasi, namun tindak lanjut pembudayaan belum merata.",
+     "4": "Proses perubahan terencana berbasis data, terlaksana konsisten, dievaluasi, ditindaklanjuti, dan menghasilkan inovasi yang terlembaga serta berdampak pada mutu madrasah."
+    }
+   },
+   {
+    "no": 3,
+    "indikator": "Menumbuhkan iklim yang mendorong kebebasan berpikir untuk menciptakan kreativitas dan inovasi, termasuk kewirausahaan sosial warga madrasah",
+    "penggalian": "Pengawas menggali upaya kepala madrasah menumbuhkan budaya berpikir kreatif, inisiatif, dan jiwa kewirausahaan sosial, serta dukungan terhadap gagasan baru yang memberi manfaat bagi madrasah dan peserta didik.",
+    "data": "Bukti iklim yang mendorong kebebasan berpikir kreatif dan inovatif, data ragam usaha/aktivitas produktif madrasah, serta program pengelolaan dan pendayagunaan hasil usaha.",
+    "bukti": "Observasi dan studi dokumen: (1) data ragam usaha/aktivitas produktif yang dimiliki madrasah; (2) program pengelolaan dan pendayagunaan hasil usaha/aktivitas produktif; (3) praktik penguatan karakter kreatif dan inovatif warga madrasah.",
+    "rubrik": {
+     "1": "Tidak ada iklim yang mendorong kebebasan berpikir dan kreativitas warga madrasah.",
+     "2": "Ada wadah/gagasan kreatif tetapi belum terdokumentasi dan implementasinya terbatas.",
+     "3": "Iklim kreatif dan inovatif tercipta serta terdokumentasi, namun dukungan terhadap gagasan baru belum konsisten merata.",
+     "4": "Iklim kebebasan berpikir dan kewirausahaan sosial terlembaga, mendorong inisiatif warga, dievaluasi, dan berdampak pada tumbuhnya kreativitas serta kemandirian peserta didik."
+    }
+   },
+   {
+    "no": 4,
+    "indikator": "Mendorong warga madrasah melakukan prakarsa dan keberanian moral untuk menghadirkan hal-hal baru yang berdampak positif",
+    "penggalian": "Pengawas menggali peran kepala madrasah dalam menumbuhkan keberanian warga untuk berinisiatif, termasuk keteladanan, apresiasi, dan ruang aman untuk mencoba hal baru serta belajar dari kegagalan.",
+    "data": "Bukti warga madrasah memiliki keberanian berinisiatif melakukan hal-hal baru, data aktivitas produktif, dan program pendayagunaan hasil inisiatif.",
+    "bukti": "Observasi dan studi dokumen: (1) data ragam usaha/aktivitas produktif yang dimiliki madrasah; (2) program pengelolaan dan pendayagunaan hasil usaha/inisiatif; (3) dokumentasi apresiasi atas prakarsa warga madrasah.",
+    "rubrik": {
+     "1": "Tidak ada dorongan prakarsa/keberanian moral warga madrasah untuk melakukan hal baru.",
+     "2": "Ada dorongan prakarsa namun bersifat sporadis dan belum terdokumentasi.",
+     "3": "Dorongan prakarsa dan keberanian moral terlaksana serta terdokumentasi, namun pembinaan dan tindak lanjut belum merata.",
+     "4": "Kepala madrasah meneladankan dan melembagakan budaya prakarsa, memberi apresiasi konsisten, mengevaluasi, sehingga inisiatif warga berdampak nyata pada peningkatan mutu dan karakter peserta didik."
+    }
+   }
+  ]
+ },
+ {
+  "kode": "3.2",
+  "no": 2,
+  "unsur": "Bekerja keras untuk mencapai keberhasilan madrasah sebagai organisasi pembelajaran yang efektif",
+  "indikator": [
+   {
+    "no": 1,
+    "indikator": "Bertindak kreatif dan inovatif dalam melaksanakan pekerjaan melalui cara berpikir dan bertindak yang produktif",
+    "penggalian": "Pengawas menggali bagaimana kepala madrasah mendorong keterampilan berpikir dan bertindak kreatif, kritis, mandiri, kolaboratif, dan komunikatif dalam pembelajaran yang berpusat pada murid.",
+    "data": "Modul ajar/RPP yang memuat rencana pembelajaran untuk menumbuhkan keterampilan berpikir dan bertindak kreatif, produktif, kritis, mandiri, kolaboratif, dan komunikatif; hasil kerja/karya peserta didik; foto aktivitas pembelajaran.",
+    "bukti": "Observasi dan studi dokumen: (1) modul ajar yang memuat rencana pembelajaran menumbuhkan keterampilan abad ke-21; (2) hasil kerja dan karya peserta didik; (3) foto-foto aktivitas pembelajaran peserta didik.",
+    "rubrik": {
+     "1": "Tidak ada tindakan kreatif dan inovatif dalam melaksanakan pekerjaan.",
+     "2": "Ada rencana pembelajaran kreatif tetapi implementasinya terbatas dan bersifat administratif.",
+     "3": "Tindakan kreatif-inovatif terlaksana dan terdokumentasi dalam pembelajaran, namun tindak lanjutnya belum optimal.",
+     "4": "Kreativitas dan inovasi terencana, terlaksana konsisten, dievaluasi/refleksi, dan berdampak terukur pada keterampilan berpikir kritis-kreatif serta hasil belajar peserta didik."
+    }
+   },
+   {
+    "no": 2,
+    "indikator": "Memberdayakan potensi madrasah secara optimal ke dalam kegiatan produktif yang menguntungkan dan mendukung pembelajaran",
+    "penggalian": "Pengawas menggali optimalisasi potensi sumber daya madrasah (SDM, sarana, lingkungan) ke dalam kegiatan produktif berkelanjutan yang mendukung pendanaan dan sekaligus menjadi sumber belajar peserta didik.",
+    "data": "Rencana Kerja Pengembangan Madrasah, dokumen penanganan permasalahan, dokumen hasil kegiatan, dan dokumen pengembangan madrasah.",
+    "bukti": "Observasi, wawancara, dan studi dokumen: (1) Rencana Kerja Pengembangan Madrasah; (2) dokumen penanganan permasalahan/kasus; (3) dokumen hasil kegiatan madrasah; (4) dokumen hasil kegiatan produktif; (5) dokumen pengembangan madrasah.",
+    "rubrik": {
+     "1": "Tidak ada pemberdayaan potensi madrasah ke dalam kegiatan produktif.",
+     "2": "Ada rencana pemberdayaan potensi tetapi implementasinya terbatas atau administratif.",
+     "3": "Potensi madrasah diberdayakan secara nyata dan terdokumentasi, namun keberlanjutan dan dampaknya belum optimal.",
+     "4": "Pemberdayaan potensi terencana partisipatif, terlaksana konsisten, dievaluasi, dan menghasilkan kegiatan produktif berkelanjutan yang berdampak pada mutu dan kemandirian madrasah."
+    }
+   },
+   {
+    "no": 3,
+    "indikator": "Menumbuhkan jiwa kewirausahaan (kreatif, inovatif, produktif) dan kemandirian di kalangan warga madrasah",
+    "penggalian": "Pengawas menggali program pembinaan jiwa kewirausahaan dan kemandirian bagi guru, tenaga kependidikan, dan peserta didik, serta keterkaitan dengan penguatan karakter dan Panca Cinta.",
+    "data": "Program pengembangan jiwa kewirausahaan, dokumen kegiatan, dan bukti tumbuhnya sikap kreatif, inovatif, produktif, serta kemandirian warga madrasah.",
+    "bukti": "Observasi, wawancara, dan studi dokumen: (1) program pengembangan jiwa kewirausahaan; (2) dokumen kegiatan pembinaan kewirausahaan; (3) bukti praktik kemandirian warga madrasah; (4) integrasi kewirausahaan pada pembelajaran dan penguatan karakter.",
+    "rubrik": {
+     "1": "Tidak ada upaya menumbuhkan jiwa kewirausahaan di kalangan warga madrasah.",
+     "2": "Ada program jiwa kewirausahaan tetapi implementasinya terbatas atau sekadar administratif.",
+     "3": "Jiwa kewirausahaan ditumbuhkan secara nyata dan terdokumentasi, namun belum merata ke seluruh warga madrasah.",
+     "4": "Pembinaan jiwa kewirausahaan terencana, terlaksana konsisten, dievaluasi, dan berdampak pada tumbuhnya kreativitas, inovasi, serta kemandirian warga dan peserta didik."
+    }
+   },
+   {
+    "no": 4,
+    "indikator": "Menghimpun dan mengembangkan ide-ide baru warga madrasah menjadi program inovasi yang berkelanjutan",
+    "penggalian": "Pengawas menggali mekanisme penghimpunan, pencatatan, dan pengembangan gagasan baru dari warga madrasah menjadi program nyata yang memberi manfaat bagi mutu dan pembelajaran.",
+    "data": "Dokumen/bank ide warga madrasah, program pengembangan ide menjadi inovasi, serta bukti tindak lanjut ide menjadi kegiatan.",
+    "bukti": "Observasi, wawancara, dan studi dokumen: (1) bank/daftar ide-ide baru warga madrasah; (2) Rencana Kerja Pengembangan Madrasah; (3) bukti pengembangan ide menjadi program/kegiatan nyata.",
+    "rubrik": {
+     "1": "Tidak ada upaya menghimpun dan mengembangkan ide-ide baru.",
+     "2": "Ada pencatatan ide tetapi belum dikembangkan menjadi program nyata.",
+     "3": "Ide-ide baru dihimpun dan sebagian dikembangkan menjadi program yang terdokumentasi, namun tindak lanjutnya belum konsisten.",
+     "4": "Ide-ide baru terhimpun melalui wadah partisipatif, dikembangkan menjadi program inovatif, dievaluasi, dan menghasilkan perbaikan yang berdampak pada mutu madrasah."
+    }
+   }
+  ]
+ },
+ {
+  "kode": "3.3",
+  "no": 3,
+  "unsur": "Memiliki motivasi yang kuat untuk sukses dalam melaksanakan tugas pokok dan fungsinya sebagai pemimpin madrasah",
+  "indikator": [
+   {
+    "no": 1,
+    "indikator": "Bersedia belajar dari orang lain dan menjalin kemitraan untuk pengembangan diri serta madrasah",
+    "penggalian": "Pengawas menggali keterbukaan kepala madrasah terhadap masukan, belajar dari lembaga lain, serta kemitraan dengan orang tua dan komunitas sebagai bagian dari pembelajaran berkelanjutan.",
+    "data": "Forum komunikasi dengan lembaga pendidikan lain dan orang tua per tingkat/angkatan, dokumen kemitraan, dan foto kegiatan.",
+    "bukti": "Observasi, wawancara, dan studi dokumen: (1) forum komunikasi dengan lembaga pendidikan lain dan orang tua peserta didik per tingkat/kelas/angkatan; (2) dokumen kemitraan/kerjasama; (3) foto-foto kegiatan.",
+    "rubrik": {
+     "1": "Tidak ada kemauan belajar dari orang lain maupun kemitraan dengan pihak lain.",
+     "2": "Ada kemauan belajar tetapi belum diwujudkan dalam forum/kemitraan yang terdokumentasi.",
+     "3": "Kepala madrasah aktif belajar dan bermitra, terlaksana serta terdokumentasi, namun manfaatnya belum optimal.",
+     "4": "Kepala madrasah terbuka belajar dan membangun kemitraan partisipatif, terlaksana konsisten, dievaluasi, dan memberi dampak nyata pada pengembangan diri serta mutu madrasah."
+    }
+   },
+   {
+    "no": 2,
+    "indikator": "Berkeinginan kuat untuk selalu melakukan yang terbaik dan mengembangkan prestasi madrasah",
+    "penggalian": "Pengawas menggali orientasi kepala madrasah pada perbaikan berkelanjutan, keterlibatan dalam kompetisi/pengembangan, serta capaian prestasi warga madrasah.",
+    "data": "Dokumen/foto pelaksanaan kegiatan, keikutsertaan dalam lomba pembelajaran/pendidikan/manajemen, dan prestasi guru, tenaga kependidikan, serta kepala madrasah.",
+    "bukti": "Observasi, wawancara, dan studi dokumen: (1) dokumen/foto pelaksanaan kegiatan; (2) keikutsertaan dalam lomba pembelajaran/pendidikan maupun manajemen; (3) prestasi dalam lomba guru, tenaga kependidikan, dan kepala madrasah.",
+    "rubrik": {
+     "1": "Tidak ada keinginan untuk melakukan yang terbaik atau mengembangkan prestasi.",
+     "2": "Ada keinginan berprestasi tetapi belum diwujudkan dalam kegiatan yang terdokumentasi.",
+     "3": "Kepala madrasah aktif berikhtiar melakukan yang terbaik dan berprestasi, terlaksana serta terdokumentasi, namun belum konsisten merata.",
+     "4": "Orientasi mutu dan prestasi terencana, terlaksana konsisten, dievaluasi, dan menghasilkan peningkatan prestasi serta mutu layanan yang berdampak terukur pada peserta didik."
+    }
+   },
+   {
+    "no": 3,
+    "indikator": "Menciptakan perubahan yang kuat dan berkelanjutan bagi peningkatan mutu madrasah",
+    "penggalian": "Pengawas menggali komitmen dan kemampuan kepala madrasah mewujudkan perubahan signifikan melalui program inovasi, target yang terukur, dan pemantauan capaian.",
+    "data": "Program inovasi madrasah atau Rencana Kerja Pengembangan Madrasah, dan laporan target/capaian yang telah diraih.",
+    "bukti": "Observasi, wawancara, dan studi dokumen: (1) program inovasi madrasah atau Rencana Kerja Pengembangan Madrasah; (2) laporan target yang sudah dicapai; (3) bukti implementasi perubahan yang berdampak pada mutu.",
+    "rubrik": {
+     "1": "Tidak ada upaya menciptakan perubahan yang kuat bagi madrasah.",
+     "2": "Ada rencana perubahan tetapi implementasinya terbatas atau sekadar administratif.",
+     "3": "Perubahan yang kuat terlaksana dan terdokumentasi, dengan sebagian target tercapai, namun tindak lanjut belum optimal.",
+     "4": "Perubahan terencana partisipatif, terlaksana konsisten, dievaluasi/refleksi, ditindaklanjuti, dan berdampak terukur pada peningkatan mutu madrasah."
+    }
+   }
+  ]
+ }
+ ,{
+  "kode": "3.4",
+  "no": 4,
+  "unsur": "Pantang menyerah dan selalu mencari solusi terbaik dalam menghadapi kendala yang dihadapi madrasah",
+  "indikator": [
+   {
+    "no": 1,
+    "indikator": "Melibatkan tokoh agama, masyarakat, dan pemerintah dalam memecahkan masalah kelembagaan madrasah",
+    "penggalian": "Pengawas menggali kemampuan kepala madrasah membangun jejaring dan melibatkan pemangku kepentingan eksternal untuk mengatasi kendala kelembagaan serta memperkuat kemandirian madrasah.",
+    "data": "MoU/kerjasama dengan pihak lain, dokumen sister school, dan kemitraan dengan sekolah/instansi lain.",
+    "bukti": "Observasi, wawancara, dan studi dokumen: (1) MoU dengan pihak lain; (2) sister school; (3) kemitraan dengan sekolah lain dan pemangku kepentingan.",
+    "rubrik": {
+     "1": "Tidak ada keterlibatan tokoh agama, masyarakat, atau pemerintah dalam penyelesaian masalah kelembagaan.",
+     "2": "Ada kontak/komunikasi dengan pihak luar tetapi belum diformalisasi atau terdokumentasi.",
+     "3": "Keterlibatan pemangku kepentingan terlaksana dan terdokumentasi (MoU/kemitraan), namun tindak lanjut penyelesaian masalah belum optimal.",
+     "4": "Jejaring kemitraan dikelola partisipatif, efektif menyelesaikan masalah kelembagaan, dievaluasi, dan berdampak pada penguatan kelembagaan serta mutu madrasah."
+    }
+   },
+   {
+    "no": 2,
+    "indikator": "Bersikap objektif dan tidak memihak dalam mengatasi konflik internal madrasah",
+    "penggalian": "Pengawas menggali keteladanan kepala madrasah dalam bersikap adil, transparan, dan netral saat menghadapi konflik internal sehingga tercipta lingkungan kerja yang aman dan inklusif.",
+    "data": "Dokumen penanganan konflik, notulen rapat, dan foto kegiatan penyelesaian konflik secara objektif.",
+    "bukti": "Studi dokumen dan wawancara: (1) dokumen kegiatan penanganan konflik; (2) notulen rapat penyelesaian masalah; (3) foto kegiatan.",
+    "rubrik": {
+     "1": "Tidak ada sikap objektif/tidak memihak dalam mengatasi konflik internal.",
+     "2": "Ada upaya penyelesaian konflik tetapi pendekatannya belum objektif atau belum terdokumentasi.",
+     "3": "Kepala madrasah bersikap objektif dan netral dalam menyelesaikan konflik, terlaksana serta terdokumentasi, namun konsistensinya belum optimal.",
+     "4": "Penyelesaian konflik dilakukan secara adil, transparan, dan konsisten, dievaluasi/refleksi, sehingga tercipta iklim kerja aman-inklusif dan harmonis yang berdampak pada mutu."
+    }
+   },
+   {
+    "no": 3,
+    "indikator": "Bersikap simpatik dan tenggang rasa terhadap orang lain",
+    "penggalian": "Pengawas menggali penerapan kepemimpinan yang empatik, melayani, dan menghargai keberagaman sebagai wujud penguatan karakter dan moderasi beragama di madrasah.",
+    "data": "Dokumen kegiatan yang menunjukkan sikap simpatik/tenggang rasa, catatan layanan/kepedulian, dan foto kegiatan.",
+    "bukti": "Observasi, wawancara, dan studi dokumen: (1) dokumen kegiatan kepedulian/kepemimpinan melayani; (2) foto kegiatan; (3) testimoni/kesan warga madrasah.",
+    "rubrik": {
+     "1": "Tidak ada sikap simpatik/tenggang rasa terhadap orang lain.",
+     "2": "Ada sikap simpatik tetapi belum konsisten dan belum terdokumentasi.",
+     "3": "Sikap simpatik dan tenggang rasa terlaksana serta terdokumentasi, namun belum merata ke seluruh warga madrasah.",
+     "4": "Kepala madrasah meneladankan kepemimpinan melayani yang empatik dan inklusif, terlaksana konsisten, dievaluasi, dan menciptakan iklim harmonis yang berdampak pada kenyamanan serta mutu warga madrasah."
+    }
+   }
+  ]
+  },
+  {
+  "kode": "3.5",
+  "no": 5,
+  "unsur": "Memiliki naluri kewirausahaan dalam mengelola kegiatan produksi/jasa madrasah sebagai sumber pembelajaran peserta didik",
+  "indikator": [
+   {
+    "no": 1,
+    "indikator": "Merencanakan kegiatan produksi/jasa dan kewirausahaan sosial sesuai dengan potensi madrasah",
+    "penggalian": "Pengawas menggali perencanaan kegiatan produksi/jasa berbasis potensi madrasah yang diarahkan sebagai sumber pembelajaran dan penguatan karakter kemandirian peserta didik.",
+    "data": "Dokumen perencanaan kegiatan produksi/jasa dan kewirausahaan sesuai potensi madrasah.",
+    "bukti": "Studi dokumen dan wawancara: (1) laporan yang memuat pelaksanaan dan hasil program pengembangan kewirausahaan; (2) dokumen perencanaan kegiatan produksi/jasa; (3) analisis potensi madrasah.",
+    "rubrik": {
+     "1": "Tidak ada perencanaan kegiatan produksi/jasa sesuai potensi madrasah.",
+     "2": "Ada perencanaan tetapi belum berbasis analisis potensi madrasah atau sekadar administratif.",
+     "3": "Perencanaan kegiatan produksi/jasa sesuai potensi terlaksana dan terdokumentasi, namun belum sepenuhnya berbasis data.",
+     "4": "Perencanaan tersusun partisipatif berbasis analisis potensi dan data, terarah sebagai sumber pembelajaran, dievaluasi, dan berdampak pada peserta didik."
+    }
+   },
+   {
+    "no": 2,
+    "indikator": "Membina kegiatan produksi/jasa sesuai prinsip pengelolaan yang profesional dan akuntabel",
+    "penggalian": "Pengawas menggali pembinaan kegiatan produksi/jasa dengan tata kelola profesional, akuntabel, dan transparan yang mendukung keberlanjutan serta keterlibatan peserta didik.",
+    "data": "Dokumen pembinaan kegiatan produksi/jasa sesuai prinsip pengelolaan profesional dan akuntabel.",
+    "bukti": "Studi dokumen dan wawancara: (1) laporan memuat pelaksanaan dan hasil program pengembangan kewirausahaan; (2) dokumen tata kelola/pembinaan usaha; (3) bukti akuntabilitas pengelolaan.",
+    "rubrik": {
+     "1": "Tidak ada pembinaan kegiatan produksi/jasa yang profesional dan akuntabel.",
+     "2": "Ada pembinaan tetapi belum profesional/akuntabel dan implementasinya terbatas.",
+     "3": "Pembinaan kegiatan produksi/jasa profesional dan akuntabel terlaksana serta terdokumentasi, namun belum konsisten.",
+     "4": "Pembinaan terencana, terlaksana konsisten dengan tata kelola profesional-akuntabel, dievaluasi/refleksi, dan berdampak pada keberlanjutan usaha serta pembelajaran peserta didik."
+    }
+   },
+   {
+    "no": 3,
+    "indikator": "Melaksanakan pengawasan kegiatan produksi/jasa dan menyusun laporan secara berkala",
+    "penggalian": "Pengawas menggali mekanisme pengawasan dan pelaporan kegiatan produksi/jasa sebagai wujud tata kelola berbasis data dan akuntabilitas pengelolaan kewirausahaan madrasah.",
+    "data": "Dokumen pelaksanaan pengawasan kegiatan produksi/jasa dan laporan kegiatan.",
+    "bukti": "Wawancara dan studi dokumen: (1) laporan hasil evaluasi program pengembangan kewirausahaan; (2) program pengembangan jiwa kewirausahaan; (3) program pengembangan unit produksi kewirausahaan.",
+    "rubrik": {
+     "1": "Tidak ada pengawasan kegiatan produksi/jasa maupun laporan.",
+     "2": "Ada pengawasan/laporan tetapi belum rutin atau sekadar administratif.",
+     "3": "Pengawasan dan penyusunan laporan terlaksana serta terdokumentasi secara berkala, namun tindak lanjutnya belum optimal.",
+     "4": "Pengawasan dan pelaporan berjalan konsisten, dievaluasi, ditindaklanjuti, dan menjadi dasar perbaikan tata kelola yang berdampak pada mutu serta pembelajaran peserta didik."
+    }
+   },
+   {
+    "no": 4,
+    "indikator": "Mengembangkan kegiatan produksi/jasa dan pemasarannya, termasuk kemitraan yang mendukung keberlanjutan usaha",
+    "penggalian": "Pengawas menggali upaya pengembangan dan pemasaran produk/jasa, perluasan jaringan kemitraan, serta dampaknya terhadap pendanaan madrasah dan pengalaman belajar kewirausahaan peserta didik.",
+    "data": "Dokumen pengembangan kegiatan produksi/jasa, pemasaran, dan kemitraan usaha.",
+    "bukti": "Wawancara dan studi dokumen: (1) laporan hasil evaluasi program pengembangan kewirausahaan; (2) program pengembangan jiwa kewirausahaan; (3) program pengembangan unit produksi kewirausahaan; (4) dokumen kemitraan pemasaran.",
+    "rubrik": {
+     "1": "Tidak ada pengembangan kegiatan produksi/jasa maupun pemasarannya.",
+     "2": "Ada pengembangan/pemasaran tetapi masih terbatas atau belum terdokumentasi.",
+     "3": "Pengembangan dan pemasaran produk/jasa terlaksana serta terdokumentasi, namun kemitraan dan keberlanjutannya belum optimal.",
+     "4": "Pengembangan dan pemasaran terencana, diperkuat kemitraan, terlaksana konsisten, dievaluasi, dan berdampak pada keberlanjutan usaha serta keterampilan kewirausahaan peserta didik."
+    }
+   }
+  ]
+ }
+]

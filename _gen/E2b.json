@@ -1,0 +1,37 @@
+{
+ "code": "MJ",
+ "label": "Pelaksanaan Tugas Manajerial",
+ "aspek": [
+  {
+   "kode": "2.1",
+   "no": 1,
+   "unsur": "Menyusun perencanaan madrasah untuk berbagai tingkatan perencanaan.",
+   "indikator": [
+    {
+     "no": 1,
+     "indikator": "Mampu mengembangkan RKJM, RKT/RKAM dengan program lainnya berdasarkan data hasil evaluasi dalam pemenuhan 8 SNP",
+     "data": "Dokumen RKJM, RKT/RKAM yang  meliputi SNP",
+     "bukti": "Melalui studi dokumen: (1) Dokumen Evaluasi Diri Madrasah EDM); dan (2) Dokumen RKJM dan RKT berbasis EDM"
+    },
+    {
+     "no": 2,
+     "indikator": "Mampu merumuskan visi-misi sebagai arah pengembangan program RKJM, RKT/RKAS dan program lainnya.",
+     "data": "Visi-misi madrasah merupakan rumusan hasil keputusan bersama.",
+     "bukti": "Melalui studi dokumen: (1) visi, misi yang telah ditetapkan oleh Kamad; dan (2) berita acara dan daftar hadir kegiatan perumusan/ peninjauan kembali dan penetapan visi dan misi."
+    },
+    {
+     "no": 3,
+     "indikator": "Mampu menentukan strategi pencapaian tujuan madrasah, dilengkapi dengan indikator pencapaian yang terukur",
+     "data": "Dokumen program yang memuat strategi pencapaian tujuan madrasah",
+     "bukti": "Melalui studi dokumen: (1) program kerja; dan (2) RKJM dan RKTM"
+    },
+    {
+     "no": 4,
+     "indikator": "Mampu menyusun program dengan rencana evaluasi keterlaksanaan dan pencapaian program",
+     "data": "Dokumen rencana evaluasi keterlaksanaan dan pencapaian program.",
+     "bukti": "Melalui studi dokumen:\r\nRKJM dan RKTM"
+    }
+   ]
+  }
+ ]
+}

@@ -1,0 +1,212 @@
+[
+ {
+  "kode": "1.1",
+  "no": 1,
+  "unsur": "Mengembangkan madrasah sesuai dengan kebutuhan.",
+  "indikator": [
+   {
+    "no": 1,
+    "indikator": "Mampu mengembangkan struktur organisasi madrasah yang sesuai dengan kebutuhan program.",
+    "penggalian": "Menggali bagaimana kepala madrasah merancang dan menetapkan struktur organisasi yang selaras dengan program madrasah, serta bagaimana proses penyusunannya dilakukan secara partisipatif.",
+    "data": "Dokumen struktur organisasi madrasah beserta notulen rapat penyusunannya.",
+    "bukti": "Melalui telaah dokumen dan observasi: (1) bagan/struktur organisasi; (2) notulen rapat yang memuat keputusan penyusunan struktur organisasi; (3) dokumen sosialisasi struktur; dan (4) daftar hadir.",
+    "rubrik": {
+     "1": "Struktur organisasi tidak tersedia atau tidak relevan dengan kebutuhan program madrasah.",
+     "2": "Struktur organisasi tersedia tetapi disusun sepihak, belum mencerminkan kebutuhan program, dan sosialisasinya terbatas.",
+     "3": "Struktur organisasi disusun sesuai kebutuhan program dan terdokumentasi, namun tindak lanjut evaluasi kesesuaiannya belum merata.",
+     "4": "Struktur organisasi disusun partisipatif, selaras kebutuhan program, disosialisasikan, dievaluasi, ditindaklanjuti, dan berdampak pada efektivitas pembagian tugas."
+    }
+   },
+   {
+    "no": 2,
+    "indikator": "Mampu menempatkan personalia sesuai dengan kebutuhan tugas madrasah.",
+    "penggalian": "Menggali kesesuaian penempatan personalia dengan kebutuhan dan kompetensi, serta kejelasan uraian tugas setiap personil pada struktur organisasi.",
+    "data": "Dokumen uraian tugas personalia dan rincian tugas pada struktur organisasi madrasah.",
+    "bukti": "Melalui telaah dokumen: (1) dokumen penetapan/pengesahan susunan organisasi madrasah; (2) rincian tugas setiap personil; (3) SOP personalia; dan (4) sertifikat/kompetensi personil.",
+    "rubrik": {
+     "1": "Penempatan personalia tidak sesuai kebutuhan tugas atau tidak terdokumentasi.",
+     "2": "Penempatan personalia ada tetapi belum sepenuhnya sesuai kebutuhan, dan uraian tugas bersifat administratif.",
+     "3": "Penempatan personalia sesuai kebutuhan dan terdokumentasi, namun belum seluruhnya ditindaklanjuti dengan pembinaan.",
+     "4": "Penempatan personalia didasarkan pada kebutuhan dan kompetensi, disertai uraian tugas jelas, pembinaan, dan berdampak pada kinerja organisasi."
+    }
+   },
+   {
+    "no": 3,
+    "indikator": "Mampu mengembangkan pedoman dan prosedur kerja organisasi madrasah.",
+    "penggalian": "Menggali ketersediaan dan penerapan SOP/pedoman kerja organisasi madrasah sebagai acuan tata kelola yang tertib.",
+    "data": "Pedoman dan prosedur kerja (SOP) organisasi madrasah.",
+    "bukti": "Melalui telaah dokumen dan observasi: (1) SOP madrasah; (2) dokumen sosialisasi SOP; dan (3) bukti pelaksanaan SOP.",
+    "rubrik": {
+     "1": "Pedoman/SOP kerja organisasi tidak tersedia atau tidak relevan.",
+     "2": "Pedoman/SOP tersedia tetapi belum diimplementasikan secara konsisten.",
+     "3": "Pedoman/SOP tersedia dan diimplementasikan, namun evaluasi keterlaksanaannya belum rutin.",
+     "4": "Pedoman/SOP tersedia, diimplementasikan konsisten, dievaluasi, ditindaklanjuti, dan berdampak pada tertib tata kelola madrasah."
+    }
+   }
+  ]
+ },
+ {
+  "kode": "1.2",
+  "no": 2,
+  "unsur": "Mengelola perubahan dan pengembangan madrasah menuju organisasi pembelajar yang efektif.",
+  "indikator": [
+   {
+    "no": 1,
+    "indikator": "Mampu mengembangkan program baru untuk meningkatkan pencapaian target yang lebih tinggi.",
+    "penggalian": "Menggali upaya kepala madrasah merancang program pengembangan yang memuat target capaian lebih tinggi dan berbasis data pencapaian sebelumnya, termasuk indikator keunggulan khas satuan pendidikan.",
+    "data": "Program pengembangan madrasah yang memuat target capaian indikator keunggulan khas, kerja sama tim, dan data realisasi target yang meningkat dari capaian sebelumnya.",
+    "bukti": "Melalui telaah dokumen: (1) visi dan misi madrasah; (2) data prestasi madrasah; (3) data hasil Asesmen Nasional/Asesmen Madrasah 3 tahun terakhir; dan (4) data alumni.",
+    "rubrik": {
+     "1": "Tidak ada program baru untuk meningkatkan target pencapaian.",
+     "2": "Program ada tetapi belum memuat target lebih tinggi atau belum berbasis data.",
+     "3": "Program baru tersusun dengan target lebih tinggi dan terdokumentasi, namun tindak lanjut capaiannya belum optimal.",
+     "4": "Program baru disusun partisipatif berbasis data, dilaksanakan konsisten, dievaluasi, ditindaklanjuti, dan berdampak pada peningkatan capaian target."
+    }
+   },
+   {
+    "no": 2,
+    "indikator": "Mampu dan terampil dalam membangun tim kerja yang efektif untuk menghasilkan kinerja yang lebih unggul.",
+    "penggalian": "Menggali pembentukan tim kerja/komunitas belajar (KKG/MGMP) yang efektif, lengkap dengan distribusi dan deskripsi tugas serta program kegiatannya.",
+    "data": "Struktur organisasi yang dilengkapi distribusi dan deskripsi pembagian tugas, serta program dan laporan kegiatan tim kerja.",
+    "bukti": "Melalui telaah dokumen dan observasi: (1) bagan/struktur organisasi; (2) SK tim kerja; (3) tugas dan fungsi; (4) terbentuknya KKG/MGMP; (5) program KKG/MGMP; dan (6) laporan kegiatan KKG/MGMP.",
+    "rubrik": {
+     "1": "Tim kerja tidak terbentuk atau tidak berjalan.",
+     "2": "Tim kerja terbentuk tetapi program dan pembagian tugasnya belum efektif.",
+     "3": "Tim kerja berjalan dengan program terdokumentasi, namun belum seluruhnya menghasilkan produk kinerja unggul.",
+     "4": "Tim kerja efektif, berprogram, dievaluasi, ditindaklanjuti, dan menghasilkan produk kinerja yang berdampak pada mutu madrasah."
+    }
+   },
+   {
+    "no": 3,
+    "indikator": "Mampu menerapkan berbagai teknik pembaruan dalam pengelolaan pembelajaran.",
+    "penggalian": "Menggali penerapan teknik pembaruan pembelajaran yang terprogram, selaras Kurikulum Madrasah, dan mendukung pembelajaran berpusat pada murid serta pembelajaran mendalam.",
+    "data": "Dokumen penerapan strategi pembaruan pembelajaran yang terprogram.",
+    "bukti": "Melalui telaah dokumen: (1) Kurikulum Madrasah; (2) kalender pendidikan; (3) perangkat ajar/modul ajar; (4) sistem penilaian/asesmen; dan (5) peraturan akademik.",
+    "rubrik": {
+     "1": "Tidak ada teknik pembaruan dalam pengelolaan pembelajaran.",
+     "2": "Teknik pembaruan ada tetapi belum terprogram atau masih administratif.",
+     "3": "Teknik pembaruan terprogram dan terlaksana, namun belum merata diterapkan di seluruh kelas/guru.",
+     "4": "Teknik pembaruan terprogram, konsisten, dievaluasi, ditindaklanjuti, dan berdampak pada kualitas pembelajaran berpusat pada murid."
+    }
+   },
+   {
+    "no": 4,
+    "indikator": "Mampu mengembangkan potensi dan meningkatkan prestasi madrasah.",
+    "penggalian": "Menggali upaya kepala madrasah mengembangkan potensi dan prestasi peserta didik yang meningkat dari waktu ke waktu, baik akademik maupun non-akademik.",
+    "data": "Dokumen bukti perkembangan potensi dan prestasi peserta didik yang meningkat dari waktu ke waktu.",
+    "bukti": "Melalui telaah dokumen: (1) data prestasi madrasah 1 tahun terakhir; (2) data hasil Asesmen Nasional/Asesmen Madrasah 1 tahun terakhir; (3) dokumen akreditasi; dan (4) program ekstrakurikuler.",
+    "rubrik": {
+     "1": "Tidak ada upaya pengembangan potensi dan prestasi peserta didik.",
+     "2": "Ada upaya pengembangan tetapi belum terdokumentasi atau belum meningkat.",
+     "3": "Pengembangan potensi dan prestasi berjalan dan terdokumentasi, namun belum merata dan tindak lanjutnya belum optimal.",
+     "4": "Pengembangan potensi dan prestasi berjalan konsisten, dievaluasi, ditindaklanjuti, dan berdampak pada peningkatan prestasi peserta didik secara berkelanjutan."
+    }
+   }
+  ]
+ },
+ {
+  "kode": "1.3",
+  "no": 3,
+  "unsur": "Mengelola hubungan antara madrasah dan masyarakat dalam rangka pencarian dukungan ide, sumber belajar, dan pembiayaan.",
+  "indikator": [
+   {
+    "no": 1,
+    "indikator": "Merencanakan kerja sama dengan lembaga pemerintah, swasta, dan masyarakat.",
+    "penggalian": "Menggali perencanaan kerja sama madrasah dengan lembaga pemerintah, swasta, dan masyarakat, termasuk kemitraan orang tua dan komite madrasah.",
+    "data": "Data dan dokumen perencanaan kerja sama dengan lembaga pemerintah, swasta, dan masyarakat.",
+    "bukti": "Melalui telaah dokumen: (1) SK komite madrasah; (2) AD/ART komite madrasah; (3) program kerja komite madrasah; (4) laporan kegiatan komite madrasah; dan (5) dokumen tertulis kerja sama (MoU).",
+    "rubrik": {
+     "1": "Tidak ada perencanaan kerja sama dengan pemerintah, swasta, atau masyarakat.",
+     "2": "Perencanaan kerja sama ada tetapi belum terdokumentasi lengkap atau masih bersifat administratif.",
+     "3": "Perencanaan kerja sama tersusun dan terdokumentasi, namun belum seluruhnya ditindaklanjuti menjadi kerja sama nyata.",
+     "4": "Perencanaan kerja sama partisipatif, terdokumentasi, ditindaklanjuti, dan berdampak pada dukungan ide, sumber belajar, dan pembiayaan madrasah."
+    }
+   },
+   {
+    "no": 2,
+    "indikator": "Melakukan pendekatan-pendekatan untuk mendapatkan dukungan dari lembaga pemerintah, swasta, dan masyarakat.",
+    "penggalian": "Menggali upaya nyata kepala madrasah dalam membangun kemitraan dan mendapatkan dukungan dari pemerintah, swasta, dan masyarakat.",
+    "data": "Dokumen program kerja sama dengan pemerintah, swasta, dan masyarakat.",
+    "bukti": "Melalui telaah dokumen: (1) program kegiatan kerja sama; (2) foto kegiatan; (3) jadwal kegiatan; dan (4) SK penanggung jawab program.",
+    "rubrik": {
+     "1": "Tidak ada pendekatan untuk memperoleh dukungan dari pihak luar.",
+     "2": "Pendekatan dilakukan tetapi sporadis dan belum terprogram.",
+     "3": "Pendekatan terprogram dan terdokumentasi, namun dukungan yang diperoleh belum optimal atau belum merata.",
+     "4": "Pendekatan terprogram, konsisten, dievaluasi, ditindaklanjuti, dan berdampak pada dukungan nyata dari pemerintah, swasta, dan masyarakat."
+    }
+   },
+   {
+    "no": 3,
+    "indikator": "Memanfaatkan dan memelihara hubungan kerja sama dengan lembaga pemerintah, swasta, dan masyarakat.",
+    "penggalian": "Menggali pemanfaatan dan keberlanjutan hubungan kerja sama madrasah dengan pihak eksternal serta dampaknya bagi madrasah.",
+    "data": "Data hasil kerja sama dengan lembaga pemerintah, swasta, dan masyarakat.",
+    "bukti": "Melalui telaah dokumen: laporan kegiatan kerja sama beserta bukti tindak lanjutnya.",
+    "rubrik": {
+     "1": "Hubungan kerja sama tidak dimanfaatkan atau tidak terpelihara.",
+     "2": "Hubungan kerja sama dipelihara sebatas administratif, belum dimanfaatkan optimal.",
+     "3": "Kerja sama dimanfaatkan dan terpelihara, namun belum dievaluasi dampaknya secara berkala.",
+     "4": "Kerja sama dimanfaatkan optimal, dipelihara, dievaluasi, ditindaklanjuti, dan berdampak pada pengembangan madrasah."
+    }
+   }
+  ]
+ },
+ {
+  "kode": "1.4",
+  "no": 4,
+  "unsur": "Mengelola proses pencapaian 8 SNP sesuai dengan arah dan tujuan pendidikan nasional.",
+  "indikator": [
+   {
+    "no": 1,
+    "indikator": "Mengaplikasikan pengembangan Kurikulum Madrasah yang mengacu pada standar isi.",
+    "penggalian": "Menggali penerapan pengembangan Kurikulum Madrasah yang mengacu pada standar isi, termasuk penyusunan perangkat ajar/modul ajar.",
+    "data": "Dokumen analisis SNP dalam hal standar isi beserta dokumen Kurikulum Madrasah.",
+    "bukti": "Melalui telaah dokumen: (1) Kurikulum Madrasah; (2) kalender pendidikan; (3) perangkat ajar/modul ajar; (4) penilaian; (5) peraturan akademik; dan (6) buku kerja guru.",
+    "rubrik": {
+     "1": "Kurikulum Madrasah tidak mengacu pada standar isi atau tidak tersedia.",
+     "2": "Kurikulum Madrasah tersedia tetapi belum sepenuhnya mengacu standar isi dan perangkat ajarnya belum lengkap.",
+     "3": "Kurikulum Madrasah mengacu standar isi dan terdokumentasi, namun tindak lanjut review-nya belum rutin.",
+     "4": "Kurikulum Madrasah disusun partisipatif, mengacu standar isi, dievaluasi, ditindaklanjuti, dan berdampak pada kesesuaian pembelajaran."
+    }
+   },
+   {
+    "no": 2,
+    "indikator": "Mengaplikasikan pengembangan proses pembelajaran yang mengacu pada standar proses.",
+    "penggalian": "Menggali penerapan proses pembelajaran yang mengacu standar proses, berpusat pada murid, mendukung pembelajaran mendalam, dan memanfaatkan modul ajar.",
+    "data": "Dokumen analisis SNP dalam hal standar proses beserta perangkat pembelajaran.",
+    "bukti": "Melalui telaah dokumen: (1) dokumen pengembangan perangkat ajar; (2) modul ajar (RPP); (3) RPE/RPP; (4) buku teks; (5) jurnal mengajar guru; dan (6) data siswa.",
+    "rubrik": {
+     "1": "Proses pembelajaran tidak mengacu pada standar proses.",
+     "2": "Proses pembelajaran mengacu standar proses tetapi implementasinya terbatas dan dokumen belum lengkap.",
+     "3": "Proses pembelajaran mengacu standar proses dan terlaksana, namun belum merata dan refleksi belum optimal.",
+     "4": "Proses pembelajaran berpusat pada murid, mengacu standar proses, konsisten, dievaluasi, ditindaklanjuti, dan berdampak pada hasil belajar."
+    }
+   },
+   {
+    "no": 3,
+    "indikator": "Mengaplikasikan sistem penilaian pembelajaran yang mengacu pada standar penilaian.",
+    "penggalian": "Menggali penerapan sistem penilaian yang mengacu standar penilaian, termasuk KKTP serta asesmen formatif dan sumatif.",
+    "data": "Dokumen analisis SNP dalam hal standar penilaian beserta instrumen dan hasil asesmen.",
+    "bukti": "Melalui telaah dokumen: (1) instrumen penilaian; (2) kisi-kisi soal; (3) kumpulan naskah soal; (4) analisis butir soal; (5) dokumen analisis hasil belajar siswa; (6) laporan hasil belajar siswa; (7) tindak lanjut hasil penilaian; (8) dokumen asesmen formatif; dan (9) dokumen asesmen sumatif.",
+    "rubrik": {
+     "1": "Sistem penilaian tidak mengacu pada standar penilaian.",
+     "2": "Sistem penilaian ada tetapi belum sepenuhnya mengacu standar dan tindak lanjutnya terbatas.",
+     "3": "Sistem penilaian mengacu standar dan terlaksana, namun analisis dan tindak lanjut belum merata.",
+     "4": "Sistem penilaian berbasis KKTP dan asesmen formatif-sumatif, dievaluasi, ditindaklanjuti, dan berdampak pada peningkatan hasil belajar."
+    }
+   },
+   {
+    "no": 4,
+    "indikator": "Melaksanakan penjaminan mutu pencapaian standar kompetensi lulusan.",
+    "penggalian": "Menggali pelaksanaan penjaminan mutu pencapaian standar kompetensi lulusan (SKL), termasuk penguatan karakter, Panca Cinta, dan prestasi peserta didik.",
+    "data": "Dokumen analisis SNP dalam hal standar kompetensi lulusan beserta data prestasi peserta didik.",
+    "bukti": "Melalui telaah dokumen: (1) program kegiatan kesiswaan; (2) laporan kegiatan kesiswaan; (3) dokumentasi kegiatan kesiswaan; (4) laporan kegiatan pembiasaan siswa; (5) dokumen kegiatan literasi; (6) data rata-rata hasil asesmen 2 tahun terakhir; (7) data prestasi akademik 2 tahun terakhir; dan (8) data prestasi non-akademik 2 tahun terakhir.",
+    "rubrik": {
+     "1": "Penjaminan mutu pencapaian SKL tidak terlaksana.",
+     "2": "Penjaminan mutu ada tetapi implementasinya terbatas dan belum berbasis data.",
+     "3": "Penjaminan mutu terlaksana dan terdokumentasi, namun tindak lanjut pencapaian SKL belum optimal.",
+     "4": "Penjaminan mutu berjalan konsisten, dievaluasi, ditindaklanjuti, dan berdampak pada peningkatan kompetensi lulusan secara terukur."
+    }
+   }
+  ]
+ }
+]

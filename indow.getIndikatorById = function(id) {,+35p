@@ -1852,9 +1852,7 @@ window.getIndikatorById = function(id) {
   const parts = String(id).split('_');
   if (parts.length < 3) return null;
   const code = parts[0], aspek_kode = parts[1], ind_no = parseInt(parts[2], 10);
-  // Sadar-jenjang: utamakan dataset sesuai jenjang aktif (RA punya dataset sendiri).
-  const jList = (window.getInstrumenByJenjang ? window.getInstrumenByJenjang(window.PKKM_JENJANG_AKTIF) : null) || window.PKKM_KOMPONEN || [];
-  const k = jList.find(x => x.code === code) || (window.PKKM_KOMPONEN || []).find(x => x.code === code);
+  const k = window.PKKM_KOMPONEN.find(x => x.code === code);
   if (!k) return null;
   const a = k.aspek.find(x => x.kode === aspek_kode);
   if (!a) return null;
@@ -2027,22 +2025,10 @@ window._findKomponenByPenilaian = function (penilaian_id, komponenCode) {
 // Varian tambal-sulam lama (PKKM_RA_VARIAN) DINONAKTIFKAN.
 // Instrumen RA baru sudah sepenuhnya kontekstual, sehingga redaksi indikator
 // dipakai apa adanya (termasuk meneruskan field penggalian & rubrik bila ada).
-// Override manual (hasil edit halaman Instrumen) ikut diterapkan untuk
-// jenjang selain RA. OBJEK MASTER TIDAK DIUBAH.
 window.getIndikatorTampil = function (ind, indikator_id, jenjang) {
   const out = { indikator: ind.indikator, data: ind.data, bukti: ind.bukti };
   if (ind.penggalian) out.penggalian = ind.penggalian;
   if (ind.rubrik) out.rubrik = ind.rubrik;
-  if (jenjang !== 'RA' && indikator_id && window.InstrumenOverride) {
-    const ov = window.InstrumenOverride.get(indikator_id);
-    if (ov) {
-      if (ov.indikator != null) out.indikator = ov.indikator;
-      if (ov.data != null) out.data = ov.data;
-      if (ov.bukti != null) out.bukti = ov.bukti;
-      if (ov.penggalian != null) out.penggalian = ov.penggalian;
-      if (ov.rubrik != null) out.rubrik = ov.rubrik;
-    }
-  }
   return out;
 };
 

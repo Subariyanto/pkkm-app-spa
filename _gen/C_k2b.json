@@ -1,0 +1,167 @@
+{
+ "code": "MJ",
+ "label": "Pelaksanaan Tugas Manajerial",
+ "aspek": [
+  {
+   "kode": "2.6",
+   "no": 6,
+   "unsur": "Mengelola peserta didik dalam rangka penerimaan peserta didik baru, dan penempatan dan pengembangan kapasitas peserta didik",
+   "indikator": [
+    {
+     "no": 1,
+     "indikator": "Menyusun perencanaan penerimaan, pengelolaan dan pengembangan kompetensi peserta didik.",
+     "data": "Dokumen program penerimaan peserta didik baru, kriteria penerimaan peserta didik, data hasil analisis bekal ajar peserta didik awal,",
+     "bukti": "Studi dokumen: (1) dokumen program penerimaan peserta didik baru; (2) brosur; dan (3) data hasil analisis kemampuan peserta didik baru"
+    },
+    {
+     "no": 2,
+     "indikator": "Memiliki program pengembangan potensi diri dan prestasi peserta didik.",
+     "data": "Dokumen program pengembangan potensi diri dan prestasi peserta didik.",
+     "bukti": "Observasi dan studi dokumen:\r\nprogram pengembangan diri peserta didik."
+    },
+    {
+     "no": 3,
+     "indikator": "Memfasilitasi kegiatan-kegiatan untuk meningkatkan pembiasaan melalui penanaman nilai-nilai.",
+     "data": "Data program kegiatan akademik dan nonakademik melalui penanaman nilai - nilai.",
+     "bukti": "Observasi lingkungan aktivitas siswa, wawancara dan studi dokumen: (1) program kegiatan akademik dan non akademik dan laporan pelaksanaannya; dan (2) dokumentasi kegiatan."
+    },
+    {
+     "no": 4,
+     "indikator": "Memfasilitasi kegiatan pengembangan diri bagi peserta didik, pendidik, dan tenaga kependidikan lainnya secara optimal",
+     "data": "Data keterlaksanaan program pengembangan diri peserta didik, pendidik, dan tenaga kependidikan",
+     "bukti": "Observasi lingkungan aktivitas siswa dan guru, wawancara dan studi dokumen: (1) program kegiatan pengembangan diri; (2) dokumentasi kegiatan; dan (3) data prestasi siswa, guru dan tendik."
+    }
+   ]
+  },
+  {
+   "kode": "2.7",
+   "no": 7,
+   "unsur": "Mengelola pengembangan kurikulum dan kegiatan pembelajaran sesuai dengan arah dan tujuan pendidikan nasional",
+   "indikator": [
+    {
+     "no": 1,
+     "indikator": "Mampu mengarahkan secara efektif dalam menerapkan prinsip-prinsip pengengembangan KTSP dalam kegiatan IHT, Workshop, Rapat Koordinasi, dan kegiatan MGMP/KKG.",
+     "data": "Dokumen hasil pengembangan kurikulum yang disusun melalui rapat kerja, IHT, Workshop, Rakor, atau kegiatan MGMP/KKG",
+     "bukti": "Studi dokumen: (1) dokumen kurikulum yang berlaku; (2) SK tim pengembang kurikulum; dan (3) dokumen penyusunan dokumen kurikulum (daftar hadir, berita acara, notulen)."
+    },
+    {
+     "no": 2,
+     "indikator": "Mampu mengendalikan pelaksanaan KTSP berlandaskan kalender pendidikan, menerbitkan surat keputusan pembagian tugas mengajar, dan menerapkan aturan akademik.",
+     "data": "Pelaksanaan kurikulum sesuai dengan kalender pendidikan tingkat madrasah, surat keputusan pembagian tugas mengajar, dan aturan akademik.",
+     "bukti": "Studi dokumen: (1) struktur kurikulum; (2) jadwal pelajaran; (3) daftar hadir guru; dan (4) peraturan akademik"
+    },
+    {
+     "no": 3,
+     "indikator": "Memfasilitasi efektivitas tim kerja guru dalam rangka meningkatkan mutu pembelajaran.",
+     "data": "Bukti pelaksanaan kerja sama guru pada tingkat satuan pendidikan, antar satuan pendidikan dalam meningkatkan mutu perencanaan, proses, pembelajaran",
+     "bukti": "Studi dokumen: (1) program KKG/MGMP di madrasah; dan (2) laporan pelaksanaan KKG/MGMP."
+    },
+    {
+     "no": 4,
+     "indikator": "Mampu mengembangkan pelayanan belajar yang inovatif melalui pengembangan perangkat dan sumber belajar yang terbarukan.",
+     "data": "Bukti penggunaan metode hasil pelatihan paling akhir, memanfaatkan teknologi informasi dan komunikasi, penggunaan alat peraga, teknik evaluasi baru yang menghasilkan produk belajar peserta didik yang dipublikasikan di lingkungan madrasah atau media lain",
+     "bukti": "Observasi kelas, studi dokumen wawancara dengan siswa dan guru:\r\nmenelaah ragam metode, media dan sumber belajar yang digunakan dalam RPP"
+    },
+    {
+     "no": 5,
+     "indikator": "Memfasilitasi peserta didik dalam mengembangkan kolaborasi dan kompetisi bidang akademik dan nonakademik",
+     "data": "Data kegiatan kolaborasi dan kompetisi peserta didik tingkat madrasah, baik akademik dan non akademik.",
+     "bukti": "Wawancara dan studi dokumen: (1) program, laporan dan dokumen kegiatan kesiswaan (kegiatan akademik maupun non akademik); dan (2) data prestasi akademik maupun nonakademik."
+    }
+   ]
+  },
+  {
+   "kode": "2.8",
+   "no": 8,
+   "unsur": "Mengelola keuangan madrasah sesuai dengan prinsip pengelolaan yang akuntabel, transparan, dan efisien",
+   "indikator": [
+    {
+     "no": 1,
+     "indikator": "Mampu merencanakan kebutuhan keuangan madrasah sesuai dengan rencana pengembangan madrasah, baik jangka pendek maupun jangka panjang",
+     "data": "Dokumen RKJM dan RKTM",
+     "bukti": "Studi dokumen: (1) RKJM dan RKTM; (2) laporan keuangan; dan (3) buku kas."
+    },
+    {
+     "no": 2,
+     "indikator": "Mampu mengupayaan sumber-sumber keuangan terutama dari luar madrasah dan dari unit usaha madrasah",
+     "data": "Dokumen RKJM dan RKTM",
+     "bukti": "Studi dokumen RKJM dan RKTM."
+    },
+    {
+     "no": 3,
+     "indikator": "Mampu mengkoordinasikan pembelajaran keuangan sesuai dengan peraturan dan perundang-undangan berdasarkan asas prioritas dan efisiensi.",
+     "data": "Dokumen RKJM dan RKTM",
+     "bukti": "Studi dokumen RKJM dan RKTM."
+    },
+    {
+     "no": 4,
+     "indikator": "Mampu membuat laporan dan evaluasi pengelolaan keuangan madrasah sesuai dengan prinsip efisien, tranparan, dan akuntabel.",
+     "data": "Dokumen RKJM dan RKTM",
+     "bukti": "Studi dokumen: (1) RKJM dan RKTM; (2) laporan keuangan; dan (3) buku kas."
+    }
+   ]
+  },
+  {
+   "kode": "2.9",
+   "no": 9,
+   "unsur": "Mengelola ketatausahaan madrasah dalam mendukung pencapaian tujuan madrasah",
+   "indikator": [
+    {
+     "no": 1,
+     "indikator": "Mampu mengelola administrasi surat masuk dan surat keluar sesuai dengan pedoman persuratan yang berlaku",
+     "data": "Adanya bukti dokumen surat masuk dan keluar",
+     "bukti": "Melalui studi dokumen:\r\nsurat masuk dan keluar"
+    },
+    {
+     "no": 2,
+     "indikator": "Mampu mengelola administrasi madrasah yang meliputi administrasi akademik, kesiswaan, sarana/prasarana, keuangan, dan hubungan madrasah dengan masyarakat",
+     "data": "Adanya bukti dokumen administrasi madrasah",
+     "bukti": "Melalui studi dokumen:\r\nadministrasi madrasah (akademik, kesiswaan, sarana/prasaran, keuangan, dan hubungan madrasah dengan masyarakat)"
+    },
+    {
+     "no": 3,
+     "indikator": "Mampu mengelola administrasi kearsipan madrasah baik arsip dinamis maupun arsip lainnya",
+     "data": "Adanya bukti dokumen administrasi madrasah",
+     "bukti": "Melalui studi Dokumen:\r\nAdministrasi madrasah"
+    },
+    {
+     "no": 4,
+     "indikator": "Mampu mengelola administrasi akreditasi madrasah sesuai dengan prinsip-prinsip tersedianya dokumen pendukung dan bukti fisik",
+     "data": "Adanya bukti dokumen administrasi madrasah",
+     "bukti": "Melalui studi Dokumen:\r\nAdministrasi pemenuhan 8 SNP madrasah"
+    }
+   ]
+  },
+  {
+   "kode": "2.10",
+   "no": 10,
+   "unsur": "Melakukan monitoring, evaluasi, dan pelaporan pelaksanaan program kegiatan madrasah dengan prosedur yang tepat, serta merencanakan tindak lanjutnya.",
+   "indikator": [
+    {
+     "no": 1,
+     "indikator": "Menyusun standar kinerja program pendidikan yang dapat diukur dan dinilai",
+     "data": "Dokumen SKP yang terukur",
+     "bukti": "Melalui studi dokumen:\r\nSKP yang terukur"
+    },
+    {
+     "no": 2,
+     "indikator": "Melakukan monitoring dan evaluasi kinerja program pendidikan dengan menggunakan teknik yang sesuai",
+     "data": "Dokumen pelaksanaan monitoring dan evaluasi  yang sesuai",
+     "bukti": "Melalui studi dokumen:\r\npelaksanaan monitoring dan evaluasi  yang sesuai"
+    },
+    {
+     "no": 3,
+     "indikator": "Menyusun laporan sesuai dengan standar pelaporan monitoring dan evaluasi",
+     "data": "Dokumen laporan pelaksanaan monitoring dan evaluasi",
+     "bukti": "Melalui studi dokumen:\r\nLaporan pelaksanaan monitoring dan evaluasi"
+    },
+    {
+     "no": 4,
+     "indikator": "Merumuskan program tindak lanjut berdasarkan hasil evaluasi pelaksanaan program sebelumnya",
+     "data": "Dokumen program tindak lanjut berdasarkan hasil  monitring dan evaluasi",
+     "bukti": "Melalui studi dokumen:\r\nProgram tindak lanjut berdasarkan hasil  monitring dan evaluasi"
+    }
+   ]
+  }
+ ]
+}

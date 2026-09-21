@@ -501,6 +501,27 @@ function wipeAll() {
 }
 
 // === Expose ====================================================
+// === Override Instrumen (editing halaman Instrumen) ===========
+// Menyimpan perubahan redaksi indikator (indikator/penggalian/data/bukti/rubrik)
+// yang di-edit lewat halaman Instrumen. Key: `${komponenCode}_${aspekKode}_${no}`.
+// Hanya berlaku untuk jenjang MI/MTs/MA (jenjang RA memakai dataset terpisah).
+const InstrumenOverride = {
+  all() { return pLoad(PKKM_KEYS.instrumen_overrides, {}); },
+  get(id) { return this.all()[id] || null; },
+  set(id, fields) {
+    const all = this.all();
+    all[id] = Object.assign({}, all[id] || {}, fields);
+    pSave(PKKM_KEYS.instrumen_overrides, all);
+  },
+  remove(id) {
+    const all = this.all();
+    delete all[id];
+    pSave(PKKM_KEYS.instrumen_overrides, all);
+  },
+  clear() { pSave(PKKM_KEYS.instrumen_overrides, {}); },
+  count() { return Object.keys(this.all()).length; },
+};
+
 // === PKB (Pengembangan Keprofesian Berkelanjutan) =============
 // Schema: { id, kamad_id, periode_id, sub_aspek_kode, prioritas (1-5),
 //           unsur_pkb, jenis_pkb, kegiatan_pkb, catatan }
@@ -582,6 +603,7 @@ window.identifikasiPrioritasPKB = identifikasiPrioritasPKB;
 
 
 window.PKKM_KEYS = PKKM_KEYS;
+window.InstrumenOverride = InstrumenOverride;
 window.Kamad = Kamad;
 window.Periode = Periode;
 window.Penilaian = Penilaian;

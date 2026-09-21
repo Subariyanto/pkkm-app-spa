@@ -1,0 +1,238 @@
+[
+ {
+  "kode": "2.2",
+  "no": 2,
+  "unsur": "Memimpin madrasah dalam rangka pendayagunaan sumber daya madrasah secara optimal.",
+  "indikator": [
+   {
+    "no": 1,
+    "indikator": "Memberi contoh disiplin: hadir tepat waktu, disiplin menggunakan waktu, dan tepat waktu mengakhiri pekerjaan.",
+    "penggalian": "Pengawas menggali keteladanan kepala madrasah dalam disiplin waktu dan kehadiran pada seluruh kegiatan madrasah sebagai teladan bagi warga madrasah.",
+    "data": "Dokumen daftar hadir seluruh kegiatan madrasah (rekapitulasi kehadiran kepala madrasah).",
+    "bukti": "Observasi, wawancara, dan studi dokumen: (1) rekap finger print/kehadiran kepala madrasah; dan (2) daftar hadir pada kegiatan di madrasah.",
+    "rubrik": {
+     "1": "Tidak ada dokumen kehadiran kepala madrasah atau tidak terpantau kedisiplinannya.",
+     "2": "Dokumen kehadiran ada namun kedisiplinan waktu belum konsisten atau hanya administratif.",
+     "3": "Kedisiplinan hadir dan waktu terlaksana sebagian besar kegiatan serta terdokumentasi, namun belum sepenuhnya menjadi teladan yang merata.",
+     "4": "Kedisiplinan waktu terencana, terlaksana konsisten, dievaluasi, dicontohkan, dan berdampak meningkatnya disiplin warga madrasah."
+    }
+   },
+   {
+    "no": 2,
+    "indikator": "Melaksanakan peraturan sesuai ketentuan yang berlaku dan mengarahkan warga madrasah mematuhinya.",
+    "penggalian": "Pengawas menggali peran kepala madrasah dalam menegakkan aturan dan menjadi contoh dalam pelaksanaan peraturan madrasah.",
+    "data": "Bukti keteladanan kepala madrasah dalam mengarahkan guru, tenaga kependidikan, dan peserta didik melaksanakan kegiatan sesuai peraturan.",
+    "bukti": "Wawancara dengan warga madrasah dan studi dokumen tata tertib/pelaksanaan aturan madrasah.",
+    "rubrik": {
+     "1": "Kepala madrasah tidak menjadi contoh atau tidak mengarahkan pelaksanaan peraturan.",
+     "2": "Pelaksanaan peraturan ada namun arahan terbatas atau bersifat administratif.",
+     "3": "Peraturan terlaksana dan kepala madrasah mengarahkan sebagian besar warga madrasah, terdokumentasi namun belum merata.",
+     "4": "Kepala madrasah konsisten menegakkan aturan, menjadi teladan, dievaluasi, ditindaklanjuti, dan berdampak tertibnya warga madrasah."
+    }
+   },
+   {
+    "no": 3,
+    "indikator": "Menunjukkan keteladanan dalam pemanfaatan sumber daya madrasah secara efektif dan efisien.",
+    "penggalian": "Pengawas menggali kemampuan kepala madrasah memecahkan masalah, merencanakan, memantau, dan menilai pemanfaatan sumber daya secara partisipatif.",
+    "data": "Dokumen perencanaan, pemanfaatan, pemantauan, dan penilaian sumber daya madrasah yang disusun bersama warga madrasah.",
+    "bukti": "Wawancara dengan warga madrasah dan studi dokumen perencanaan serta laporan pemanfaatan sumber daya.",
+    "rubrik": {
+     "1": "Tidak ada perencanaan atau pemantauan pemanfaatan sumber daya madrasah.",
+     "2": "Ada rencana pemanfaatan sumber daya namun pelaksanaan terbatas atau administratif.",
+     "3": "Pemanfaatan sumber daya terlaksana, terdokumentasi, dan dipantau namun tindak lanjut penilaian belum optimal.",
+     "4": "Pemanfaatan sumber daya terencana partisipatif, terlaksana konsisten, dievaluasi, ditindaklanjuti, dan berdampak efektivitas-efisiensi penggunaan."
+    }
+   },
+   {
+    "no": 4,
+    "indikator": "Menunjukkan kedisiplinan sebagai insan pembelajar sepanjang hayat.",
+    "penggalian": "Pengawas menggali kebiasaan membaca, mendengar, menulis, dan menyebarkan gagasan/ilmu baru kepala madrasah sebagai pembelajar berkelanjutan.",
+    "data": "Koleksi/pemanfaatan buku dan referensi ilmu pengetahuan, serta karya tulis kepala madrasah.",
+    "bukti": "Wawancara dan observasi: (1) koleksi dan pemanfaatan buku referensi/ilmu pengetahuan; dan (2) karya tulis yang diterbitkan maupun tidak.",
+    "rubrik": {
+     "1": "Kepala madrasah tidak menunjukkan kebiasaan belajar atau berkarya tulis.",
+     "2": "Ada kebiasaan membaca/menulis namun terbatas atau belum terdokumentasi.",
+     "3": "Kebiasaan belajar dan berkarya tulis terlaksana terdokumentasi, namun penyebaran gagasan belum merata.",
+     "4": "Kepala madrasah konsisten belajar, berkarya tulis, menyebarkan gagasan, dan berdampak tumbuhnya budaya belajar warga madrasah."
+    }
+   }
+  ]
+ },
+ {
+  "kode": "2.3",
+  "no": 3,
+  "unsur": "Menciptakan budaya dan iklim madrasah yang kondusif dan inovatif bagi pembelajaran peserta didik.",
+  "indikator": [
+   {
+    "no": 1,
+    "indikator": "Menjadi contoh budaya mutu yang kompetitif dalam mendorong peningkatan prestasi akademik dan nonakademik peserta didik.",
+    "penggalian": "Pengawas menggali upaya kepala madrasah membangun budaya mutu berkelanjutan yang mendorong peningkatan hasil belajar dan prestasi peserta didik.",
+    "data": "Dokumen capaian hasil asesmen, target ketercapaian, serta program dan data prestasi akademik-nonakademik yang terprogram, terlaksana, dan meningkat.",
+    "bukti": "Wawancara dan studi dokumen: (1) capaian KKTP/hasil asesmen; (2) hasil Asesmen Madrasah; (3) program keunggulan dan inovasi akademik-nonakademik; dan (4) data prestasi akademik dan nonakademik.",
+    "rubrik": {
+     "1": "Tidak ada program peningkatan mutu atau data prestasi yang terkelola.",
+     "2": "Ada program peningkatan mutu namun pelaksanaan terbatas atau hanya administratif.",
+     "3": "Program mutu terlaksana dan terdokumentasi, sebagian besar berjalan, namun peningkatan prestasi belum optimal/merata.",
+     "4": "Budaya mutu terencana partisipatif, terlaksana konsisten, dievaluasi, ditindaklanjuti, dan berdampak peningkatan prestasi akademik-nonakademik terukur."
+    }
+   },
+   {
+    "no": 2,
+    "indikator": "Melengkapi sarana dan prasarana untuk menciptakan suasana belajar yang aman, inklusif, kondusif, dan menyenangkan bagi peserta didik.",
+    "penggalian": "Pengawas menggali upaya kepala madrasah mewujudkan lingkungan fisik yang aman, bersih, ramah, dan mendukung pembelajaran berpusat pada peserta didik.",
+    "data": "Kondisi lingkungan madrasah yang asri, bersih, rindang, aman, dan menyenangkan bagi peserta didik.",
+    "bukti": "Observasi lingkungan madrasah: suasana lingkungan yang asri, bersih, rindang, aman, dan menyenangkan peserta didik.",
+    "rubrik": {
+     "1": "Lingkungan madrasah tidak mendukung suasana belajar yang kondusif.",
+     "2": "Sebagian sarana tersedia namun belum terpelihara atau belum inklusif.",
+     "3": "Lingkungan sebagian besar asri, bersih, dan aman terdokumentasi, namun belum merata di seluruh area.",
+     "4": "Lingkungan aman-inklusif, terpelihara konsisten, dievaluasi, ditindaklanjuti, dan berdampak kenyamanan belajar peserta didik."
+    }
+   },
+   {
+    "no": 3,
+    "indikator": "Memfasilitasi kegiatan untuk meningkatkan budaya baca dan budaya tulis peserta didik.",
+    "penggalian": "Pengawas menggali komitmen kepala madrasah menggerakkan literasi (baca-tulis) melalui program dan pemanfaatan sumber belajar berbasis teknologi.",
+    "data": "Data kunjungan perpustakaan, peminjaman buku, pembaruan bahan bacaan, sumber belajar berbasis TIK, sarana publikasi karya tulis, dan kompetisi menulis peserta didik.",
+    "bukti": "Observasi, wawancara, dan studi dokumen: (1) rencana dan laporan kegiatan literasi; (2) dokumen pengembangan budaya baca; dan (3) dokumen/pajangan hasil karya tulis peserta didik.",
+    "rubrik": {
+     "1": "Tidak ada program literasi atau budaya baca-tulis yang terkelola.",
+     "2": "Ada program literasi namun pelaksanaan terbatas atau administratif.",
+     "3": "Kegiatan baca-tulis terlaksana dan terdokumentasi, namun tindak lanjut/pembinaan belum merata.",
+     "4": "Program literasi terencana partisipatif, terlaksana konsisten, dievaluasi, ditindaklanjuti, dan berdampak meningkatnya minat baca-tulis peserta didik."
+    }
+   },
+   {
+    "no": 4,
+    "indikator": "Memfasilitasi kegiatan lomba bidang akademik dan nonakademik bagi peserta didik.",
+    "penggalian": "Pengawas menggali dukungan kepala madrasah memfasilitasi kompetisi berjenjang dari tingkat madrasah hingga luar sebagai wahana pengembangan potensi peserta didik.",
+    "data": "Dokumen penyelenggaraan kompetisi dari tingkat madrasah serta perolehan piagam, penghargaan, piala, dan trofi bidang akademik-nonakademik.",
+    "bukti": "Observasi dan studi dokumen: (1) dokumen penyelenggaraan kompetisi dari tingkat madrasah; dan (2) daftar perolehan piagam, penghargaan, piala, dan trofi di semua jenjang.",
+    "rubrik": {
+     "1": "Tidak ada fasilitasi kegiatan lomba peserta didik.",
+     "2": "Ada fasilitasi lomba namun pelaksanaan terbatas atau tidak berjenjang.",
+     "3": "Fasilitasi lomba terlaksana dan terdokumentasi sebagian besar, namun tindak lanjut pembinaan belum optimal.",
+     "4": "Fasilitasi lomba terencana, terlaksana konsisten, dievaluasi, ditindaklanjuti, dan berdampak peningkatan capaian prestasi peserta didik."
+    }
+   }
+  ]
+ },
+ {
+  "kode": "2.4",
+  "no": 4,
+  "unsur": "Mengelola guru dan staf dalam rangka pendayagunaan sumber daya manusia secara optimal.",
+  "indikator": [
+   {
+    "no": 1,
+    "indikator": "Menyusun perencanaan pengembangan pendidik dan tenaga kependidikan.",
+    "penggalian": "Pengawas menggali kemampuan kepala madrasah merencanakan program pembinaan dan pengembangan kompetensi pendidik-tenaga kependidikan berbasis data kebutuhan.",
+    "data": "Dokumen program pembinaan dan pengembangan pendidik serta tenaga kependidikan di madrasah.",
+    "bukti": "Studi dokumen dan wawancara: program kerja kepala madrasah terkait pengembangan SDM.",
+    "rubrik": {
+     "1": "Tidak ada perencanaan pengembangan pendidik dan tenaga kependidikan.",
+     "2": "Ada program pembinaan namun belum berbasis analisis kebutuhan atau hanya administratif.",
+     "3": "Perencanaan pengembangan SDM tersusun dan terdokumentasi, namun pelaksanaan belum merata/optimal.",
+     "4": "Perencanaan disusun partisipatif berbasis data, terlaksana konsisten, dievaluasi, ditindaklanjuti, dan berdampak peningkatan kompetensi SDM."
+    }
+   },
+   {
+    "no": 2,
+    "indikator": "Melakukan pembinaan berkala untuk meningkatkan mutu sumber daya manusia madrasah.",
+    "penggalian": "Pengawas menggali keberlanjutan dan kualitas pembinaan kepala madrasah terhadap guru dan tenaga kependidikan secara periodik.",
+    "data": "Dokumen pelaksanaan kegiatan pembinaan guru dan tenaga kependidikan.",
+    "bukti": "Studi dokumen dan wawancara: (1) buku/catatan pembinaan guru dan tendik (notulen dan daftar hadir rapat pembinaan); dan (2) laporan kinerja kepala madrasah.",
+    "rubrik": {
+     "1": "Tidak ada kegiatan pembinaan SDM madrasah.",
+     "2": "Ada pembinaan namun tidak berkala atau hanya administratif.",
+     "3": "Pembinaan berkala terlaksana dan terdokumentasi sebagian besar, namun tindak lanjut belum optimal.",
+     "4": "Pembinaan terencana, terlaksana konsisten, dievaluasi, ditindaklanjuti, dan berdampak peningkatan mutu SDM madrasah."
+    }
+   },
+   {
+    "no": 3,
+    "indikator": "Memfasilitasi guru dan tenaga administrasi untuk meningkatkan pembinaan kompetensi.",
+    "penggalian": "Pengawas menggali bentuk dukungan kepala madrasah dalam memfasilitasi pengembangan profesional guru dan staf administrasi.",
+    "data": "Data dukungan kepala madrasah dalam memfasilitasi guru dan staf administrasi meningkatkan mutu profesi.",
+    "bukti": "Studi dokumen dan wawancara: (1) buku/catatan pembinaan guru dan tendik (notulen dan daftar hadir rapat pembinaan); dan (2) laporan kinerja kepala madrasah.",
+    "rubrik": {
+     "1": "Tidak ada fasilitasi peningkatan kompetensi guru dan staf.",
+     "2": "Ada fasilitasi namun terbatas atau bersifat administratif.",
+     "3": "Fasilitasi peningkatan kompetensi terlaksana dan terdokumentasi, namun belum merata bagi seluruh SDM.",
+     "4": "Fasilitasi terencana, terlaksana konsisten, dievaluasi, ditindaklanjuti, dan berdampak peningkatan mutu profesi guru-staf."
+    }
+   },
+   {
+    "no": 4,
+    "indikator": "Memantau dan menilai penerapan hasil pelatihan dalam pekerjaan di madrasah.",
+    "penggalian": "Pengawas menggali mekanisme pemantauan dan evaluasi kepala madrasah terhadap dampak pelatihan pada kinerja pendidik-tenaga kependidikan.",
+    "data": "Dokumen program evaluasi pelatihan atau pengembangan profesi pendidik dan tenaga kependidikan.",
+    "bukti": "Observasi dan studi dokumen: (1) program pelatihan pengembangan profesi guru dan tendik; dan (2) laporan pelaksanaan pelatihan pengembangan profesi guru dan tendik.",
+    "rubrik": {
+     "1": "Tidak ada pemantauan/penilaian hasil pelatihan.",
+     "2": "Ada pemantauan namun belum menilai penerapan hasil pelatihan atau administratif.",
+     "3": "Pemantauan dan penilaian terlaksana terdokumentasi, namun tindak lanjut perbaikan belum optimal.",
+     "4": "Pemantauan-penilaian terencana, terlaksana konsisten, ditindaklanjuti, dan berdampak penerapan hasil pelatihan pada peningkatan kinerja."
+    }
+   }
+  ]
+ },
+ {
+  "kode": "2.5",
+  "no": 5,
+  "unsur": "Mengelola sarana dan prasarana madrasah dalam rangka pendayagunaan secara optimal",
+  "indikator": [
+   {
+    "no": 1,
+    "indikator": "Mengelola fasilitas prasarana, perabot, dan sarana madrasah secara efektif dan efisien.",
+    "penggalian": "Pengawas menggali pengelolaan gedung, lahan, perabot, peralatan kantor, dan alat kebersihan yang tertib, terpelihara, dan termanfaatkan optimal.",
+    "data": "Data inventaris dan pemeliharaan fasilitas prasarana, perabot, serta sarana madrasah.",
+    "bukti": "Observasi dan studi dokumen: (1) buku inventaris; dan (2) buku pemeliharaan sarana dan prasarana.",
+    "rubrik": {
+     "1": "Fasilitas prasarana-sarana tidak terinventarisasi atau tidak terpelihara.",
+     "2": "Ada inventaris namun pemeliharaan dan pemanfaatan terbatas atau administratif.",
+     "3": "Pengelolaan sarana-prasarana terlaksana dan terdokumentasi sebagian besar, namun tindak lanjut belum optimal.",
+     "4": "Pengelolaan terencana, terlaksana konsisten, dievaluasi, ditindaklanjuti, dan berdampak optimalnya pemanfaatan sarana-prasarana madrasah."
+    }
+   },
+   {
+    "no": 2,
+    "indikator": "Mengelola perpustakaan madrasah sebagai sumber belajar yang mendukung literasi.",
+    "penggalian": "Pengawas menggali pengelolaan layanan dan koleksi perpustakaan yang mendukung budaya baca serta pembelajaran peserta didik.",
+    "data": "Data pengelolaan perpustakaan (koleksi, layanan, dan pemanfaatan) yang tertib.",
+    "bukti": "Observasi fisik dan studi dokumen: (1) buku induk perpustakaan; dan (2) buku/data/grafik layanan perpustakaan.",
+    "rubrik": {
+     "1": "Perpustakaan tidak dikelola atau tidak berfungsi.",
+     "2": "Perpustakaan ada namun pengelolaan koleksi dan layanan terbatas/administratif.",
+     "3": "Perpustakaan dikelola dan dilayani dengan dokumentasi, namun pemanfaatan belum optimal.",
+     "4": "Perpustakaan terkelola, layanan konsisten, dievaluasi, ditindaklanjuti, dan berdampak meningkatnya literasi peserta didik."
+    }
+   },
+   {
+    "no": 3,
+    "indikator": "Mengelola laboratorium madrasah sebagai penunjang pembelajaran.",
+    "penggalian": "Pengawas menggali pengelolaan laboratorium (inventaris, layanan, dan keamanan) yang menunjang pembelajaran berbasis praktik.",
+    "data": "Data pengelolaan laboratorium (inventaris dan layanan) yang baik.",
+    "bukti": "Observasi fisik dan studi dokumen: (1) daftar inventaris laboratorium; dan (2) buku/jurnal/data/grafik layanan laboratorium.",
+    "rubrik": {
+     "1": "Laboratorium tidak dikelola atau tidak berfungsi.",
+     "2": "Laboratorium ada namun pengelolaan inventaris dan layanan terbatas/administratif.",
+     "3": "Laboratorium dikelola dan dilayani dengan dokumentasi, namun pemanfaatan praktik belum optimal.",
+     "4": "Laboratorium terkelola, layanan konsisten, dievaluasi, ditindaklanjuti, dan berdampak meningkatnya kualitas pembelajaran praktik."
+    }
+   },
+   {
+    "no": 4,
+    "indikator": "Mengelola fasilitas penunjang madrasah lainnya (bengkel, toko, koperasi, kebun, dan sejenisnya).",
+    "penggalian": "Pengawas menggali pengelolaan fasilitas penunjang kewirausahaan madrasah yang termanfaatkan sebagai wahana pembelajaran dan kemandirian.",
+    "data": "Data pengelolaan fasilitas penunjang (bengkel, toko, koperasi, kebun, dan sejenisnya) yang tertib.",
+    "bukti": "Observasi fisik, wawancara, dan studi dokumen: data fasilitas penunjang wirausaha yang dikelola madrasah.",
+    "rubrik": {
+     "1": "Fasilitas penunjang tidak dikelola atau tidak termanfaatkan.",
+     "2": "Fasilitas penunjang ada namun pengelolaan terbatas/administratif.",
+     "3": "Fasilitas penunjang dikelola dan termanfaatkan, terdokumentasi, namun tidak merata/optimal.",
+     "4": "Fasilitas penunjang terkelola, termanfaatkan konsisten, dievaluasi, ditindaklanjuti, dan berdampak pada pembelajaran dan kemandirian madrasah."
+    }
+   }
+  ]
+ }
+]

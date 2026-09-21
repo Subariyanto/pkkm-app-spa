@@ -1,0 +1,118 @@
+{
+ "code": "PM",
+ "label": "Usaha Pengembangan Madrasah",
+ "aspek": [
+  {
+   "kode": "1.1",
+   "no": 1,
+   "unsur": "Mengembangkan madrasah sesuai dengan kebutuhan.",
+   "indikator": [
+    {
+     "no": 1,
+     "indikator": "Mampu menggembangkan struktur organisasi yang sesuai dengan kebutuhan program.",
+     "data": "Dokumen struktur madrasah",
+     "bukti": "Melalui observasi dan studi dokumen: (1) bagan/struktur organisasi; (2) notulen rapat yang berisi keputusan tentang penyusunan struktur organisasi; (3) dokumen sosialisasi; dan (4) Daftar Hadir"
+    },
+    {
+     "no": 2,
+     "indikator": "Mampu menempatkan personalia yang sesuai dengan kebutuhan",
+     "data": "Dokumen uraian tugas personalia di madrasah",
+     "bukti": "Melalui studi dokumen: (1) dokumen penetapan/pengesahan susunan organisasi madrsaha; (2) rincian tugas setiap personil pada struktur organisasi madrasah; (3) SOP Personalia; dan (4) Sertifikat"
+    },
+    {
+     "no": 3,
+     "indikator": "Mampu mengembangkan pedoman dan prosedur kerja organisasi madrasah",
+     "data": "Pedoman dan prosedur kerja organisasi madrasah",
+     "bukti": "Melalui obsevasi dokumen: \r\nSOP madrasah"
+    }
+   ]
+  },
+  {
+   "kode": "1.2",
+   "no": 2,
+   "unsur": "Mengelola perubahan dan pengembangan madrasah menuju organisasi pembelajar yang efektif.",
+   "indikator": [
+    {
+     "no": 1,
+     "indikator": "Mampu mengembangkan program baru untuk meningkatkan pencapaian target yang lebih tinggi.",
+     "data": "Program pengembangan madrasah mengandung target pencapaian pada indikator keunggulan khas satuan pendidikan, kerja sama tim, dan data realisasi target yang meningkat daripada pencapaian sebelumnya.",
+     "bukti": "Melalui studi dokumen: (1) visi dan Misi madrasah; (2) data prestasi madrasah; (3) data hasil UN 3 tahun terahir; (4) Data Alumni"
+    },
+    {
+     "no": 2,
+     "indikator": "Mampu dan terampil dalam membangun tim kerja yang efektif untuk mendapatkan produk kinerja yang lebih unggul.",
+     "data": "Terdapat struktur organisasi yang dilengkapi dengan distribusi dan deskripsi pembagian tugas",
+     "bukti": "Melalui observasi dan studi dokumen: (1) bagan/struktur organisasi; (2) SK; (3) tugas dan fungsi; (4) Terbentuknya KKG/MGMP; (5) Program KKG/MGMP; dan (6) Laporan kegiatan KKG/MGMP"
+    },
+    {
+     "no": 3,
+     "indikator": "Mampu menerapkan berbagai teknik pembaharuan dalam pengelolaan pembelajaran.",
+     "data": "Terdapat penerapan strategi pembaharuan dengan strategi yang terprogram",
+     "bukti": "Melalui studi dokumen: (1) KTSP; (2) kalender pendidikan; (3) perangkat pembelajaran; (4) penilaian; DAN (5) peraturan akademik"
+    },
+    {
+     "no": 4,
+     "indikator": "Mampu mengembangkan potensi dan meningkatkan prestasi madrasah",
+     "data": "Dokumen bukti perkembanganpotensi dan prestasi peserta didik, yang meningkat dari waktu ke waktu.",
+     "bukti": "Melalui studi dokumen: (1) data prestasi madrasah 1 tahun terahir; (2) data hasil UN 1 tahun terahir; (3)  Dokumen Akreditasi; dan (4) Program Ekstrakurikuler"
+    }
+   ]
+  },
+  {
+   "kode": "1.3",
+   "no": 3,
+   "unsur": "Mengelola hubungan antara madrasah dan masyarakat dalam rangka pencarian dukungan ide, sumber belajar, dan pembiayaan.",
+   "indikator": [
+    {
+     "no": 1,
+     "indikator": "Merencanakan kerjasama dengan lembaga pemerintah, swasta dan masyarakat",
+     "data": "Data kerjasama dengan lembaga pemerintah, swasta, dan masyarakat",
+     "bukti": "Melalui studi dokumen: (1) SK komite madasah; (2) AD/ART komite madrasah; (3) program kerja komite madrasah; (4) laporan kegiatan komite madrasah; dan (5) dokumen tertulis kerja sama (MUO)."
+    },
+    {
+     "no": 2,
+     "indikator": "Melakukan pendekatan-pendekatan dalam rangka mendapatkan dukungan dari lembaga pemerintah, swasta dan masyarakat",
+     "data": "Dokumen pragram kerjasama dengan pemerintah, swasta, dan masyarakat",
+     "bukti": "Melalui studi dokumen: (1) Program kegiatan kerja sama; (2) Foto kegiatan; (3) Jadwal Kegiatan; dan (4) Sk Penanggung Jawab program."
+    },
+    {
+     "no": 3,
+     "indikator": "Memanfaatkan dan memelihara hubungan kerjasama dengan lembaga pemerintah, swasta dan masyarakat",
+     "data": "Data hasil kerjasama dengan lembega pemerintah, swasta, dan masyarakat",
+     "bukti": "Melalui studi dokumen: Laporan kegiatan kerja sama"
+    }
+   ]
+  },
+  {
+   "kode": "1.4",
+   "no": 4,
+   "unsur": "Mengelola proses pencapaian 8 SNP sesuai dengan arah dan tujuan Pendidikan nasional",
+   "indikator": [
+    {
+     "no": 1,
+     "indikator": "Mengaplikasikan pengembangan kurikulum yang mengacu kepada standar isi",
+     "data": "Dokumen analisis 8 SNP dalam hal standar ini",
+     "bukti": "Melalui studi dokumen: (1) KTSP; (2) kalender pendidikan; (3) perangkat pembelajaran; (4) penilaian; (5) peraturan akademik; dan (6) Buku Kerja Guru."
+    },
+    {
+     "no": 2,
+     "indikator": "Mengaplikasikan pengembangan proses pembelajaran yang mengacu kepada standar proses",
+     "data": "Dokumen analisis 8 SNP dalam hal standar proses",
+     "bukti": "Melalui studi dokumen: (1) dokumen pengembangan silabus; (2) RPP; (2) RPE; (2) buku teks; (2) jurnal mengajar guru; dan (2) data siswa."
+    },
+    {
+     "no": 3,
+     "indikator": "Mengaplikasikan sistem penilaian pembelajaran yang mengacu kepada standar penilaian",
+     "data": "Dokumen analisis 8 SNP dalam hal standar penilaian",
+     "bukti": "Melalui studi dokumen: (1) instrumen penilaian; (2) kisi-kisi soal; (3) kumpulan nakah soal; (4) analisis butir soal; (5) dokumen analisis hasil belajar siswa; (6) laporan hasil belajar siswa; (7) tindak lanjut hasil penilaian; (8) dokumen pelaksanaan PAS; dan (9) dokumen pelaksanaan PAT."
+    },
+    {
+     "no": 4,
+     "indikator": "Melaksanakan penjaminan mutu pencapaian standar kompetensi lulusan",
+     "data": "Dokumen analisis 8 SNP dalam hal standar kompetensi lulusan",
+     "bukti": "Melalui studi dokumen: (1) dokumen program kegiatan kesiswaan; (2) laporan kegiatan kesiswaan; (3) dokumentasi kegiatan kesiswaan; (4) laporan kegiatan pembiasaan siswa; (5) dokumen kegiatan literasi; (6) data rata-rata hasil ujian 2 tahun terahir; (7) data prestasi akademik 2 tahun terahir; dan (8) data prestasi non akademik 2 tahun terahir."
+    }
+   ]
+  }
+ ]
+}
