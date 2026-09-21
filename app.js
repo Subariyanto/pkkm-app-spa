@@ -2430,7 +2430,7 @@ route('#/instrumen', (root) => {
   };
 
   const editCell = (id, ind, jenjang) => {
-    const ov = window.InstrumenOverride ? window.InstrumenOverride.get(id) : null;
+    const ov = window.InstrumenOverride ? window.InstrumenOverride.get(jenjang + ':' + id) : null;
     const r = (window.getIndikatorTampil ? window.getIndikatorTampil(ind, id, jenjang) : ind);
     const rub = r.rubrik || {};
     return `
@@ -2457,13 +2457,12 @@ route('#/instrumen', (root) => {
   function draw() {
     const jenjang = window.__instrumenJenjang;
     const isRA = jenjang === 'RA';
-    if (isRA) window.__instrumenEdit = false;
-    const editMode = !!window.__instrumenEdit && !isRA;
+    const editMode = !!window.__instrumenEdit;
 
     const list = (window.getInstrumenByJenjang ? window.getInstrumenByJenjang(jenjang) : null) || window.PKKM_KOMPONEN || [];
     const totalInd = list.reduce((s, k) => s + k.aspek.reduce((x, a) => x + a.indikator.length, 0), 0);
     const totalAspek = list.reduce((s, k) => s + k.aspek.length, 0);
-    const overrideCount = window.InstrumenOverride ? window.InstrumenOverride.count() : 0;
+    const overrideCount = window.InstrumenOverride ? Object.keys(window.InstrumenOverride.all()).filter(x => x.indexOf(jenjang + ':') === 0).length : 0;
 
     root.innerHTML = `
     <div class="page-header">
@@ -2478,7 +2477,7 @@ route('#/instrumen', (root) => {
             ${JENJANG.map(j => `<option value="${j}" ${j === jenjang ? 'selected' : ''}>${j}</option>`).join('')}
           </select>
         </div>
-        <button class="btn btn-sm ${editMode ? 'btn-secondary' : 'btn-outline-primary'}" id="btnEditInstrumen" ${isRA ? 'disabled title="Instrumen RA belum mendukung edit"' : ''}>
+        <button class="btn btn-sm ${editMode ? 'btn-secondary' : 'btn-outline-primary'}" id="btnEditInstrumen">
           <i class="bi ${editMode ? 'bi-x-lg' : 'bi-pencil-square'}"></i> ${editMode ? 'Selesai Edit' : 'Edit'}
         </button>
         <button class="btn btn-sm btn-primary" id="btnSimpanInstrumen" ${editMode ? '' : 'disabled'}>
@@ -2488,7 +2487,7 @@ route('#/instrumen', (root) => {
     </div>
     ${editMode
       ? `<div class="alert alert-warning py-2 text-tiny"><i class="bi bi-pencil-square"></i> <strong>Mode Edit.</strong> Ubah redaksi indikator / fokus penggalian / data / bukti / rubrik lalu klik <strong>Simpan</strong>. Perubahan tersimpan per perangkat (localStorage) dan langsung dipakai di form penilaian, cetak, serta laporan.${overrideCount ? ` Saat ini ada <strong>${overrideCount}</strong> indikator ter-override.` : ''}</div>`
-      : `<div class="alert alert-info py-2 text-tiny"><i class="bi bi-info-circle"></i> ${isRA ? 'Instrumen RA bersifat baku (read-only).' : 'Klik <strong>Edit</strong> untuk menyesuaikan redaksi indikator. Klik ℹ️ untuk panduan penggalian data.'}${overrideCount ? ` <span class="badge bg-warning text-dark">${overrideCount} override aktif</span>` : ''}</div>`}
+      : `<div class="alert alert-info py-2 text-tiny"><i class="bi bi-info-circle"></i> Klik <strong>Edit</strong> untuk menyesuaikan redaksi indikator jenjang ${jenjang}. Klik ℹ️ untuk panduan penggalian data.${overrideCount ? ` <span class="badge bg-warning text-dark">${overrideCount} override aktif</span>` : ''}</div>`}
     <div id="instrumenBody">
     ${list.map(k => {
       const totalIndK = k.aspek.reduce((s, a) => s + a.indikator.length, 0);
@@ -2538,7 +2537,6 @@ route('#/instrumen', (root) => {
       draw();
     });
     $('#btnEditInstrumen', root)?.addEventListener('click', () => {
-      if (isRA) { toast('Instrumen RA belum mendukung mode edit.', 'info'); return; }
       if (editMode && dirty && !confirmAction('Keluar dari mode edit tanpa menyimpan?')) return;
       window.__instrumenEdit = !editMode;
       dirty = false;
@@ -2561,7 +2559,7 @@ route('#/instrumen', (root) => {
         }
       });
       const n = Object.keys(map).length;
-      for (const id of Object.keys(map)) window.InstrumenOverride.set(id, map[id]);
+      for (const id of Object.keys(map)) window.InstrumenOverride.set(jenjang + ':' + id, map[id]);
       dirty = false;
       toast(`Tersimpan: ${n} indikator (jenjang ${jenjang}).`);
       draw();
@@ -2574,7 +2572,7 @@ route('#/instrumen', (root) => {
         ev.preventDefault();
         const id = rst.dataset.indikatorId;
         if (window.InstrumenOverride && confirmAction('Kembalikan indikator ini ke redaksi bawaan?')) {
-          window.InstrumenOverride.remove(id);
+          window.InstrumenOverride.remove(jenjang + ':' + id);
           toast('Override indikator dihapus.');
           draw();
         }

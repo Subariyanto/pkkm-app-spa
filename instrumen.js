@@ -2027,14 +2027,16 @@ window._findKomponenByPenilaian = function (penilaian_id, komponenCode) {
 // Varian tambal-sulam lama (PKKM_RA_VARIAN) DINONAKTIFKAN.
 // Instrumen RA baru sudah sepenuhnya kontekstual, sehingga redaksi indikator
 // dipakai apa adanya (termasuk meneruskan field penggalian & rubrik bila ada).
-// Override manual (hasil edit halaman Instrumen) ikut diterapkan untuk
-// jenjang selain RA. OBJEK MASTER TIDAK DIUBAH.
+// Override manual (hasil edit halaman Instrumen) juga diterapkan, TERPISAH
+// per jenjang (kunci `${jenjang}:${indikator_id}`) agar tidak saling tertukar
+// (id RA & MI sama-sama pakai pola PM_1.1_1). OBJEK MASTER TIDAK DIUBAH.
 window.getIndikatorTampil = function (ind, indikator_id, jenjang) {
   const out = { indikator: ind.indikator, data: ind.data, bukti: ind.bukti };
   if (ind.penggalian) out.penggalian = ind.penggalian;
   if (ind.rubrik) out.rubrik = ind.rubrik;
-  if (jenjang !== 'RA' && indikator_id && window.InstrumenOverride) {
-    const ov = window.InstrumenOverride.get(indikator_id);
+  const j = jenjang || window.PKKM_JENJANG_AKTIF || null;
+  if (indikator_id && j && window.InstrumenOverride) {
+    const ov = window.InstrumenOverride.get(j + ':' + indikator_id);
     if (ov) {
       if (ov.indikator != null) out.indikator = ov.indikator;
       if (ov.data != null) out.data = ov.data;
