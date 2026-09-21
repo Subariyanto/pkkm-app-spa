@@ -150,7 +150,8 @@
     let r = 6;
     let no = 1;
     const KOMP = window.PKKM_KOMPONEN_META || window.PKKM_KOMPONEN || [];
-    const PKKM_BASE = window.PKKM_INSTRUMEN_PENGAWAS || window.PKKM_KOMPONEN || [];
+    const PKKM_BASE = (window.getInstrumenByJenjang ? window.getInstrumenByJenjang(kamad.jenjang) : null)
+      || window.PKKM_INSTRUMEN_PENGAWAS || window.PKKM_KOMPONEN || [];
 
     for (const k of PKKM_BASE) {
       // Header komponen

@@ -266,7 +266,9 @@ function isRAIndikatorSkip(indikator_id) {
 
 // === Hitung Nilai (per sub-aspek dari indikator, lalu rata komponen) ===
 function hitungNilaiAspek(penilaian_id, komponenCode, aspekKode) {
-  const k = window.PKKM_KOMPONEN.find(x => x.code === komponenCode);
+  // Sadar-jenjang: untuk penilaian RA pakai definisi komponen/aspek RA.
+  const k = (window._findKomponenByPenilaian && window._findKomponenByPenilaian(penilaian_id, komponenCode))
+    || window.PKKM_KOMPONEN.find(x => x.code === komponenCode);
   if (!k) return { nilai: 0, total: 0, terisi: 0, sumSkor: 0 };
   const a = k.aspek.find(x => x.kode === aspekKode);
   if (!a) return { nilai: 0, total: 0, terisi: 0, sumSkor: 0 };
@@ -289,7 +291,8 @@ function hitungNilaiAspek(penilaian_id, komponenCode, aspekKode) {
 }
 
 function hitungNilaiKomponen(penilaian_id, komponenCode) {
-  const k = window.PKKM_KOMPONEN.find(x => x.code === komponenCode);
+  const k = (window._findKomponenByPenilaian && window._findKomponenByPenilaian(penilaian_id, komponenCode))
+    || window.PKKM_KOMPONEN.find(x => x.code === komponenCode);
   if (!k) return { nilai: 0, totalAspek: 0, aspekTerisi: 0, totalIndikator: 0, terisi: 0 };
   let sumNilaiAspek = 0;
   let aspekTerisi = 0;
@@ -328,7 +331,19 @@ function hitungNilaiAkhir(penilaian_id) {
   let totalBobot = 0;
   let nilaiTertimbang = 0;
   const detail = [];
-  for (const k of window.PKKM_KOMPONEN) {
+  // Sadar-jenjang: daftar komponen mengikuti instrumen penilaian ini (RA/regular)
+  let kompList = window.PKKM_KOMPONEN;
+  if (window._findKomponenByPenilaian) {
+    try {
+      const p = Penilaian.get(penilaian_id);
+      if (p) {
+        const km = Kamad.get(p.kamad_id);
+        const list = window.getInstrumenByJenjang && window.getInstrumenByJenjang(km && km.jenjang);
+        if (list && list.length) kompList = list;
+      }
+    } catch (e) { /* fallback ke instrumen aktif */ }
+  }
+  for (const k of kompList) {
     if (skipHK && k.code === 'HK') continue; // skip HK utk penilaian tahunan
     const h = hitungNilaiKomponen(penilaian_id, k.code);
     const w = Number(bobot[k.code] || 0);
@@ -355,14 +370,21 @@ function progressPenilaian(penilaian_id) {
 
   const raSkip = isRAPenilaian(penilaian_id);
 
-  let total = window.PKKM_TOTAL_INDIKATOR || 0;
-  if (skipHK) {
-    // Kurangi total indikator komponen HK
-    const HK = (window.PKKM_KOMPONEN || []).find(k => k.code === 'HK');
-    if (HK) {
-      const hkCount = HK.aspek.reduce((s, a) => s + (a.indikator?.length || 0), 0);
-      total = Math.max(0, total - hkCount);
+  // Total indikator sadar-jenjang: pakai instrumen sesuai jenjang kamad penilaian ini
+  let kompList = window.PKKM_KOMPONEN || [];
+  try {
+    const p = Penilaian.get(penilaian_id);
+    if (p) {
+      const km = Kamad.get(p.kamad_id);
+      const list = window.getInstrumenByJenjang && window.getInstrumenByJenjang(km && km.jenjang);
+      if (list && list.length) kompList = list;
     }
+  } catch (e) { /* fallback */ }
+
+  let total = 0;
+  for (const k of kompList) {
+    if (skipHK && k.code === 'HK') continue;
+    total += k.aspek.reduce((s, a) => s + ((a.indikator && a.indikator.length) || 0), 0);
   }
   if (raSkip) {
     // Kurangi total indikator yang tidak relevan untuk jenjang RA
@@ -520,9 +542,17 @@ function identifikasiPrioritasPKB(kamad_id, periode_id, topN) {
     if (periode && periode.type !== 'tahun_4') skipHK = true;
   } catch (e) { /* fallback */ }
 
-  // Build daftar sub-aspek dari instrumen aktif (komponen × aspek)
+  // Build daftar sub-aspek dari instrumen aktif (komponen × aspek), sadar-jenjang
+  const subKompList = (window._findKomponenByPenilaian && sessions[0]
+    ? (function () {
+        try {
+          const km = Kamad.get(Penilaian.get(sessions[0].id).kamad_id);
+          return window.getInstrumenByJenjang(km && km.jenjang);
+        } catch (e) { return null; }
+      })()
+    : null) || window.PKKM_INSTRUMEN_PENGAWAS || window.PKKM_KOMPONEN || [];
   const subAspeks = [];
-  for (const k of (window.PKKM_INSTRUMEN_PENGAWAS || window.PKKM_KOMPONEN || [])) {
+  for (const k of subKompList) {
     if (skipHK && k.code === 'HK') continue;
     for (const a of k.aspek) {
       // Hitung nilai rata-rata sub-aspek dari semua sessions

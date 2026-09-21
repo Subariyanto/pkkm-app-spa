@@ -129,9 +129,32 @@ function openPenggalianModal(indikator_id) {
   const redaksi = window.getIndikatorTampil ? window.getIndikatorTampil(ind, indikator_id, jenjangAktif) : ind;
   const buktiText = (redaksi.bukti||'').trim();
   const dataText = (redaksi.data||'').trim();
+  const penggalianText = (redaksi.penggalian||'').trim();
+  const rub = redaksi.rubrik || ind.rubrik || null;
+  const rubrikHtml = (rub && (rub[4] || rub[3] || rub[2] || rub[1]))
+    ? `<div class="mb-3">
+          <div class="fw-semibold mb-1"><i class="bi bi-award text-primary"></i> Rubrik Skor</div>
+          <div class="row g-2">
+            ${[4,3,2,1].map(v => { const lbl=['','Kurang','Cukup','Baik','Sangat Baik'][v];
+              const warna = v===4?'success':v===3?'primary':v===2?'warning':'danger';
+              return `<div class="col-12">
+                <div class="border rounded p-2 bg-light">
+                  <span class="badge bg-${warna} me-2">Skor ${v} — ${lbl}</span>
+                  <span class="text-tiny">${escapeHTML(rub[v]||'-')}</span>
+                </div>
+              </div>`; }).join('')}
+          </div>
+        </div>`
+    : `<div class="mb-3 text-muted text-tiny"><i class="bi bi-award"></i> Rubrik skor belum tersedia untuk indikator ini.</div>`;
   const buktiHtml = buktiText
     ? `<pre class="bukti-fisik mb-0 p-2 bg-light rounded" style="white-space:pre-wrap;font-family:inherit;font-size:0.9rem">${escapeHTML(buktiText)}</pre>`
     : `<div class="text-muted text-tiny"><i class="bi bi-info-circle"></i> Belum ada panduan bukti fisik untuk indikator ini.</div>`;
+  const penggalianHtml = penggalianText
+    ? `<div class="mb-3">
+        <div class="fw-semibold mb-1"><i class="bi bi-search text-primary"></i> Fokus yang Digali</div>
+        <div class="text-tiny">${escapeHTML(penggalianText)}</div>
+      </div>`
+    : '';
   const html = `
     <div class="modal fade" id="penggalianModal" tabindex="-1">
       <div class="modal-dialog modal-lg modal-dialog-centered modal-dialog-scrollable">
@@ -148,13 +171,18 @@ function openPenggalianModal(indikator_id) {
             <div class="alert alert-primary py-2 mb-3">
               <strong>Indikator Kinerja:</strong><br>${escapeHTML(redaksi.indikator||'-')}
             </div>
+            ${penggalianHtml}
             <div class="mb-3">
               <div class="fw-semibold mb-1"><i class="bi bi-clipboard-data text-success"></i> Data Yang Diharapkan</div>
               <div class="text-tiny">${escapeHTML(dataText) || '<span class="text-muted">-</span>'}</div>
             </div>
-            <div class="mb-2">
+            <div class="mb-3">
               <div class="fw-semibold mb-1"><i class="bi bi-folder2-open text-warning"></i> Bukti Fisik / Cara Penggalian Data</div>
               ${buktiHtml}
+            </div>
+            ${rubrikHtml}
+            <div class="alert alert-secondary py-2 mb-0 text-tiny">
+              <i class="bi bi-info-circle"></i> <strong>Catatan:</strong> Bukti tidak harus seluruhnya tersedia. Penilai menggunakan sumber bukti yang relevan dan melakukan triangulasi melalui dokumen, observasi, wawancara/konfirmasi serta data hasil. Kelengkapan dokumen bukan satu-satunya dasar pemberian skor.
             </div>
           </div>
           <div class="modal-footer">
@@ -334,7 +362,7 @@ route('#/', (root) => {
     <div class="dash-hero">
       <i class="bi bi-mortarboard-fill dash-hero-icon"></i>
       <h2>Aplikasi PKKM</h2>
-      <p>Penilaian Kinerja Kepala Madrasah</p>
+      <p>Penilaian Kinerja Kepala Madrasah / Kepala RA</p>
     </div>
 
     <div class="dash-stats">
@@ -703,8 +731,8 @@ route('#/penilaian', (root) => {
     : allPeriode.filter(p => p.type !== 'tahun_4');
 
   const judulHalaman = isFourYear
-    ? 'Penilaian Kinerja Kepala Madrasah 4 Tahunan'
-    : 'Penilaian Kinerja Kepala Madrasah Tahunan';
+    ? 'Penilaian Kinerja Kepala Madrasah/RA 4 Tahunan'
+    : 'Penilaian Kinerja Kepala Madrasah/RA Tahunan';
 
   const judulIcon = isFourYear ? 'bi-calendar4-week' : 'bi-calendar3';
 
@@ -755,7 +783,7 @@ route('#/penilaian', (root) => {
                       <tr>
                         <td>
                           <div class="fw-semibold">${escapeHTML(k.nama)}</div>
-                          <div class="text-tiny text-muted">${escapeHTML(k.nama_madrasah||'-')} &middot; ${escapeHTML(k.jenjang||'-')}</div>
+                          <div class="text-tiny text-muted">${k.jenjang === 'RA' ? 'Kepala RA' : 'Kepala Madrasah'} &middot; ${escapeHTML(k.nama_madrasah||'-')}${k.jenjang === 'RA' ? ' <span class="badge bg-success">RA</span>' : ' &middot; ' + escapeHTML(k.jenjang||'-')}</div>
                         </td>
                         <td><span class="text-tiny text-muted" data-status-for="${k.id}">-</span></td>
                         <td><button class="btn btn-sm btn-primary" data-action="open-penilaian" data-kamad="${k.id}"><i class="bi bi-pencil-square"></i> Nilai</button></td>
@@ -1103,9 +1131,9 @@ route('#/penilaian/:kamadId/:periodeId/:role', (root, params) => {
   }
   // Switch instrumen sesuai role
   const roleInfo = (window.PKKM_ROLES||[]).find(x => x.code === role) || { instrumen: 'pengawas', label: role };
-  if (typeof window.setInstrumenRole === 'function') window.setInstrumenRole(roleInfo.instrumen);
-  // Simpan jenjang kamad aktif agar modal penggalian data bisa pakai redaksi RA
+  // Simpan jenjang kamad aktif, lalu pilih instrumen sesuai jenjang + role (RA vs regular)
   window.PKKM_JENJANG_AKTIF = kamad.jenjang || null;
+  if (typeof window.setInstrumenRole === 'function') window.setInstrumenRole(roleInfo.instrumen, kamad.jenjang);
   const pen = Penilaian.ensureRole(kamad.id, periode.id, role);
   // Prefill identitas Pengawas dari Pengaturan, tetapi simpan salinannya
   // pada sesi agar setiap penilai/periode memiliki identitas sendiri.
@@ -1250,7 +1278,7 @@ route('#/penilaian/:kamadId/:periodeId/:role', (root, params) => {
     root.innerHTML = `
       <div class="page-header">
         <div>
-          <h5><i class="bi bi-pencil-square"></i> Penilaian: ${escapeHTML(kamad.nama)}</h5>
+          <h5><i class="bi bi-pencil-square"></i> Penilaian: ${escapeHTML(kamad.nama)} ${kamad.jenjang === 'RA' ? '<span class="badge bg-success">Kepala RA</span>' : ''}</h5>
           <div class="page-header-sub">${escapeHTML(kamad.nama_madrasah)} (${escapeHTML(kamad.jenjang||'-')}) &middot; ${escapeHTML(periode.label)}</div>
           <div class="mt-1"><span class="badge bg-light text-dark"><i class="bi bi-person-badge"></i> Penilai: ${escapeHTML(roleInfo.label||role)}</span> <span class="badge bg-light text-dark border ms-1">Instrumen: ${roleInfo.instrumen === 'gtk' ? 'Guru/Tendik &amp; Komite' : 'Pengawas'}</span></div>
         </div>
@@ -1711,8 +1739,11 @@ route('#/cetak/:id', (root, params) => {
   const penilaiLabel = penRole === 'pengawas_1' ? 'Penilai I'
     : penRole === 'pengawas_2' ? 'Penilai II'
     : (roleInfoCetak?.label || 'Penilai');
-  const jabatanKamad = kamad?.jabatan || 'Kepala Madrasah';
+  const isRA = kamad?.jenjang === 'RA';
+  const jabatanKamad = isRA ? 'Kepala RA' : (kamad?.jabatan || 'Kepala Madrasah');
+  const judulCetak = isRA ? 'LAPORAN PENILAIAN KINERJA KEPALA RA' : 'LAPORAN PENILAIAN KINERJA KEPALA MADRASAH';
   const tempat = Meta.get('lokasi_ttd', 'Jember');
+  const printKompList = window.PKKM_KOMPONEN;
 
   root.innerHTML = `
     <div class="d-flex justify-content-between align-items-center mb-3 no-print">
@@ -1726,7 +1757,7 @@ route('#/cetak/:id', (root, params) => {
     <div class="card">
       <div class="card-body" id="printArea">
         <div class="print-header text-center">
-          <h5 class="mb-1">LAPORAN PENILAIAN KINERJA KEPALA MADRASAH</h5>
+          <h5 class="mb-1">${judulCetak}</h5>
           <div>${escapeHTML(periode?.label||'-')}</div>
           <hr>
         </div>
@@ -1783,7 +1814,7 @@ route('#/cetak/:id', (root, params) => {
             </tr>
           </thead>
           <tbody>
-            ${window.PKKM_KOMPONEN.map(k => `
+            ${printKompList.map(k => `
               <tr><td colspan="4" style="background:#f4faf5;"><strong>${k.no}. ${escapeHTML(k.label)}</strong></td></tr>
               ${k.aspek.map(a => {
                 const ha = hitungNilaiAspek(pen.id, k.code, a.kode);

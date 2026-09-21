@@ -1975,3 +1975,62 @@ window.getRolesForPeriode = function (periodeType) {
   if (periodeType === 'tahun_4') return window.PKKM_ROLES;
   return window.PKKM_ROLES.filter(r => r.scope === 'all');
 };
+
+// ============================================================================
+// INTEGRASI INSTRUMEN RA (ditambahkan 22 Sep 2026)
+// Instrumen RA dimuat dari instrumen-ra.js. Pemilihan instrumen berbasis
+// jenjang + role, tanpa mengubah struktur/bobot penilaian existing.
+// ============================================================================
+
+// Pemilih instrumen berbasis jenjang + role.
+// jenjang: 'RA' | 'MI' | 'MTs' | 'MA' | null ; role: 'pengawas' | 'gtk'
+window.getInstrumenByJenjang = function (jenjang, role) {
+  const isGtk = (role === 'gtk');
+  if (jenjang === 'RA') {
+    const raList = isGtk ? window.PKKM_INSTRUMEN_RA_GTK : window.PKKM_INSTRUMEN_RA_PENGAWAS;
+    if (raList && raList.length) return raList;
+  }
+  return isGtk
+    ? (window.PKKM_INSTRUMEN_GTK || window.PKKM_INSTRUMEN_PENGAWAS)
+    : (window.PKKM_INSTRUMEN_PENGAWAS || window.PKKM_KOMPONEN);
+};
+
+// Backward-compat + sadar-jenjang: set instrumen aktif sesuai role & jenjang.
+window.setInstrumenRole = function (role, jenjang) {
+  const j = jenjang || window.PKKM_JENJANG_AKTIF || null;
+  window.PKKM_KOMPONEN = window.getInstrumenByJenjang(j, role);
+  window.PKKM_TOTAL_INDIKATOR = window.PKKM_KOMPONEN.reduce(
+    (s, k) => s + k.aspek.reduce((s2, a) => s2 + (a.indikator ? a.indikator.length : 0), 0), 0
+  );
+};
+
+// Cari definisi komponen untuk sebuah penilaian (jenjang diambil dari kamad).
+window._findKomponenByPenilaian = function (penilaian_id, komponenCode) {
+  let jenjang = null;
+  try {
+    const pen = window.Penilaian && window.Penilaian.get(penilaian_id);
+    if (pen) {
+      const k = window.Kamad && window.Kamad.get(pen.kamad_id);
+      if (k) jenjang = k.jenjang;
+    }
+  } catch (e) { /* noop */ }
+  const list = window.getInstrumenByJenjang(jenjang) || window.PKKM_KOMPONEN || [];
+  const found = list.find(x => x.code === komponenCode);
+  if (found) return found;
+  const base = (window.PKKM_KOMPONEN || []).find(x => x.code === komponenCode);
+  if (base) return base;
+  return (window.PKKM_INSTRUMEN_PENGAWAS || []).find(x => x.code === komponenCode) || null;
+};
+
+// Varian tambal-sulam lama (PKKM_RA_VARIAN) DINONAKTIFKAN.
+// Instrumen RA baru sudah sepenuhnya kontekstual, sehingga redaksi indikator
+// dipakai apa adanya (termasuk meneruskan field penggalian & rubrik bila ada).
+window.getIndikatorTampil = function (ind, indikator_id, jenjang) {
+  const out = { indikator: ind.indikator, data: ind.data, bukti: ind.bukti };
+  if (ind.penggalian) out.penggalian = ind.penggalian;
+  if (ind.rubrik) out.rubrik = ind.rubrik;
+  return out;
+};
+
+// Tidak ada lagi indikator RA yang dikeluarkan dari penyebut.
+window.PKKM_RA_SKIP = [];

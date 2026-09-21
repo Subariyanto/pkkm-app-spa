@@ -111,7 +111,9 @@
     for (const r of dinilai) {
       const pen = r.penilaian;
       if (!pen) continue;
-      for (const k of KOMP_LIST) {
+      // Sadar-jenjang: pakai daftar komponen/aspek sesuai jenjang kamad ini
+      const kList = (window.getInstrumenByJenjang ? window.getInstrumenByJenjang(r.k && r.k.jenjang) : null) || KOMP_LIST;
+      for (const k of kList) {
         if (!isFourYear && k.code === 'HK') continue;
         for (const a of (k.aspek || [])) {
           const ha = window.hitungNilaiAspek(pen.id, k.code, a.kode);
