@@ -1708,7 +1708,12 @@ route('#/cetak/:id', (root, params) => {
   const penilaiNip = pen.penilai_nip || ((pen.role || '').startsWith('pengawas') ? pengawas.nip : '');
   const penilaiJabatan = pen.penilai_jabatan || ((pen.role || '').startsWith('pengawas') ? (pengawas.jabatan || 'Pengawas Madrasah') : (roleInfoCetak?.label || 'Penilai'));
   const penilaiUnit = pen.penilai_unit || ((pen.role || '').startsWith('pengawas') ? (pengawas.unit || `Kemenag Kabupaten ${Meta.get('kabupaten_kota', 'Jember')}`) : '');
-  const pokjawas = Meta.get('identitas_ketua_pokjawas', { nama: 'SUBARIYANTO, S.Pd, M.Pd.I', nip: '197002122005011004' });
+  // Label penilai pada kolom tanda tangan: Penilai I / Penilai II (mengikuti urutan pengawas)
+  const penRole = pen.role || 'pengawas_1';
+  const penilaiLabel = penRole === 'pengawas_1' ? 'Penilai I'
+    : penRole === 'pengawas_2' ? 'Penilai II'
+    : (roleInfoCetak?.label || 'Penilai');
+  const jabatanKamad = kamad?.jabatan || 'Kepala Madrasah';
   const tempat = Meta.get('lokasi_ttd', 'Jember');
 
   root.innerHTML = `
@@ -1810,18 +1815,19 @@ route('#/cetak/:id', (root, params) => {
         <div class="ttd-grid">
           <div class="ttd-box">
             <div class="ttd-tempat">&nbsp;</div>
-            <div class="ttd-jabatan">Mengetahui,<br>Ketua Pokjawas Madrasah Kab. ${escapeHTML(Meta.get('kabupaten_kota','Jember'))}</div>
+            <div class="ttd-jabatan">Mengetahui,<br>${escapeHTML(jabatanKamad)} ${escapeHTML(kamad?.nama_madrasah||'')}</div>
             <div class="ttd-spacer"></div>
-            <div class="ttd-name">${escapeHTML(pokjawas.nama||'..............................')}</div>
-            <div class="ttd-nip">NIP. ${escapeHTML(pokjawas.nip||'..............................')}</div>
+            <div class="ttd-name">${escapeHTML(kamad?.nama||'..............................')}</div>
+            <div class="ttd-nip">NIP. ${escapeHTML(kamad?.nip||'..............................')}</div>
           </div>
           <div class="ttd-box">
             <div class="ttd-tempat">&nbsp;</div>
             <div class="ttd-tempat">${escapeHTML(tempat)}, ${escapeHTML(pen.tanggal||nowLocal().slice(0,10))}</div>
-            <div class="ttd-jabatan">${escapeHTML(penilaiJabatan)},${penilaiUnit ? `<br><span class="text-tiny">${escapeHTML(penilaiUnit)}</span>` : ''}</div>
+            <div class="ttd-jabatan">${escapeHTML(penilaiLabel)},</div>
             <div class="ttd-spacer"></div>
             <div class="ttd-name">${escapeHTML(penilaiNama||'..............................')}</div>
             <div class="ttd-nip">NIP/ID. ${escapeHTML(penilaiNip||'..............................')}</div>
+            ${(penilaiJabatan || penilaiUnit) ? `<div class="text-tiny">${escapeHTML(penilaiJabatan)}${penilaiJabatan && penilaiUnit ? ' &middot; ' : ''}${escapeHTML(penilaiUnit)}</div>` : ''}
           </div>
         </div>
       </div>
