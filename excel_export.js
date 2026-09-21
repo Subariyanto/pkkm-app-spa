@@ -108,7 +108,7 @@
       rPenilai++;
       const idData = [
         ['Nama', session?.penilai_nama || '-'],
-        ['NIP/ID', session?.penilai_nip || '-'],
+        ['NIP', session?.penilai_nip || '-'],
         ['Jabatan', session?.penilai_jabatan || '-'],
         ['Unit Kerja', session?.penilai_unit || '-'],
       ];

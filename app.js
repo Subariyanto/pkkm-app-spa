@@ -1825,7 +1825,7 @@ route('#/cetak/:id', (root, params) => {
             <div class="ttd-jabatan">${escapeHTML(penilaiLabel)},</div>
             <div class="ttd-spacer"></div>
             <div class="ttd-name">${escapeHTML(penilaiNama||'..............................')}</div>
-            <div class="ttd-nip">NIP/ID. ${escapeHTML(penilaiNip||'..............................')}</div>
+            <div class="ttd-nip">NIP. ${escapeHTML(penilaiNip||'..............................')}</div>
           </div>
         </div>
       </div>
