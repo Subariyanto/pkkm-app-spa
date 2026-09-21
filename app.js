@@ -1107,6 +1107,19 @@ route('#/penilaian/:kamadId/:periodeId/:role', (root, params) => {
   // Simpan jenjang kamad aktif agar modal penggalian data bisa pakai redaksi RA
   window.PKKM_JENJANG_AKTIF = kamad.jenjang || null;
   const pen = Penilaian.ensureRole(kamad.id, periode.id, role);
+  // Prefill identitas Pengawas dari Pengaturan, tetapi simpan salinannya
+  // pada sesi agar setiap penilai/periode memiliki identitas sendiri.
+  if (role.startsWith('pengawas') && !pen.penilai_nama && !pen.penilai_nip && !pen.penilai_jabatan && !pen.penilai_unit) {
+    const idPengawas = Meta.get('identitas_pengawas', {});
+    const patchPengawas = {
+      penilai_nama: idPengawas.nama || '',
+      penilai_nip: idPengawas.nip || '',
+      penilai_jabatan: idPengawas.jabatan || 'Pengawas Madrasah',
+      penilai_unit: idPengawas.unit || `Kemenag Kabupaten ${Meta.get('kabupaten_kota', 'Jember')}`,
+    };
+    Penilaian.update(pen.id, patchPengawas);
+    Object.assign(pen, patchPengawas);
+  }
   const isFinal = pen.status === 'final';
 
   function renderKomponenAccordion() {
@@ -1254,6 +1267,30 @@ route('#/penilaian/:kamadId/:periodeId/:role', (root, params) => {
 
       <div class="row g-3">
         <div class="col-lg-8">
+          <div class="card mb-3 border-primary">
+            <div class="card-header bg-primary text-white"><i class="bi bi-person-vcard"></i> Identitas Penilai</div>
+            <div class="card-body">
+              <div class="text-tiny text-muted mb-2">Identitas ini tersimpan khusus untuk sesi <strong>${escapeHTML(roleInfo.label||role)}</strong> dan akan dicantumkan pada laporan serta Export Excel.</div>
+              <div class="row g-2">
+                <div class="col-md-6">
+                  <label class="form-label text-tiny mb-1">Nama Penilai</label>
+                  <input type="text" class="form-control form-control-sm" id="penilaiNama" value="${escapeHTML(pen.penilai_nama||'')}" placeholder="Nama lengkap penilai">
+                </div>
+                <div class="col-md-6">
+                  <label class="form-label text-tiny mb-1">NIP / NIY / NIK</label>
+                  <input type="text" class="form-control form-control-sm" id="penilaiNip" value="${escapeHTML(pen.penilai_nip||'')}" placeholder="Nomor identitas">
+                </div>
+                <div class="col-md-6">
+                  <label class="form-label text-tiny mb-1">Jabatan</label>
+                  <input type="text" class="form-control form-control-sm" id="penilaiJabatan" value="${escapeHTML(pen.penilai_jabatan||'')}" placeholder="Jabatan penilai">
+                </div>
+                <div class="col-md-6">
+                  <label class="form-label text-tiny mb-1">Unit Kerja / Madrasah</label>
+                  <input type="text" class="form-control form-control-sm" id="penilaiUnit" value="${escapeHTML(pen.penilai_unit||'')}" placeholder="Unit kerja atau madrasah">
+                </div>
+              </div>
+            </div>
+          </div>
           <div class="accordion" id="komponenAcc">
             ${renderKomponenAccordion()}
           </div>
@@ -1417,6 +1454,17 @@ route('#/penilaian/:kamadId/:periodeId/:role', (root, params) => {
 
     // catatan & rekomendasi
     let t1, t2;
+    let tPenilai;
+    const saveIdentitasPenilai = () => {
+      clearTimeout(tPenilai);
+      tPenilai = setTimeout(() => Penilaian.update(pen.id, {
+        penilai_nama: $('#penilaiNama')?.value || '',
+        penilai_nip: $('#penilaiNip')?.value || '',
+        penilai_jabatan: $('#penilaiJabatan')?.value || '',
+        penilai_unit: $('#penilaiUnit')?.value || '',
+      }), 250);
+    };
+    ['#penilaiNama', '#penilaiNip', '#penilaiJabatan', '#penilaiUnit'].forEach(sel => $(sel)?.addEventListener('input', saveIdentitasPenilai));
     $('#catatanUmum')?.addEventListener('input', e => {
       clearTimeout(t1); t1 = setTimeout(() => Penilaian.update(pen.id, { catatan_umum: e.target.value }), 350);
     });
@@ -1528,6 +1576,7 @@ route('#/rekap', (root) => {
                 <td>
                   <div class="fw-semibold">${escapeHTML(r.k.nama)}</div>
                   <div class="text-tiny text-muted">${escapeHTML(r.k.nama_madrasah||'-')} &middot; ${escapeHTML(r.k.jenjang||'-')}</div>
+                  ${r.sessions.some(s => s.penilai_nama) ? `<div class="text-tiny text-primary"><i class="bi bi-person-check"></i> ${escapeHTML(r.sessions.filter(s => s.penilai_nama).map(s => s.penilai_nama).join(' · '))}</div>` : ''}
                 </td>
                 ${window.PKKM_KOMPONEN.map(k => {
                   const d = detail?.find(x => x.code === k.code);
@@ -1630,7 +1679,7 @@ route('#/cetak', (root) => {
                   const roleBadge = roleInfo ? `<span class="badge bg-light text-dark border ms-1">${escapeHTML(roleInfo.label)}</span>` : '';
                   return `<tr>
                     <td>${escapeHTML(k?.nama||'?')}<div class="text-tiny text-muted">${escapeHTML(k?.nama_madrasah||'')}</div></td>
-                    <td>${escapeHTML(per?.label||'?')} ${roleBadge}</td>
+                    <td>${escapeHTML(per?.label||'?')} ${roleBadge}${p.penilai_nama ? `<div class="text-tiny text-muted"><i class="bi bi-person"></i> ${escapeHTML(p.penilai_nama)}</div>` : ''}</td>
                     <td>${p.status === 'final' ? '<span class="badge bg-success">FINAL</span>' : '<span class="badge bg-secondary">Draft</span>'}</td>
                     <td><a class="btn btn-sm btn-primary" href="#/cetak/${p.id}"><i class="bi bi-eye"></i> Lihat</a></td>
                   </tr>`;
@@ -1654,6 +1703,11 @@ route('#/cetak/:id', (root, params) => {
   const skorMap = {}; for (const s of skorRows) if (s.indikator_id) skorMap[s.indikator_id] = s;
 
   const pengawas = Meta.get('identitas_pengawas', { nama: '', nip: '' });
+  const roleInfoCetak = (window.PKKM_ROLES || []).find(r => r.code === (pen.role || 'pengawas_1'));
+  const penilaiNama = pen.penilai_nama || ((pen.role || '').startsWith('pengawas') ? pengawas.nama : '');
+  const penilaiNip = pen.penilai_nip || ((pen.role || '').startsWith('pengawas') ? pengawas.nip : '');
+  const penilaiJabatan = pen.penilai_jabatan || ((pen.role || '').startsWith('pengawas') ? (pengawas.jabatan || 'Pengawas Madrasah') : (roleInfoCetak?.label || 'Penilai'));
+  const penilaiUnit = pen.penilai_unit || ((pen.role || '').startsWith('pengawas') ? (pengawas.unit || `Kemenag Kabupaten ${Meta.get('kabupaten_kota', 'Jember')}`) : '');
   const pokjawas = Meta.get('identitas_ketua_pokjawas', { nama: 'SUBARIYANTO, S.Pd, M.Pd.I', nip: '197002122005011004' });
   const tempat = Meta.get('lokasi_ttd', 'Jember');
 
@@ -1764,10 +1818,10 @@ route('#/cetak/:id', (root, params) => {
           <div class="ttd-box">
             <div class="ttd-tempat">&nbsp;</div>
             <div class="ttd-tempat">${escapeHTML(tempat)}, ${escapeHTML(pen.tanggal||nowLocal().slice(0,10))}</div>
-            <div class="ttd-jabatan">Pengawas Madrasah,</div>
+            <div class="ttd-jabatan">${escapeHTML(penilaiJabatan)},${penilaiUnit ? `<br><span class="text-tiny">${escapeHTML(penilaiUnit)}</span>` : ''}</div>
             <div class="ttd-spacer"></div>
-            <div class="ttd-name">${escapeHTML(pengawas.nama||'..............................')}</div>
-            <div class="ttd-nip">NIP. ${escapeHTML(pengawas.nip||'..............................')}</div>
+            <div class="ttd-name">${escapeHTML(penilaiNama||'..............................')}</div>
+            <div class="ttd-nip">NIP/ID. ${escapeHTML(penilaiNip||'..............................')}</div>
           </div>
         </div>
       </div>
