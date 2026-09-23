@@ -245,20 +245,6 @@
     }
     html += '</div></div>';
 
-    // Admin panel — butuh admin key
-    html += '<div class="card shadow-sm mb-3"><div class="card-body">';
-    html += '<h5 class="card-title">🛡️ Admin Panel</h5>';
-    html += '<p class="text-muted small">Masukkan Admin Key untuk generate kode, revoke, reset device.</p>';
-    html += '<div class="mb-3"><input type="password" id="adminKeyInput" class="form-control" placeholder="Admin Key" autocomplete="off"></div>';
-    html += '<button class="btn btn-primary btn-sm me-1" id="btnAdminLogin">🔑 Login Admin</button>';
-    html += '<div id="adminPanel" style="display:none;" class="mt-3">';
-    html += '<button class="btn btn-primary btn-sm me-1" id="btnGen1">+ 1 Kode</button>';
-    html += '<button class="btn btn-outline-primary btn-sm me-1" id="btnGen5">+ 5 Kode</button>';
-    html += '<button class="btn btn-outline-secondary btn-sm me-1" id="btnRefresh">🔄 Refresh</button>';
-    html += '<div id="codesTable" class="mt-3"></div>';
-    html += '</div>';
-    html += '</div></div>';
-
     root.innerHTML = html;
     var $ = function (sel) { return root.querySelector(sel); };
 
@@ -281,50 +267,11 @@
       if (typeof navigate === 'function') navigate('#/lisensi'); else location.reload();
     });
 
-    // Admin login
-    if ($('#btnAdminLogin')) $('#btnAdminLogin').addEventListener('click', async function () {
-      var btn = this;
-      var key = $('#adminKeyInput').value.trim();
-      if (!key) { alert('Masukkan Admin Key.'); return; }
-      btn.disabled = true; btn.textContent = '⏳ Memverifikasi...';
-      // Test admin key by listing codes
-      var codes = await window.SupabaseSync.adminListCodes(key);
-      btn.disabled = false; btn.textContent = '🔑 Login Admin';
-      if (codes.length === 0 && !window.SupabaseSync._lastAdminOk) {
-        // Cek apakah network error atau key salah
-        // Jika array kosong tapi tidak error → mungkin belum ada kode
-      }
-      // Simpan admin key di session (tidak persist di localStorage)
-      sessionStorage.setItem('pkkm_admin_key', key);
-      $('#adminPanel').style.display = '';
-      btn.textContent = '✅ Admin Aktif';
-      btn.classList.remove('btn-primary');
-      btn.classList.add('btn-success');
-      await renderCodesTable(root, key);
-    });
-
-    // Cek apakah admin sudah login (session)
-    var savedKey = sessionStorage.getItem('pkkm_admin_key');
-    if (savedKey) {
-      $('#adminKeyInput').value = '';
-      $('#adminPanel').style.display = '';
-      var btnLogin = $('#btnAdminLogin');
-      if (btnLogin) {
-        btnLogin.textContent = '✅ Admin Aktif';
-        btnLogin.classList.remove('btn-primary');
-        btnLogin.classList.add('btn-success');
-      }
-      await renderCodesTable(root, savedKey);
-    }
-
-    if ($('#btnGen1')) $('#btnGen1').addEventListener('click', function () { doGen(1, root); });
-    if ($('#btnGen5')) $('#btnGen5').addEventListener('click', function () { doGen(5, root); });
-    if ($('#btnRefresh')) $('#btnRefresh').addEventListener('click', function () { renderCodesTable(root, sessionStorage.getItem('pkkm_admin_key')); });
   }
 
-  async function renderCodesTable(root, adminKey) {
+  async function renderCodesTableLegacy(root, adminKey) {
     var container = root.querySelector('#codesTable');
-    if (!container) return;
+    if (!container) return; // panel admin dipindah ke menu Aktivasi (#/admin/aktivasi)
     container.innerHTML = '<div class="text-center py-2"><div class="spinner-border spinner-border-sm text-primary"></div></div>';
     var codes = await window.SupabaseSync.adminListCodes(adminKey);
     if (!codes || codes.length === 0) {
@@ -364,7 +311,7 @@
         var r = await window.SupabaseSync.adminResetDevice(code, adminKey);
         if (!r.success) { alert('❌ Gagal: ' + (r.reason || 'unknown')); return; }
         alert('✅ Device binding direset. Kode bisa dipakai lagi.');
-        renderCodesTable(root, adminKey);
+        renderCodesTableLegacy(root, adminKey);
       });
     });
     container.querySelectorAll('[data-revoke]').forEach(function (btn) {
@@ -374,7 +321,7 @@
         var r = await window.SupabaseSync.adminRevokeCode(c, adminKey);
         if (!r.success) { alert('❌ Gagal: ' + (r.reason || 'unknown')); return; }
         alert('✅ Kode dicabut.');
-        renderCodesTable(root, adminKey);
+        renderCodesTableLegacy(root, adminKey);
       });
     });
     container.querySelectorAll('[data-edit]').forEach(function (btn) {
@@ -387,7 +334,7 @@
         var r = await window.SupabaseSync.adminUpdateRecipient(code, val.trim(), adminKey);
         if (!r.success) { alert('❌ Gagal: ' + (r.reason || 'unknown')); return; }
         alert('✅ Catatan berhasil diperbarui.');
-        renderCodesTable(root, adminKey);
+        renderCodesTableLegacy(root, adminKey);
       });
     });
     container.querySelectorAll('[data-delete]').forEach(function (btn) {
@@ -405,24 +352,9 @@
           : await window.SupabaseSync.adminDeleteUnusedCode(code, adminKey);
         if (!r.success) { alert('❌ Gagal: ' + (r.reason || 'unknown')); return; }
         alert('✅ Kode berhasil dihapus.');
-        renderCodesTable(root, adminKey);
+        renderCodesTableLegacy(root, adminKey);
       });
     });
-  }
-
-  async function doGen(n, root) {
-    var adminKey = sessionStorage.getItem('pkkm_admin_key');
-    if (!adminKey) { alert('Login admin dulu.'); return; }
-    var made = [];
-    var failed = 0;
-    for (var i = 0; i < n; i++) {
-      var r = await window.SupabaseSync.adminGenerateCode(adminKey, '');
-      if (r.success && r.code) made.push(r.code);
-      else failed++;
-    }
-    if (made.length) alert('✅ ' + made.length + ' kode dibuat:\n\n' + made.join('\n'));
-    if (failed) alert('⚠️ ' + failed + ' kode gagal dibuat.');
-    renderCodesTable(root, adminKey);
   }
 
   function escapeHtmlLocal(s) {
