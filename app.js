@@ -291,13 +291,13 @@ function syncAuthUI() {
       }
     });
   }
-  // Menu Aktivasi = khusus admin (berdasarkan Admin Key di sessionStorage).
-  // Menu Lisensi = untuk semua pengguna (tempat lihat status + input kode aktivasi).
+  // Menu Aktivasi & Lisensi = khusus admin (berdasarkan Admin Key di sessionStorage).
+  // Non-admin beraktivasi lewat layar "Aktivasi & Registrasi Akun" otomatis.
   const isAdmin = !!sessionStorage.getItem('pkkm_admin_key');
   const adminNav = document.getElementById('navAdminAktivasi');
   if (adminNav) adminNav.style.display = isAdmin ? '' : 'none';
   const lisensiNav = document.getElementById('navLisensi');
-  if (lisensiNav) lisensiNav.style.display = '';
+  if (lisensiNav) lisensiNav.style.display = isAdmin ? '' : 'none';
 
   // Update navbar region label dari setting kabupaten/kota
   const navRegion = document.getElementById('navRegionLabel');
