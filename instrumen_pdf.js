@@ -488,13 +488,15 @@
     ctx.y = sigTop + 32;
     doc.setDrawColor(120);
     doc.setFont('helvetica', 'bold'); doc.setFontSize(9);
-    doc.text('(..................................................)', ctx.ML + 4, ctx.y);
-    doc.text('(..................................................)', ctx.ML + half + 4, ctx.y);
+    var namaPenilai = identity.penilai_nama || '';
+    var namaKamad = identity.kamad_nama || '';
+    doc.text(namaPenilai ? safeText(namaPenilai) : '(..................................................)', ctx.ML + 4, ctx.y, { maxWidth: half - 10 });
+    doc.text(namaKamad ? safeText(namaKamad) : '(..................................................)', ctx.ML + half + 4, ctx.y, { maxWidth: half - 10 });
     ctx.y += 4.6;
     doc.setFont('helvetica', 'normal'); doc.setFontSize(8.4); doc.setTextColor(60);
     doc.text('NIP / NIY / NIK: ' + (identity.penilai_nip || '................................'), ctx.ML + 4, ctx.y, { maxWidth: half - 6 });
-    var nm = identity.penilai_nama || '';
-    if (nm) { doc.setFontSize(8.4); }
+    doc.text('NIP / NIY / NIK: ' + (identity.kamad_nip || '................................'), ctx.ML + half + 4, ctx.y, { maxWidth: half - 6 });
+    ctx.y += 5;
     doc.setTextColor(0);
   }
 

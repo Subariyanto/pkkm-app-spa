@@ -2671,6 +2671,18 @@ route('#/instrumen-pdf', (root) => {
               ${TYPES.map(t => `<option value="${escapeHTML(t.label)}">${escapeHTML(t.label)}</option>`).join('')}
             </select>
           </div>
+          <div class="col-md-6">
+            <label class="form-label text-tiny mb-1">Nama Penilai</label>
+            <input type="text" class="form-control form-control-sm" name="penilai_nama"
+              value="${escapeHTML((Meta.get('identitas_pengawas', {}) || {}).nama || '')}"
+              placeholder="Nama lengkap penilai">
+          </div>
+          <div class="col-md-6">
+            <label class="form-label text-tiny mb-1">NIP / NIY / NIK Penilai</label>
+            <input type="text" class="form-control form-control-sm" name="penilai_nip"
+              value="${escapeHTML((Meta.get('identitas_pengawas', {}) || {}).nip || '')}"
+              placeholder="NIP / NIY / NIK penilai">
+          </div>
           <div class="col-12">
             <div class="form-check form-check-inline">
               <input class="form-check-input" type="checkbox" id="chkCatatan" name="withNotes">
@@ -2716,6 +2728,9 @@ route('#/instrumen-pdf', (root) => {
     const identity = {
       role_code: roleCode,
       role_label: roleInfo.label || '',
+      penilai_nama: fd.get('penilai_nama') || '',
+      penilai_nip: fd.get('penilai_nip') || '',
+      penilai_jabatan: roleInfo.label || 'Pengawas Madrasah',
       kamad_nama: kamad ? (kamad.nama || '') : '',
       kamad_nip: kamad ? (kamad.nip || '') : '',
       kamad_madrasah: kamad ? (kamad.nama_madrasah || '') : '',
