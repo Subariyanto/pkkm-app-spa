@@ -2484,6 +2484,9 @@ route('#/instrumen', (root) => {
         <button class="btn btn-sm btn-primary" id="btnSimpanInstrumen" ${editMode ? '' : 'disabled'}>
           <i class="bi bi-save"></i> Simpan
         </button>
+        <button class="btn btn-sm btn-outline-success" id="btnDownloadInstrumenPdf" title="Unduh instrumen jenjang ini sebagai PDF">
+          <i class="bi bi-file-earmark-pdf"></i> Download PDF
+        </button>
       </div>
     </div>
     ${editMode
@@ -2543,6 +2546,15 @@ route('#/instrumen', (root) => {
       dirty = false;
       draw();
     });
+    $('#btnDownloadInstrumenPdf', root)?.addEventListener('click', () => {
+      if (!window.InstrumenPDF) { toast('Modul PDF belum termuat. Hard refresh (Ctrl+Shift+R) lalu coba lagi.', 'error'); return; }
+      try {
+        window.InstrumenPDF.download(jenjang, {});
+        toast('PDF instrumen jenjang ' + jenjang + ' sedang diunduh...');
+      } catch (e) {
+        toast('Gagal membuat PDF: ' + (e.message || e), 'error');
+      }
+    });
     $('#btnSimpanInstrumen', root)?.addEventListener('click', () => {
       if (!window.InstrumenOverride) { toast('Modul penyimpanan belum siap. Refresh halaman.', 'error'); return; }
       if (!editMode) { toast('Klik Edit terlebih dahulu untuk mengubah instrumen.', 'info'); return; }
@@ -2582,6 +2594,75 @@ route('#/instrumen', (root) => {
   }
 
   draw();
+});
+
+// --- Instrumen PDF: unduh instrumen per jenjang (Pengawas / GTK) -------
+route('#/instrumen-pdf', (root) => {
+  const JENJANG = (window.PKKM_JENJANG || ['MI', 'MTs', 'MA', 'RA']);
+  const rows = JENJANG.map(j => {
+    const isRA = j === 'RA';
+    const c = (window.InstrumenPDF ? window.InstrumenPDF.countsFor(j, null) : { komponen: '-', aspek: '-', indikator: '-' });
+    const cGtk = (window.InstrumenPDF ? window.InstrumenPDF.countsFor(j, 'gtk') : c);
+    return `
+      <tr>
+        <td><strong>${j}</strong><div class="text-tiny text-muted">${escapeHTML((window.InstrumenPDF?.JENJANG_LABEL || {})[j] || j)}</div></td>
+        <td class="text-tiny">${c.aspek} sub-aspek<br>${c.indikator} indikator</td>
+        <td class="text-tiny">${cGtk.indikator} indikator</td>
+        <td class="text-end">
+          <button class="btn btn-sm btn-outline-success" data-pdf-jenjang="${j}" data-pdf-role=""><i class="bi bi-file-earmark-pdf"></i> Pengawas</button>
+          <button class="btn btn-sm btn-outline-primary" data-pdf-jenjang="${j}" data-pdf-role="gtk"><i class="bi bi-file-earmark-pdf"></i> Guru/Tendik</button>
+        </td>
+      </tr>`;
+  }).join('');
+
+  root.innerHTML = `
+    <div class="page-header">
+      <div>
+        <h5><i class="bi bi-file-earmark-pdf"></i> Download PDF Instrumen PKKM</h5>
+        <span class="page-header-sub">Unduh instrumen lengkap (indikator, data, bukti, rubrik) per jenjang</span>
+      </div>
+    </div>
+    <div class="alert alert-info py-2 text-tiny">
+      <i class="bi bi-info-circle"></i> PDF memuat seluruh komponen, sub-aspek, indikator, data yang diharapkan, panduan penggalian/bukti, dan rubrik skor 1-4.
+      Redaksi yang tercetak mengikuti hasil <strong>Edit Instrumen</strong> pada jenjang terkait. Tombol <strong>Pengawas</strong> untuk instrumen Pokjawas, <strong>Guru/Tendik</strong> untuk instrumen GTK &amp; Komite.
+    </div>
+    <div class="card">
+      <div class="card-body p-0">
+        <div class="table-responsive">
+          <table class="table table-hover align-middle mb-0">
+            <thead class="table-light">
+              <tr><th width="140">Jenjang</th><th>Instrumen Pengawas</th><th>Instrumen Guru/Tendik</th><th class="text-end" width="300">Unduh PDF</th></tr>
+            </thead>
+            <tbody>${rows}</tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+    <div class="text-tiny text-muted mt-2">
+      Instrumen RA memakai dataset terpisah. Jika PDF gagal dibuat, lakukan hard refresh (Ctrl+Shift+R) agar pustaka jsPDF termuat.
+    </div>`;
+
+  root.addEventListener('click', (ev) => {
+    const btn = ev.target.closest('[data-pdf-jenjang]');
+    if (!btn) return;
+    const jenjang = btn.dataset.pdfJenjang;
+    const role = btn.dataset.pdfRole || null;
+    if (!window.InstrumenPDF) { toast('Modul PDF belum termuat. Hard refresh (Ctrl+Shift+R) lalu coba lagi.', 'error'); return; }
+    const label = role === 'gtk' ? 'Guru/Tendik' : 'Pengawas';
+    btn.disabled = true;
+    const oldHtml = btn.innerHTML;
+    btn.innerHTML = '<span class="spinner-border spinner-border-sm"></span> Menyiapkan...';
+    setTimeout(() => {
+      try {
+        window.InstrumenPDF.download(jenjang, { role });
+        toast(`PDF instrumen ${jenjang} (${label}) sedang diunduh...`);
+      } catch (e) {
+        toast('Gagal membuat PDF: ' + (e.message || e), 'error');
+      }
+      btn.disabled = false;
+      btn.innerHTML = oldHtml;
+    }, 30);
+  });
 });
 
 // --- Analisis PKB (Pengembangan Keprofesian Berkelanjutan) ----
