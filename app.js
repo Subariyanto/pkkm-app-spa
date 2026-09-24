@@ -2484,8 +2484,11 @@ route('#/instrumen', (root) => {
         <button class="btn btn-sm btn-primary" id="btnSimpanInstrumen" ${editMode ? '' : 'disabled'}>
           <i class="bi bi-save"></i> Simpan
         </button>
-        <button class="btn btn-sm btn-outline-success" id="btnDownloadInstrumenPdf" title="Unduh instrumen jenjang ini sebagai PDF">
-          <i class="bi bi-file-earmark-pdf"></i> Download PDF
+        <button class="btn btn-sm btn-success" id="btnFormulirInstrumen" title="Unduh formulir penilaian manual (kotak skor untuk dicentang)">
+          <i class="bi bi-check2-square"></i> Formulir Penilaian
+        </button>
+        <button class="btn btn-sm btn-outline-success" id="btnDownloadInstrumenPdf" title="Unduh instrumen lengkap + rubrik sebagai PDF">
+          <i class="bi bi-file-earmark-pdf"></i> Instrumen PDF
         </button>
       </div>
     </div>
@@ -2546,6 +2549,15 @@ route('#/instrumen', (root) => {
       dirty = false;
       draw();
     });
+    $('#btnFormulirInstrumen', root)?.addEventListener('click', () => {
+      if (!window.InstrumenPDF) { toast('Modul PDF belum termuat. Hard refresh (Ctrl+Shift+R) lalu coba lagi.', 'error'); return; }
+      try {
+        window.InstrumenPDF.download(jenjang, { mode: 'formulir' });
+        toast('Formulir penilaian jenjang ' + jenjang + ' sedang diunduh...');
+      } catch (e) {
+        toast('Gagal membuat PDF: ' + (e.message || e), 'error');
+      }
+    });
     $('#btnDownloadInstrumenPdf', root)?.addEventListener('click', () => {
       if (!window.InstrumenPDF) { toast('Modul PDF belum termuat. Hard refresh (Ctrl+Shift+R) lalu coba lagi.', 'error'); return; }
       try {
@@ -2596,11 +2608,13 @@ route('#/instrumen', (root) => {
   draw();
 });
 
-// --- Instrumen PDF: unduh instrumen per jenjang (Pengawas / GTK) -------
+// --- Instrumen PDF: unduh instrumen / formulir penilaian per jenjang -------
 route('#/instrumen-pdf', (root) => {
   const JENJANG = (window.PKKM_JENJANG || ['MI', 'MTs', 'MA', 'RA']);
+  const KAMAD = (window.Kamad ? Kamad.list() : []);
+  const TYPES = (window.PKKM_PERIODE_TYPES || []);
+
   const rows = JENJANG.map(j => {
-    const isRA = j === 'RA';
     const c = (window.InstrumenPDF ? window.InstrumenPDF.countsFor(j, null) : { komponen: '-', aspek: '-', indikator: '-' });
     const cGtk = (window.InstrumenPDF ? window.InstrumenPDF.countsFor(j, 'gtk') : c);
     return `
@@ -2609,8 +2623,8 @@ route('#/instrumen-pdf', (root) => {
         <td class="text-tiny">${c.aspek} sub-aspek<br>${c.indikator} indikator</td>
         <td class="text-tiny">${cGtk.indikator} indikator</td>
         <td class="text-end">
-          <button class="btn btn-sm btn-outline-success" data-pdf-jenjang="${j}" data-pdf-role=""><i class="bi bi-file-earmark-pdf"></i> Pengawas</button>
-          <button class="btn btn-sm btn-outline-primary" data-pdf-jenjang="${j}" data-pdf-role="gtk"><i class="bi bi-file-earmark-pdf"></i> Guru/Tendik</button>
+          <button class="btn btn-sm btn-outline-success" data-pdf-jenjang="${j}" data-pdf-role="" data-pdf-mode="instrumen"><i class="bi bi-file-earmark-pdf"></i> Pengawas</button>
+          <button class="btn btn-sm btn-outline-primary" data-pdf-jenjang="${j}" data-pdf-role="gtk" data-pdf-mode="instrumen"><i class="bi bi-file-earmark-pdf"></i> Guru/Tendik</button>
         </td>
       </tr>`;
   }).join('');
@@ -2619,14 +2633,59 @@ route('#/instrumen-pdf', (root) => {
     <div class="page-header">
       <div>
         <h5><i class="bi bi-file-earmark-pdf"></i> Download PDF Instrumen PKKM</h5>
-        <span class="page-header-sub">Unduh instrumen lengkap (indikator, data, bukti, rubrik) per jenjang</span>
+        <span class="page-header-sub">Formulir penilaian manual (kotak centang) + instrumen lengkap per jenjang</span>
       </div>
     </div>
-    <div class="alert alert-info py-2 text-tiny">
-      <i class="bi bi-info-circle"></i> PDF memuat seluruh komponen, sub-aspek, indikator, data yang diharapkan, panduan penggalian/bukti, dan rubrik skor 1-4.
-      Redaksi yang tercetak mengikuti hasil <strong>Edit Instrumen</strong> pada jenjang terkait. Tombol <strong>Pengawas</strong> untuk instrumen Pokjawas, <strong>Guru/Tendik</strong> untuk instrumen GTK &amp; Komite.
+
+    <div class="card mb-3 border-success">
+      <div class="card-header bg-success-subtle"><strong><i class="bi bi-check2-square"></i> Formulir Penilaian Manual (untuk dicentang)</strong></div>
+      <div class="card-body">
+        <p class="text-tiny text-muted mb-3">
+          Cetak formulir ini untuk penilaian di lapangan. Pengawas memberi <strong>tanda centang (\u2713)</strong> pada kotak skor 1 / 2 / 3 / 4,
+          lalu hasilnya diinput ke aplikasi PKKM. Kolom skor <strong>sengaja dikosongkan</strong>.
+        </p>
+        <form id="frmFormulirPdf" class="row g-2 align-items-end">
+          <div class="col-md-3">
+            <label class="form-label text-tiny mb-1">Jenjang</label>
+            <select class="form-select form-select-sm" name="jenjang">
+              ${JENJANG.map(j => `<option value="${j}">${j}</option>`).join('')}
+            </select>
+          </div>
+          <div class="col-md-3">
+            <label class="form-label text-tiny mb-1">Penilai</label>
+            <select class="form-select form-select-sm" name="role_code">
+              ${(window.PKKM_ROLES || []).map(r => `<option value="${r.code}" data-instrumen="${r.instrumen}">${escapeHTML(r.label)}</option>`).join('')}
+            </select>
+          </div>
+          <div class="col-md-3">
+            <label class="form-label text-tiny mb-1">Kepala Madrasah (opsional)</label>
+            <select class="form-select form-select-sm" name="kamad_id">
+              <option value="">-- kosongkan (diisi tangan) --</option>
+              ${KAMAD.map(k => `<option value="${k.id}">${escapeHTML(k.nama || '')} - ${escapeHTML(k.nama_madrasah || '')}</option>`).join('')}
+            </select>
+          </div>
+          <div class="col-md-3">
+            <label class="form-label text-tiny mb-1">Periode (opsional)</label>
+            <select class="form-select form-select-sm" name="periode_label">
+              <option value="">-- kosongkan --</option>
+              ${TYPES.map(t => `<option value="${escapeHTML(t.label)}">${escapeHTML(t.label)}</option>`).join('')}
+            </select>
+          </div>
+          <div class="col-12">
+            <div class="form-check form-check-inline">
+              <input class="form-check-input" type="checkbox" id="chkCatatan" name="withNotes">
+              <label class="form-check-label text-tiny" for="chkCatatan">Sertakan catatan kecil: data yang diharapkan &amp; fokus penggalian</label>
+            </div>
+          </div>
+          <div class="col-12 mt-2">
+            <button type="submit" class="btn btn-success"><i class="bi bi-file-earmark-pdf"></i> Download Formulir Penilaian</button>
+          </div>
+        </form>
+      </div>
     </div>
+
     <div class="card">
+      <div class="card-header"><strong><i class="bi bi-journal-text"></i> Instrumen Lengkap (indikator + data + bukti + rubrik)</strong></div>
       <div class="card-body p-0">
         <div class="table-responsive">
           <table class="table table-hover align-middle mb-0">
@@ -2638,9 +2697,38 @@ route('#/instrumen-pdf', (root) => {
         </div>
       </div>
     </div>
+
     <div class="text-tiny text-muted mt-2">
-      Instrumen RA memakai dataset terpisah. Jika PDF gagal dibuat, lakukan hard refresh (Ctrl+Shift+R) agar pustaka jsPDF termuat.
+      Redaksi yang tercetak mengikuti hasil <strong>Edit Instrumen</strong> pada jenjang terkait (termasuk varian RA).
+      Jika PDF gagal dibuat, lakukan hard refresh (Ctrl+Shift+R) agar pustaka jsPDF termuat.
     </div>`;
+
+  $('#frmFormulirPdf', root)?.addEventListener('submit', (ev) => {
+    ev.preventDefault();
+    if (!window.InstrumenPDF) { toast('Modul PDF belum termuat. Hard refresh (Ctrl+Shift+R) lalu coba lagi.', 'error'); return; }
+    const fd = new FormData(ev.target);
+    const jenjang = fd.get('jenjang');
+    const roleCode = fd.get('role_code');
+    const roleInfo = (window.PKKM_ROLES || []).find(r => r.code === roleCode) || {};
+    const withNotes = !!fd.get('withNotes');
+    const kamadId = fd.get('kamad_id');
+    const kamad = kamadId ? Kamad.get(Number(kamadId)) : null;
+    const identity = {
+      role_code: roleCode,
+      role_label: roleInfo.label || '',
+      kamad_nama: kamad ? (kamad.nama || '') : '',
+      kamad_nip: kamad ? (kamad.nip || '') : '',
+      kamad_madrasah: kamad ? (kamad.nama_madrasah || '') : '',
+      kamad_nsm: kamad ? (kamad.nsm || '') : '',
+      periode: fd.get('periode_label') || '',
+    };
+    try {
+      window.InstrumenPDF.download(jenjang, { role: roleInfo.instrumen || null, mode: 'formulir', identity, withNotes });
+      toast(`Formulir penilaian ${jenjang} (${roleInfo.label || roleCode}) sedang diunduh...`);
+    } catch (e) {
+      toast('Gagal membuat PDF: ' + (e.message || e), 'error');
+    }
+  });
 
   root.addEventListener('click', (ev) => {
     const btn = ev.target.closest('[data-pdf-jenjang]');
@@ -2654,7 +2742,7 @@ route('#/instrumen-pdf', (root) => {
     btn.innerHTML = '<span class="spinner-border spinner-border-sm"></span> Menyiapkan...';
     setTimeout(() => {
       try {
-        window.InstrumenPDF.download(jenjang, { role });
+        window.InstrumenPDF.download(jenjang, { role, mode: 'instrumen' });
         toast(`PDF instrumen ${jenjang} (${label}) sedang diunduh...`);
       } catch (e) {
         toast('Gagal membuat PDF: ' + (e.message || e), 'error');
