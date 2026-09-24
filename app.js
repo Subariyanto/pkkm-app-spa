@@ -2635,6 +2635,11 @@ route('#/instrumen-pdf', (root) => {
         <h5><i class="bi bi-file-earmark-pdf"></i> Download PDF Instrumen PKKM</h5>
         <span class="page-header-sub">Formulir penilaian manual (kotak centang) + instrumen lengkap per jenjang</span>
       </div>
+      <div class="d-flex gap-2 align-items-center">
+        <button class="btn btn-sm btn-outline-primary" id="btnEditInstrumenDariSini">
+          <i class="bi bi-pencil-square"></i> Edit Instrumen
+        </button>
+      </div>
     </div>
 
     <div class="card mb-3 border-success">
@@ -2714,6 +2719,10 @@ route('#/instrumen-pdf', (root) => {
       Redaksi yang tercetak mengikuti hasil <strong>Edit Instrumen</strong> pada jenjang terkait (termasuk varian RA).
       Jika PDF gagal dibuat, lakukan hard refresh (Ctrl+Shift+R) agar pustaka jsPDF termuat.
     </div>`;
+
+  $('#btnEditInstrumenDariSini', root)?.addEventListener('click', () => {
+    window.location.hash = '#/instrumen';
+  });
 
   $('#frmFormulirPdf', root)?.addEventListener('submit', (ev) => {
     ev.preventDefault();
