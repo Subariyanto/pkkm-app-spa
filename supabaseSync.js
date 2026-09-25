@@ -6,7 +6,7 @@
 
   // === PUSAT LISENSI APLIKASI ===
   var SUPABASE_URL = 'https://llaukzsztguwrtwdubpm.supabase.co';
-  var SUPABASE_ANON_KEY = 'sb_publishable_ueDydfaO-kFcHEmJKM-ClQ_gKVHNdbG';
+  var SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImxsYXVrenN6dGd1d3J0d2R1YnBtIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODcxOTI1NDgsImV4cCI6MjEwMjc2ODU0OH0.DqKtA0aus9nOLViMEWjAPvYIAdLS_EKU3H8dYKe_Zhk'; // legacy anon (JWT) — publishable key lama sudah dicabut
   var APP_SLUG = 'pkkm';
   var TIMEOUT_MS = 10000;
 
