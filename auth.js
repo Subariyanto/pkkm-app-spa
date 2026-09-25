@@ -143,6 +143,66 @@
     return id;
   }
 
+  // --- SISTEM AKUN (1 kode = 1 akun) ---
+  // Hash password akun: sha256(username + ':' + password).
+  // Hash yang SAMA dipakai lokal (cache offline) dan dikirim ke server.
+  async function accountHash(username, password) {
+    return await sha256(String(username || '').trim().toLowerCase() + ':' + String(password || ''));
+  }
+
+  // Pesan user-friendly untuk reason dari RPC akun
+  function accountReasonMsg(reason) {
+    switch (reason) {
+      case 'code_used':
+        return 'Kode aktivasi ini sudah dipakai akun lain. Satu kode hanya untuk satu akun. Hubungi Admin/Ketua Pokjawas.';
+      case 'account_exists':
+        return 'Username sudah dipakai. Pilih username lain, atau login dengan akun Anda.';
+      case 'invalid_code':
+        return 'Kode aktivasi tidak valid. Periksa kembali atau hubungi Admin/Ketua Pokjawas.';
+      case 'inactive':
+        return 'Kode aktivasi sudah dinonaktifkan. Hubungi Admin/Ketua Pokjawas.';
+      case 'username_invalid':
+        return 'Username minimal 4 karakter.';
+      case 'password_invalid':
+        return 'Password tidak valid.';
+      case 'revoked':
+        return 'Akun ini dinonaktifkan oleh Admin. Silakan hubungi Admin.';
+      case 'invalid_credentials':
+        return 'Username atau Password salah!';
+      case 'account_not_found':
+        return 'Akun tidak ditemukan di server. Hubungi Admin.';
+      case 'network_error':
+        return 'Butuh koneksi internet. Periksa koneksi Anda lalu coba kembali.';
+      default:
+        return 'Proses gagal. Silakan coba lagi.';
+    }
+  }
+
+  // Terapkan sesi akun ke state lokal (dipakai register & login)
+  function applyAccountState(username, passHash, fullname, madrasah, role, code) {
+    localStorage.setItem(KEY_ACTIVATED, 'true');
+    localStorage.setItem(KEY_ACTIVATION_CODE, code || '');
+    localStorage.removeItem(KEY_DEVICE_BINDING); // mode akun: tanpa ikatan perangkat
+    localStorage.setItem(KEY_USER_ROLE, role || 'pengawas');
+    localStorage.setItem(KEY_USER_USERNAME, username);
+    localStorage.setItem(KEY_USER_PASSWORD_HASH, passHash);
+    localStorage.setItem(KEY_USER_FULLNAME, fullname || '');
+    localStorage.setItem(KEY_USER_MADRASAH, madrasah || '');
+    if (window.LIC && typeof window.LIC.activateFromAccount === 'function') {
+      try {
+        window.LIC.activateFromAccount({
+          username: username,
+          passwordHash: passHash,
+          fullname: fullname || '',
+          madrasah: madrasah || '',
+          role: role || 'user',
+          licenseCode: code || '',
+          tier: 'full'
+        });
+      } catch (e) { console.warn('[auth] activateFromAccount failed:', e.message); }
+    }
+  }
+
   // --- OFFLINE ACTIVATION VALIDATOR ---
   function generateActivationCode() {
     const chars = '0123456789ABCDEF';
@@ -224,43 +284,38 @@
     return Math.max(0, Math.ceil(remaining / (24 * 60 * 60 * 1000)));
   }
 
+  // Upgrade akun trial → akun penuh (1 kode = 1 akun)
   async function upgradeFromTrial(code) {
     if (!isTrial()) return { ok: false, msg: 'Akun ini bukan akun trial.' };
-    const cleanCode = code.trim().toUpperCase();
+    const cleanCode = String(code || '').trim().toUpperCase();
+    if (!cleanCode) return { ok: false, msg: 'Kode aktivasi kosong.' };
 
-    const v = await verifyActivationCode(cleanCode);
-    if (v === false) return { ok: false, msg: 'Kode aktivasi tidak valid!' };
-    if (v === 'used') return { ok: false, msg: 'Kode aktivasi sudah digunakan di perangkat lain. Hubungi Admin/Ketua Pokjawas.' };
+    const username = (localStorage.getItem(KEY_USER_USERNAME) || '').trim().toLowerCase();
+    if (username.length < 4) {
+      return { ok: false, msg: 'Username akun trial tidak valid. Buat akun baru dari halaman Aktivasi.' };
+    }
 
-    // Hapus key trial, set aktivasi penuh
+    if (!window.SupabaseSync || typeof window.SupabaseSync.registerAccount !== 'function') {
+      return { ok: false, msg: 'Modul sync belum termuat. Refresh halaman.' };
+    }
+
+    // Kredensial akun trial yang sudah tersimpan
+    const passHash = localStorage.getItem(KEY_USER_PASSWORD_HASH) || '';
+    const fullname = localStorage.getItem(KEY_USER_FULLNAME) || '';
+    const madrasah = localStorage.getItem(KEY_USER_MADRASAH) || '';
+
+    // Klaim kode ke akun di server (1 kode = 1 akun)
+    const r = await window.SupabaseSync.registerAccount(
+      cleanCode, username, passHash, fullname, madrasah, navigator.userAgent || ''
+    );
+
+    if (r.success !== true) {
+      return { ok: false, msg: accountReasonMsg(r.success === null ? 'network_error' : r.reason) };
+    }
+
+    // Sukses — buka kunci trial, terapkan mode akun penuh
     localStorage.removeItem(KEY_TRIAL_START);
-    const devId = getDeviceId();
-    const binding = fnv1aHash(devId + ':' + cleanCode);
-
-    localStorage.setItem(KEY_ACTIVATED, 'true');
-    localStorage.setItem(KEY_ACTIVATION_CODE, cleanCode);
-    localStorage.setItem(KEY_DEVICE_BINDING, binding);
-    // Upgrade role trial -> pengawas
-    if (localStorage.getItem(KEY_USER_ROLE) === 'trial') {
-      localStorage.setItem(KEY_USER_ROLE, 'pengawas');
-    }
-
-    // Sinkronisasi lisensi ke license.js (single source of truth)
-    // LIC.redeem() handles: master code bypass, Supabase validation + atomic claim, set tier=full
-    if (window.LIC && typeof window.LIC.redeem === 'function') {
-      try {
-        const licResult = await window.LIC.redeem(cleanCode);
-        if (!licResult.ok) {
-          // Rollback auth state jika lisensi gagal
-          localStorage.setItem(KEY_USER_ROLE, 'trial');
-          localStorage.setItem(KEY_TRIAL_START, String(Date.now()));
-          localStorage.setItem(KEY_ACTIVATED, 'false');
-          return { ok: false, msg: licResult.reason || 'Aktivasi lisensi gagal.' };
-        }
-      } catch (e) {
-        console.warn('[upgradeFromTrial] LIC.redeem failed:', e.message);
-      }
-    }
+    applyAccountState(username, passHash, fullname, madrasah, 'pengawas', cleanCode);
 
     return { ok: true, msg: 'Akun berhasil di-upgrade ke lisensi penuh!' };
   }
@@ -310,13 +365,19 @@
   function isActivated() {
     const activated = localStorage.getItem(KEY_ACTIVATED) === 'true';
     if (!activated) return false;
-    
-    // Verifikasi Device Binding (Mencegah copy data ke device lain)
+
+    // Mode AKUN (1 kode = 1 akun): cukup ada sesi akun, tanpa ikatan perangkat
+    if (window.LIC && typeof window.LIC.hasAccountSession === 'function' && window.LIC.hasAccountSession()) {
+      return true;
+    }
+
+    // Mode LEGACY (device binding) — tetap didukung
     const code = localStorage.getItem(KEY_ACTIVATION_CODE);
     const devId = getDeviceId();
     const binding = localStorage.getItem(KEY_DEVICE_BINDING);
+    if (!binding) return true; // akun tanpa binding tidak dikunci
     const expectedBinding = fnv1aHash(devId + ':' + code);
-    
+
     return binding === expectedBinding;
   }
 
@@ -486,8 +547,8 @@
 
     document.getElementById('btn-reg-submit').addEventListener('click', async () => {
       const errEl = document.getElementById('auth-reg-err');
-      const code = document.getElementById('reg-code').value.trim();
-      const isTrialCode = code.toUpperCase() === TRIAL_CODE;
+      const code = document.getElementById('reg-code').value.trim().toUpperCase();
+      const isTrialCode = code === TRIAL_CODE;
       const role = isTrialCode ? 'trial' : 'pengawas';
       const username = document.getElementById('reg-username').value.trim().toLowerCase();
       const fullname = document.getElementById('reg-fullname').value.trim();
@@ -515,80 +576,56 @@
         return;
       }
 
-      // Validasi kode aktivasi (trial atau kode penuh)
-      let codeValid = isTrialCode;
-      if (!isTrialCode) {
-        const v = await verifyActivationCode(code);
-        if (v === false) {
-          errEl.textContent = 'Kode aktivasi tidak valid! Harap hubungi Admin/Ketua Pokjawas.';
-          return;
-        }
-        if (v === 'used') {
-          errEl.textContent = 'Kode aktivasi sudah digunakan di perangkat lain. Hubungi Admin/Ketua Pokjawas.';
-          return;
-        }
-        codeValid = true;
-      }
-
-      // Generate Device Binding
       const devId = getDeviceId();
-      const binding = fnv1aHash(devId + ':' + code);
+      const passHash = await accountHash(username, password);
 
-      // Simpan User & Status Aktivasi
-      const passHash = fnv1aHash(password);
-      
-      localStorage.setItem(KEY_ACTIVATED, 'true');
-      localStorage.setItem(KEY_ACTIVATION_CODE, code);
-      localStorage.setItem(KEY_DEVICE_BINDING, binding);
-      localStorage.setItem(KEY_USER_ROLE, role);
-      localStorage.setItem(KEY_USER_USERNAME, username);
-      localStorage.setItem(KEY_USER_PASSWORD_HASH, passHash);
-      localStorage.setItem(KEY_USER_FULLNAME, fullname);
-      localStorage.setItem(KEY_USER_MADRASAH, madrasah);
-
-      // Sinkronisasi lisensi ke license.js (single source of truth untuk tier)
-      // LIC.redeem() handles: master code bypass, Supabase validation + atomic claim, set tier=full
-      if (!isTrialCode && window.LIC && typeof window.LIC.redeem === 'function') {
-        try {
-          const licResult = await window.LIC.redeem(code);
-          if (!licResult.ok) {
-            // Rollback auth state jika lisensi gagal
-            localStorage.setItem(KEY_ACTIVATED, 'false');
-            errEl.textContent = licResult.reason || 'Aktivasi lisensi gagal.';
-            return;
-          }
-        } catch (e) {
-          console.warn('[register] LIC.redeem failed:', e.message);
-        }
-      }
-
-      // Report aktivasi ke Supabase (cross-device relay). Best-effort.
-      if (!isTrialCode && window.SupabaseSync && typeof window.SupabaseSync.reportActivation === 'function') {
-        try {
-          await window.SupabaseSync.reportActivation({
-            code: code,
-            nama: fullname,
-            username: username,
-            madrasah: madrasah,
-            role: role,
-            device_id: devId,
-            device_info: navigator.userAgent || ''
-          });
-        } catch (e) {
-          console.warn('[register] reportActivation failed:', e.message);
-        }
-      }
-
-      // Jika trial, simpan timestamp mulai trial
+      // ===== TRIAL: akun lokal (tanpa server) =====
       if (isTrialCode) {
+        localStorage.setItem(KEY_ACTIVATED, 'true');
+        localStorage.setItem(KEY_ACTIVATION_CODE, TRIAL_CODE);
+        localStorage.removeItem(KEY_DEVICE_BINDING);
+        localStorage.setItem(KEY_USER_ROLE, 'trial');
+        localStorage.setItem(KEY_USER_USERNAME, username);
+        localStorage.setItem(KEY_USER_PASSWORD_HASH, passHash);
+        localStorage.setItem(KEY_USER_FULLNAME, fullname);
+        localStorage.setItem(KEY_USER_MADRASAH, madrasah);
         localStorage.setItem(KEY_TRIAL_START, String(Date.now()));
+        if (window.LIC && typeof window.LIC.reset === 'function') { try { window.LIC.reset(); } catch (e) {} }
         alert('Akun Trial berhasil dibuat! Akses penuh 5 hari. Silakan login.');
-      } else {
-        alert('Aktivasi berhasil! Silakan login menggunakan akun yang baru saja dibuat.');
+        location.hash = '#/'; location.reload();
+        return;
       }
-      location.hash = '#/';
-      location.reload();
+
+      // ===== AKUN PENUH: klaim kode ke akun via server (1 kode = 1 akun) =====
+      const btn = document.getElementById('btn-reg-submit');
+      btn.disabled = true; btn.textContent = '⏳ Mendaftarkan akun...';
+      let reg;
+      try {
+        reg = await registerAccountToServer(code, username, passHash, fullname, madrasah, devId);
+      } finally {
+        btn.disabled = false; btn.textContent = 'Aktifkan & Daftar Akun';
+      }
+
+      if (!reg.ok) { errEl.textContent = reg.reason; return; }
+
+      applyAccountState(username, passHash, fullname, madrasah, role, code);
+      alert('Aktivasi berhasil!\n\nAkun "' + username + '" sudah terikat pada kode aktivasi ini.\nAnda bisa login dari perangkat mana pun dengan akun ini.');
+      location.hash = '#/'; location.reload();
     });
+  }
+
+  // Klaim kode aktivasi untuk sebuah akun (1 kode = 1 akun)
+  // Return { ok, reason } — reason = pesan siap tampil
+  async function registerAccountToServer(code, username, passHash, fullname, madrasah, devId) {
+    if (!window.SupabaseSync || typeof window.SupabaseSync.registerAccount !== 'function') {
+      return { ok: false, reason: 'Modul sync belum termuat. Refresh halaman.' };
+    }
+    const r = await window.SupabaseSync.registerAccount(
+      code, username, passHash, fullname, madrasah, navigator.userAgent || ''
+    );
+    if (r.success === true) return { ok: true, reason: 'claimed' };
+    if (r.success === null) return { ok: false, reason: accountReasonMsg('network_error') };
+    return { ok: false, reason: accountReasonMsg(r.reason) };
   }
 
   // 2. Screen Login Akun (Username + Password)
@@ -700,7 +737,6 @@
 
       const storedUser = localStorage.getItem(KEY_USER_USERNAME);
       const storedPassHash = localStorage.getItem(KEY_USER_PASSWORD_HASH);
-
       // Admin bypass: username='admin', password diverifikasi via SHA-256 (tidak plaintext)
       if (username === 'admin') {
         sha256(password).then(function(hash) {
@@ -746,13 +782,56 @@
         return;
       }
 
-      // Regular login
-      if (username !== storedUser || fnv1aHash(password) !== storedPassHash) {
-        errEl.textContent = 'Username atau Password salah!';
-        return;
-      }
+      // ===== LOGIN AKUN (1 akun; 1 kode = 1 akun) =====
+      // Cek server dulu (akun = sumber kebenaran), fallback ke kredensial lokal
+      // saat offline (kredensial di-cache) atau untuk akun trial/lama.
+      accountHash(username, password).then(async function (passHash) {
+        const localMatch = (username === storedUser) &&
+          (passHash === storedPassHash || fnv1aHash(password) === storedPassHash);
 
-      doRegularLogin();
+        let server = null;
+        if (window.SupabaseSync && typeof window.SupabaseSync.loginAccount === 'function') {
+          try {
+            server = await window.SupabaseSync.loginAccount(username, passHash, navigator.userAgent || '');
+          } catch (e) { server = null; }
+          await new Promise(function (r) { setTimeout(r, 0); });
+        }
+
+        // 1) Server memvalidasi akun → sukses
+        if (server && server.valid === true) {
+          const serverRole = (server.role === 'admin') ? 'admin' : 'pengawas';
+          applyAccountState(
+            username, passHash,
+            server.fullname || localStorage.getItem(KEY_USER_FULLNAME) || '',
+            server.madrasah || localStorage.getItem(KEY_USER_MADRASAH) || '',
+            serverRole, server.license_code || localStorage.getItem(KEY_ACTIVATION_CODE) || ''
+          );
+          doRegularLogin();
+          return;
+        }
+
+        // 2) Server menolak secara tegas (dicabut/dinonaktifkan) → blokir
+        if (server && server.valid === false && (server.reason === 'revoked' || server.reason === 'inactive')) {
+          errEl.textContent = accountReasonMsg(server.reason);
+          return;
+        }
+
+        // 3) Server bilang kredensial salah, ATAU offline (server null):
+        //    tetap izinkan bila kredensial lokal cocok (trial/akun lokal/offline)
+        if (localMatch) {
+          doRegularLogin();
+          return;
+        }
+
+        // 4) Gagal
+        if (server && server.valid === false) {
+          errEl.textContent = 'Username atau Password salah!';
+        } else {
+          errEl.textContent = 'Butuh koneksi internet untuk login akun ini. Periksa koneksi Anda lalu coba kembali.';
+        }
+      }).catch(function (e) {
+        errEl.textContent = 'Terjadi kesalahan: ' + (e && e.message ? e.message : e);
+      });
 
       function doRegularLogin() {
         sessionStorage.setItem(KEY_LOGGED_IN, 'true');
@@ -1285,14 +1364,29 @@
 
     // 0a. Migration: sinkronisasi license.js dengan auth state
     // User yang sudah aktivasi (KEY_ACTIVATED=true, role != trial) tapi license.js masih trial → fix
-    if (window.LIC && typeof window.LIC.getStatus === 'function' && typeof window.LIC.redeem === 'function') {
+    if (window.LIC && typeof window.LIC.getStatus === 'function') {
       var licStatus = window.LIC.getStatus();
       var authActivated = localStorage.getItem(KEY_ACTIVATED) === 'true';
       var authRole = localStorage.getItem(KEY_USER_ROLE);
       var authCode = localStorage.getItem(KEY_ACTIVATION_CODE);
+      var authUser = localStorage.getItem(KEY_USER_USERNAME);
+      var authPass = localStorage.getItem(KEY_USER_PASSWORD_HASH);
       if (authActivated && authRole !== 'trial' && authCode && licStatus.tier !== 'full') {
-        // User sudah aktivasi di auth tapi license.js belum full → sync
-        try { await window.LIC.redeem(authCode); } catch (e) { console.warn('[init] license migration failed:', e.message); }
+        // Mode akun: bangun sesi akun lokal tanpa memanggil server
+        if (authUser && authPass && typeof window.LIC.activateFromAccount === 'function') {
+          try {
+            window.LIC.activateFromAccount({
+              username: authUser, passwordHash: authPass,
+              fullname: localStorage.getItem(KEY_USER_FULLNAME) || '',
+              madrasah: localStorage.getItem(KEY_USER_MADRASAH) || '',
+              role: authRole === 'admin' ? 'admin' : 'user',
+              licenseCode: authCode, tier: 'full'
+            });
+          } catch (e) { console.warn('[init] account session migration failed:', e.message); }
+        } else if (typeof window.LIC.redeem === 'function') {
+          // Fallback legacy (device-based)
+          try { await window.LIC.redeem(authCode); } catch (e) { console.warn('[init] license migration failed:', e.message); }
+        }
       }
     }
 

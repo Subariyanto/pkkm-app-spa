@@ -12,6 +12,14 @@
   var currentFilter = 'all';
   var currentSearch = '';
   var currentSort = 'newest';
+  // Tab Akun (1 kode = 1 akun)
+  var currentTab = 'codes';               // codes | accounts
+  var allAccounts = [];
+  var filteredAccounts = [];
+  var accountPage = 1;
+  var accountFilter = 'all';
+  var accountSearch = '';
+  var accStats = {};
 
   function esc(s) {
     if (s == null) return '';
@@ -114,6 +122,15 @@
       var codes = await window.SupabaseSync.adminListCodes(key);
       allCodes = codes || [];
       filteredCodes = allCodes.slice();
+      try {
+        var accounts = await window.SupabaseSync.adminListAccounts(key);
+        allAccounts = accounts || [];
+        filteredAccounts = allAccounts.slice();
+      } catch (ea) { allAccounts = []; filteredAccounts = []; }
+      try {
+        var as = await window.SupabaseSync.adminGetAccountStats(key);
+        accStats = (as && as.success !== false) ? as : {};
+      } catch (es) { accStats = {}; }
     } catch (e) {
       root.innerHTML = '<div class="container py-4"><div class="alert alert-danger">Gagal memuat data: ' + esc(e.message) + '</div></div>';
       return;
@@ -131,10 +148,19 @@
 
     // Header
     html += '<div class="d-flex justify-content-between align-items-center flex-wrap gap-2 mb-3">';
-    html += '<div><h4 class="mb-0"><i class="bi bi-shield-lock-fill"></i> Manajemen Kode Aktivasi</h4>';
-    html += '<p class="text-muted small mb-0">Kelola kode aktivasi pengguna aplikasi PKKM</p></div>';
+    html += '<div><h4 class="mb-0"><i class="bi bi-shield-lock-fill"></i> Manajemen Lisensi</h4>';
+    html += '<p class="text-muted small mb-0">Kelola kode aktivasi & akun pengguna aplikasi PKKM</p></div>';
     html += '<button class="btn btn-sm btn-outline-danger" id="btnAdminLogout"><i class="bi bi-box-arrow-right"></i> Keluar Admin</button>';
     html += '</div>';
+
+    // Tab: Kode Aktivasi | Akun
+    html += '<ul class="nav nav-tabs mb-3">';
+    html += '<li class="nav-item"><button class="nav-link' + (currentTab === 'codes' ? ' active' : '') + '" id="tabCodes"><i class="bi bi-key"></i> Kode Aktivasi</button></li>';
+    html += '<li class="nav-item"><button class="nav-link' + (currentTab === 'accounts' ? ' active' : '') + '" id="tabAccounts"><i class="bi bi-people"></i> Akun <span id="accCount" class="badge bg-secondary"></span></button></li>';
+    html += '</ul>';
+
+    // ============ TAB KODE ============
+    html += '<div id="codesTab"' + (currentTab === 'codes' ? '' : ' style="display:none"') + '>';
 
     // Dashboard ringkas
     html += '<div class="row g-2 mb-3">';
@@ -177,11 +203,40 @@
     // Pagination
     html += '<div id="pagination" class="d-flex justify-content-between align-items-center flex-wrap gap-2 mt-3"></div>';
 
+    html += '</div>'; // codesTab
+
+    // ============ TAB AKUN ============
+    html += '<div id="accountsTab"' + (currentTab === 'accounts' ? '' : ' style="display:none"') + '>';
+    html += '<div class="row g-2 mb-3">';
+    html += renderStatCard('Total Akun', accStats.total_accounts || 0, 'primary');
+    html += renderStatCard('Akun Aktif', accStats.active_accounts || 0, 'success');
+    html += renderStatCard('Akun Nonaktif', accStats.revoked_accounts || 0, 'danger');
+    html += renderStatCard('Kode Terpakai', accStats.codes_with_account || 0, 'info');
+    html += '</div>';
+    html += '<div class="card shadow-sm mb-3"><div class="card-body">';
+    html += '<div class="d-flex gap-2 flex-wrap mb-2">';
+    html += '<button class="btn btn-outline-secondary btn-sm" id="btnAccRefresh"><i class="bi bi-arrow-clockwise"></i> Refresh</button>';
+    html += '</div>';
+    html += '<div class="row g-2 align-items-center">';
+    html += '<div class="col-md-8"><input type="text" id="accSearchInput" class="form-control form-control-sm" placeholder="Cari username, nama, madrasah, kode..."></div>';
+    html += '<div class="col-md-4"><select id="accFilterSelect" class="form-select form-select-sm">';
+    html += '<option value="all">Semua</option>';
+    html += '<option value="active">Aktif</option>';
+    html += '<option value="revoked">Nonaktif</option>';
+    html += '</select></div>';
+    html += '</div>';
+    html += '</div></div>';
+    html += '<div id="accountsContainer"></div>';
+    html += '<div id="accPagination" class="d-flex justify-content-between align-items-center flex-wrap gap-2 mt-3"></div>';
+    html += '</div>'; // accountsTab
+
     html += '</div>'; // container
 
     root.innerHTML = html;
     bindToolbar(root);
+    bindTab(root);
     applyFilter();
+    renderAccounts();
   }
 
   function renderStatCard(label, value, color) {
@@ -366,6 +421,297 @@
     var next = document.getElementById('nextPage');
     if (prev) prev.addEventListener('click', function () { currentPage--; renderCodes(); });
     if (next) next.addEventListener('click', function () { currentPage++; renderCodes(); });
+  }
+
+  // ================================================================
+  // TAB AKUN (1 kode = 1 akun)
+  // ================================================================
+  function bindTab(root) {
+    var tabC = root.querySelector('#tabCodes');
+    var tabA = root.querySelector('#tabAccounts');
+    var elC = root.querySelector('#codesTab');
+    var elA = root.querySelector('#accountsTab');
+    if (tabC) tabC.addEventListener('click', function () {
+      currentTab = 'codes';
+      tabC.classList.add('active'); tabA.classList.remove('active');
+      elC.style.display = ''; elA.style.display = 'none';
+    });
+    if (tabA) tabA.addEventListener('click', function () {
+      currentTab = 'accounts';
+      tabA.classList.add('active'); tabC.classList.remove('active');
+      elA.style.display = ''; elC.style.display = 'none';
+      renderAccounts();
+    });
+    var badge = root.querySelector('#accCount');
+    if (badge) badge.textContent = allAccounts.length;
+  }
+
+  function accountStatusBadge(a) {
+    if (a.status === 'revoked') return '<span class="badge bg-danger">Nonaktif</span>';
+    if (a.license_active === false) return '<span class="badge bg-warning text-dark">Kode Nonaktif</span>';
+    return '<span class="badge bg-success">Aktif</span>';
+  }
+
+  function applyAccountFilter() {
+    filteredAccounts = allAccounts.filter(function (a) {
+      if (accountFilter === 'active' && a.status !== 'active') return false;
+      if (accountFilter === 'revoked' && a.status !== 'revoked') return false;
+      if (accountSearch) {
+        var q = accountSearch.toLowerCase();
+        var hay = ((a.username || '') + ' ' + (a.fullname || '') + ' ' + (a.madrasah || '') + ' ' + (a.license_code || '')).toLowerCase();
+        if (hay.indexOf(q) === -1) return false;
+      }
+      return true;
+    });
+    accountPage = 1;
+    renderAccounts();
+  }
+
+  function renderAccounts() {
+    var container = document.getElementById('accountsContainer');
+    if (!container) return;
+    filteredAccounts = allAccounts.filter(function (a) {
+      if (accountFilter === 'active' && a.status !== 'active') return false;
+      if (accountFilter === 'revoked' && a.status !== 'revoked') return false;
+      if (accountSearch) {
+        var q = accountSearch.toLowerCase();
+        var hay = ((a.username || '') + ' ' + (a.fullname || '') + ' ' + (a.madrasah || '') + ' ' + (a.license_code || '')).toLowerCase();
+        if (hay.indexOf(q) === -1) return false;
+      }
+      return true;
+    });
+
+    var total = filteredAccounts.length;
+    var pages = Math.ceil(total / PAGE_SIZE);
+    if (accountPage > pages) accountPage = pages || 1;
+    var start = (accountPage - 1) * PAGE_SIZE;
+    var end = Math.min(start + PAGE_SIZE, total);
+    var pageData = filteredAccounts.slice(start, end);
+
+    if (total === 0) {
+      container.innerHTML = '<div class="card shadow-sm"><div class="card-body text-center py-4 text-muted"><i class="bi bi-people fs-1"></i><p class="mt-2 mb-0">Belum ada akun terdaftar.</p><p class="small mb-0">Akun muncul setelah pengguna melakukan aktivasi akun.</p></div></div>';
+      renderAccPagination();
+      return;
+    }
+
+    var isMobile = window.innerWidth < 768;
+    if (isMobile) {
+      var h = '<div class="d-flex flex-column gap-2">';
+      pageData.forEach(function (a) { h += renderAccountCard(a); });
+      h += '</div>';
+      container.innerHTML = h;
+    } else {
+      var html = '<div class="card shadow-sm"><div class="table-responsive"><table class="table table-sm table-hover mb-0" style="font-size:.85rem">';
+      html += '<thead class="table-light"><tr><th style="width:40px">No</th><th>Username</th><th>Nama / Madrasah</th><th>Kode Aktivasi</th><th>Status</th><th>Login Terakhir</th><th style="width:1px" class="text-center">Aksi</th></tr></thead><tbody>';
+      pageData.forEach(function (a, idx) { html += renderAccountRow(a, start + idx + 1); });
+      html += '</tbody></table></div></div>';
+      container.innerHTML = html;
+    }
+
+    bindAccountActions(container);
+    renderAccPagination();
+  }
+
+  function renderAccountRow(a, num) {
+    var html = '<tr>';
+    html += '<td>' + num + '</td>';
+    html += '<td><span class="fw-semibold">' + esc(a.username) + '</span></td>';
+    html += '<td class="small">' + esc(a.fullname || '-') + (a.madrasah ? '<div class="text-muted">' + esc(a.madrasah) + '</div>' : '') + '</td>';
+    html += '<td><code class="user-select-all">' + esc(a.license_code || '-') + '</code></td>';
+    html += '<td>' + accountStatusBadge(a) + '</td>';
+    html += '<td class="small">' + (a.last_login_at ? fmtDate(a.last_login_at) : '-') + '</td>';
+    html += '<td class="text-center text-nowrap">' + renderAccountActions(a) + '</td>';
+    html += '</tr>';
+    return html;
+  }
+
+  function renderAccountCard(a) {
+    return '<div class="card shadow-sm"><div class="card-body py-2 px-3">' +
+      '<div class="d-flex justify-content-between align-items-start"><div><span class="fw-bold">' + esc(a.username) + '</span></div><div>' + accountStatusBadge(a) + '</div></div>' +
+      '<div class="small text-muted mt-1"><div><b>Nama:</b> ' + esc(a.fullname || '-') + '</div>' +
+      '<div><b>Madrasah:</b> ' + esc(a.madrasah || '-') + '</div>' +
+      '<div><b>Kode:</b> <code>' + esc(a.license_code || '-') + '</code></div>' +
+      '<div><b>Login terakhir:</b> ' + (a.last_login_at ? fmtDate(a.last_login_at) : '-') + '</div></div>' +
+      '<div class="d-flex gap-1 mt-2 flex-wrap">' + renderAccountActions(a, true) + '</div></div></div>';
+  }
+
+  function renderAccountActions(a, isCard) {
+    var id = esc(a.id);
+    var btns = '';
+    btns += '<button class="btn btn-sm btn-outline-primary" data-acc-reset-pw="' + id + '" title="Reset Password"><i class="bi bi-key"></i>' + (isCard ? ' Reset PW' : '') + '</button>';
+    if (a.status === 'active') {
+      btns += '<button class="btn btn-sm btn-outline-warning" data-acc-revoke="' + id + '" title="Nonaktifkan Akun"><i class="bi bi-pause-circle"></i>' + (isCard ? ' Nonaktifkan' : '') + '</button>';
+    } else {
+      btns += '<button class="btn btn-sm btn-outline-success" data-acc-reactivate="' + id + '" title="Aktifkan Akun"><i class="bi bi-play-circle"></i>' + (isCard ? ' Aktifkan' : '') + '</button>';
+    }
+    btns += '<button class="btn btn-sm btn-outline-danger" data-acc-delete="' + id + '" title="Hapus Akun"><i class="bi bi-trash"></i>' + (isCard ? ' Hapus' : '') + '</button>';
+    return btns;
+  }
+
+  function renderAccPagination() {
+    var container = document.getElementById('accPagination');
+    if (!container) return;
+    var total = filteredAccounts.length;
+    var pages = Math.ceil(total / PAGE_SIZE);
+    if (pages <= 1) { container.innerHTML = '<div class="small text-muted">' + total + ' akun</div>'; return; }
+    var html = '<div class="small text-muted">Menampilkan ' + ((accountPage - 1) * PAGE_SIZE + 1) + '–' + Math.min(accountPage * PAGE_SIZE, total) + ' dari ' + total + ' akun</div>';
+    html += '<div class="d-flex gap-1 align-items-center">';
+    if (accountPage > 1) html += '<button class="btn btn-sm btn-outline-secondary" id="accPrevPage">‹ Sebelumnya</button>';
+    html += '<span class="small">Halaman ' + accountPage + ' / ' + pages + '</span>';
+    if (accountPage < pages) html += '<button class="btn btn-sm btn-outline-secondary" id="accNextPage">Berikutnya ›</button>';
+    html += '</div>';
+    container.innerHTML = html;
+    var prev = document.getElementById('accPrevPage');
+    var next = document.getElementById('accNextPage');
+    if (prev) prev.addEventListener('click', function () { accountPage--; renderAccounts(); });
+    if (next) next.addEventListener('click', function () { accountPage++; renderAccounts(); });
+  }
+
+  function bindAccountActions(container) {
+    var key = sessionStorage.getItem(ADMIN_KEY_STORAGE);
+
+    container.querySelectorAll('[data-acc-revoke]').forEach(function (btn) {
+      btn.addEventListener('click', async function () {
+        var id = btn.getAttribute('data-acc-revoke');
+        var a = allAccounts.find(function (x) { return x.id === id; });
+        if (!confirm('Nonaktifkan akun "' + (a ? a.username : id) + '"?\n\nAkun tidak bisa login sampai diaktifkan kembali.')) return;
+        btn.disabled = true; btn.innerHTML = '<span class="spinner-border spinner-border-sm"></span>';
+        var r = await window.SupabaseSync.adminRevokeAccount(id, key);
+        if (r.success) { toast('Akun dinonaktifkan.', 'success'); await reloadAccounts(); }
+        else { toast('Gagal: ' + (r.reason || 'unknown'), 'danger'); btn.disabled = false; btn.innerHTML = '<i class="bi bi-pause-circle"></i> Nonaktifkan'; }
+      });
+    });
+
+    container.querySelectorAll('[data-acc-reactivate]').forEach(function (btn) {
+      btn.addEventListener('click', async function () {
+        var id = btn.getAttribute('data-acc-reactivate');
+        btn.disabled = true; btn.innerHTML = '<span class="spinner-border spinner-border-sm"></span>';
+        var r = await window.SupabaseSync.adminReactivateAccount(id, key);
+        if (r.success) { toast('Akun diaktifkan kembali.', 'success'); await reloadAccounts(); }
+        else { toast('Gagal: ' + (r.reason || 'unknown'), 'danger'); btn.disabled = false; btn.innerHTML = '<i class="bi bi-play-circle"></i> Aktifkan'; }
+      });
+    });
+
+    container.querySelectorAll('[data-acc-delete]').forEach(function (btn) {
+      btn.addEventListener('click', async function () {
+        var id = btn.getAttribute('data-acc-delete');
+        var a = allAccounts.find(function (x) { return x.id === id; });
+        var msg = 'HAPUS akun "' + (a ? a.username : id) + '"?\n\nSetelah dihapus, kode aktivasi "' + (a ? a.license_code : '') + '" bisa dipakai untuk mendaftarkan akun baru. Tindakan ini TIDAK DAPAT DIBATALKAN.\n\nKetik HAPUS untuk konfirmasi:';
+        var input = prompt(msg);
+        if (input !== 'HAPUS') { if (input !== null) toast('Penghapusan dibatalkan.', 'info'); return; }
+        btn.disabled = true; btn.innerHTML = '<span class="spinner-border spinner-border-sm"></span>';
+        var r = await window.SupabaseSync.adminDeleteAccount(id, key);
+        if (r.success) { toast('Akun berhasil dihapus.', 'success'); await reloadAccounts(); }
+        else { toast('Gagal: ' + (r.reason || 'unknown'), 'danger'); btn.disabled = false; btn.innerHTML = '<i class="bi bi-trash"></i> Hapus'; }
+      });
+    });
+
+    container.querySelectorAll('[data-acc-reset-pw]').forEach(function (btn) {
+      btn.addEventListener('click', async function () {
+        var id = btn.getAttribute('data-acc-reset-pw');
+        var a = allAccounts.find(function (x) { return x.id === id; });
+        if (!a) return;
+        var newPw = prompt('Reset password untuk akun "' + a.username + '".\n\nMasukkan password baru (min. 6 karakter):');
+        if (newPw === null) return;
+        if (newPw.length < 6) { toast('Password minimal 6 karakter.', 'danger'); return; }
+        btn.disabled = true; btn.innerHTML = '<span class="spinner-border spinner-border-sm"></span>';
+        var hash = await accountHashLocal(a.username, newPw);
+        var r = await window.SupabaseSync.adminResetAccountPassword(id, hash, key);
+        if (r.success) { toast('Password akun berhasil direset.', 'success'); btn.disabled = false; btn.innerHTML = '<i class="bi bi-key"></i> Reset PW'; }
+        else { toast('Gagal: ' + (r.reason || 'unknown'), 'danger'); btn.disabled = false; btn.innerHTML = '<i class="bi bi-key"></i> Reset PW'; }
+      });
+    });
+  }
+
+  // Hash password akun: SHA-256(username + ':' + password) — harus sama dgn auth.js
+  async function accountHashLocal(username, password) {
+    var bin = String(username || '').trim().toLowerCase() + ':' + String(password || '');
+    if (window.crypto && window.crypto.subtle) {
+      try {
+        var buf = await window.crypto.subtle.digest('SHA-256', new TextEncoder().encode(bin));
+        return Array.prototype.map.call(new Uint8Array(buf), function (b) { return ('0' + b.toString(16)).slice(-2); }).join('');
+      } catch (e) { /* fallback */ }
+    }
+    // Fallback pure-JS SHA-256 (sinkron)
+    return sha256Sync(bin);
+  }
+
+  // Fallback SHA-256 sederhana (sama seperti auth.js)
+  function sha256Sync(str) {
+    function rr(v, a) { return (v >>> a) | (v << (32 - a)); }
+    var maxWord = Math.pow(2, 32), result = '';
+    var words = [], asciiBitLength = str.length * 8;
+    var hash = sha256Sync.h = sha256Sync.h || [], k = sha256Sync.k = sha256Sync.k || [];
+    var primeCounter = k.length;
+    if (!hash.length) {
+      for (var candidate = 2; primeCounter < 64; candidate++) {
+        var isPrime = true;
+        for (var factor = 2; factor * factor <= candidate; factor++) if (candidate % factor === 0) isPrime = false;
+        if (isPrime) {
+          if (primeCounter < 8) hash[primeCounter] = (Math.pow(candidate, 0.5) * maxWord) | 0;
+          k[primeCounter++] = (Math.pow(candidate, 1 / 3) * maxWord) | 0;
+        }
+      }
+    }
+    str += '\x80';
+    while (str.length % 64 - 56) str += '\x00';
+    for (var i = 0; i < str.length; i++) {
+      var j = str.charCodeAt(i);
+      if (j >> 8) return '';
+      words[i >> 2] |= j << ((3 - i) % 4) * 8;
+    }
+    words[words.length] = (asciiBitLength / maxWord) | 0;
+    words[words.length] = asciiBitLength;
+    for (var j2 = 0; j2 < words.length;) {
+      var w = words.slice(j2, j2 += 16), oldHash = hash.slice(0);
+      hash = hash.slice(0, 8);
+      for (var i2 = 0; i2 < 64; i2++) {
+        var w15 = w[i2 - 15], w2 = w[i2 - 2];
+        var a = hash[0], e = hash[4];
+        var temp1 = hash[7]
+          + (rr(e, 6) ^ rr(e, 11) ^ rr(e, 25))
+          + ((e & hash[5]) ^ (~e & hash[6]))
+          + k[i2]
+          + (w[i2] = (i2 < 16) ? w[i2] : (
+              w[i2 - 16]
+              + (rr(w15, 7) ^ rr(w15, 18) ^ (w15 >>> 3))
+              + w[i2 - 7]
+              + (rr(w2, 17) ^ rr(w2, 19) ^ (w2 >>> 10))
+            ) | 0);
+        var temp2 = (rr(a, 2) ^ rr(a, 13) ^ rr(a, 22)) + ((a & hash[1]) ^ (a & hash[2]) ^ (hash[1] & hash[2]));
+        hash = [(temp1 + temp2) | 0].concat(hash);
+        hash[4] = (hash[4] + temp1) | 0;
+      }
+      for (var i3 = 0; i3 < 8; i3++) hash[i3] = (hash[i3] + oldHash[i3]) | 0;
+    }
+    for (var i4 = 0; i4 < 8; i4++) {
+      for (var j4 = 3; j4 + 1; j4--) {
+        var b = (hash[i4] >> (j4 * 8)) & 255;
+        result += (b < 16 ? '0' : '') + b.toString(16);
+      }
+    }
+    return result;
+  }
+
+  async function reloadAccounts() {
+    var key = sessionStorage.getItem(ADMIN_KEY_STORAGE);
+    try {
+      var accounts = await window.SupabaseSync.adminListAccounts(key);
+      allAccounts = accounts || [];
+      var as = await window.SupabaseSync.adminGetAccountStats(key);
+      accStats = (as && as.success !== false) ? as : {};
+      // Update stat cards & badge
+      var elA = document.getElementById('accountsTab');
+      if (elA) {}
+      var badge = document.getElementById('accCount');
+      if (badge) badge.textContent = allAccounts.length;
+      renderAccounts();
+      // Refresh tampilan stat (re-render panel sederhana)
+      var appRoot = document.getElementById('appRoot');
+      if (appRoot && currentTab === 'accounts') { /* biarkan angka lama, cukup daftar terbaru */ }
+    } catch (e) {
+      console.warn('[AdminLicense] reloadAccounts error:', e.message);
+    }
   }
 
   // ================================================================

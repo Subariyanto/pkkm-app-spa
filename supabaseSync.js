@@ -236,6 +236,130 @@
   }
 
   // ================================================================
+  // SISTEM AKUN (1 KODE = 1 AKUN)
+  // Kode aktivasi diikat ke akun (username), bukan ke perangkat.
+  // Akun bisa login dari perangkat mana pun.
+  // ================================================================
+
+  // Registrasi akun baru: klaim kode aktivasi untuk sebuah akun
+  // Returns: { success, reason: 'claimed'|'account_exists'|'code_used'|'invalid_code'|'inactive'|'username_invalid'|'password_invalid' }
+  async function registerAccount(code, username, passwordHash, fullname, madrasah, deviceInfo) {
+    try {
+      return await callRpc('register_account', {
+        p_code: code,
+        p_app_slug: APP_SLUG,
+        p_username: username,
+        p_password_hash: passwordHash,
+        p_fullname: fullname || '',
+        p_madrasah: madrasah || '',
+        p_device_info: deviceInfo || '',
+      });
+    } catch (e) {
+      console.warn('[SupabaseSync] registerAccount error:', e.message);
+      return { success: null, reason: 'network_error' };
+    }
+  }
+
+  // Login akun (sekaligus verifikasi berkala).
+  // Returns: { valid, reason: 'ok'|'invalid_credentials'|'revoked'|'invalid_code'|'inactive', ...profil }
+  async function loginAccount(username, passwordHash, deviceInfo) {
+    try {
+      return await callRpc('login_account', {
+        p_app_slug: APP_SLUG,
+        p_username: username,
+        p_password_hash: passwordHash,
+        p_device_info: deviceInfo || '',
+        p_touch: true,
+      });
+    } catch (e) {
+      console.warn('[SupabaseSync] loginAccount error:', e.message);
+      return { valid: null, reason: 'network_error' };
+    }
+  }
+
+  // Verifikasi sesi akun tanpa menulis last_login (dipakai cek berkala)
+  async function verifyAccount(username, passwordHash) {
+    try {
+      return await callRpc('login_account', {
+        p_app_slug: APP_SLUG,
+        p_username: username,
+        p_password_hash: passwordHash,
+        p_device_info: '',
+        p_touch: false,
+      });
+    } catch (e) {
+      console.warn('[SupabaseSync] verifyAccount error:', e.message);
+      return { valid: null, reason: 'network_error' };
+    }
+  }
+
+  // Admin: daftar semua akun
+  async function adminListAccounts(adminKey) {
+    try {
+      var r = await callRpc('admin_list_accounts', { p_admin_key: adminKey, p_app_slug: APP_SLUG });
+      if (r && r.success) return r.accounts || [];
+      return [];
+    } catch (e) {
+      console.warn('[SupabaseSync] adminListAccounts error:', e.message);
+      return [];
+    }
+  }
+
+  // Admin: statistik akun
+  async function adminGetAccountStats(adminKey) {
+    try {
+      return await callRpc('admin_get_account_stats', { p_admin_key: adminKey, p_app_slug: APP_SLUG });
+    } catch (e) {
+      console.warn('[SupabaseSync] adminGetAccountStats error:', e.message);
+      return { success: false, reason: 'network_error' };
+    }
+  }
+
+  // Admin: nonaktifkan akun
+  async function adminRevokeAccount(accountId, adminKey) {
+    try {
+      return await callRpc('admin_revoke_account', { p_admin_key: adminKey, p_account_id: accountId });
+    } catch (e) {
+      console.warn('[SupabaseSync] adminRevokeAccount error:', e.message);
+      return { success: false, reason: 'network_error' };
+    }
+  }
+
+  // Admin: aktifkan kembali akun
+  async function adminReactivateAccount(accountId, adminKey) {
+    try {
+      return await callRpc('admin_reactivate_account', { p_admin_key: adminKey, p_account_id: accountId });
+    } catch (e) {
+      console.warn('[SupabaseSync] adminReactivateAccount error:', e.message);
+      return { success: false, reason: 'network_error' };
+    }
+  }
+
+  // Admin: hapus akun (kode bebas dipakai akun baru)
+  async function adminDeleteAccount(accountId, adminKey) {
+    try {
+      return await callRpc('admin_delete_account', { p_admin_key: adminKey, p_account_id: accountId });
+    } catch (e) {
+      console.warn('[SupabaseSync] adminDeleteAccount error:', e.message);
+      return { success: false, reason: 'network_error' };
+    }
+  }
+
+  // Admin: reset password akun
+  async function adminResetAccountPassword(accountId, newPasswordHash, adminKey) {
+    try {
+      return await callRpc('admin_reset_account_password', {
+        p_admin_key: adminKey,
+        p_account_id: accountId,
+        p_new_password_hash: newPasswordHash,
+      });
+    } catch (e) {
+      console.warn('[SupabaseSync] adminResetAccountPassword error:', e.message);
+      return { success: false, reason: 'network_error' };
+    }
+  }
+
+  // ================================================================
   // LEGACY COMPAT (deprecated — redirect ke API baru)
   // ================================================================
   async function isCodeValid(code) {
@@ -269,6 +393,16 @@
     claimLicense: claimLicense,
     verifyLicense: verifyLicense,
     isOnline: isOnline,
+    // Akun (1 kode = 1 akun)
+    registerAccount: registerAccount,
+    loginAccount: loginAccount,
+    verifyAccount: verifyAccount,
+    adminListAccounts: adminListAccounts,
+    adminGetAccountStats: adminGetAccountStats,
+    adminRevokeAccount: adminRevokeAccount,
+    adminReactivateAccount: adminReactivateAccount,
+    adminDeleteAccount: adminDeleteAccount,
+    adminResetAccountPassword: adminResetAccountPassword,
     // Admin
     adminGenerateCode: adminGenerateCode,
     adminListCodes: adminListCodes,

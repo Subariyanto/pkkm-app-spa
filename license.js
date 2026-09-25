@@ -1,13 +1,56 @@
-// license.js - PKKM License System (Tahap 2: Server = Source of Truth)
+// license.js - PKKM License System (Tahap 3: Server = Source of Truth, 1 Kode = 1 AKUN)
 // TIDAK ADA master code. TIDAK ADA offline bypass FULL.
 // Aktivasi pertama WAJIB server verification. Setelah aktif, boleh offline.
+// Kode aktivasi diikat ke AKUN (username), bukan ke perangkat.
 (function () {
   'use strict';
 
   var KEY_LICENSE = 'pkkm_v1_license';
   var KEY_CODES = 'pkkm_v1_activation_codes'; // local cache fallback (read-only)
+  var KEY_ACCOUNT_SESSION = 'pkkm_v1_account_session'; // sesi akun (cache offline)
   var TRIAL_DAYS = 5;
   var TRIAL_MAX_PENILAIAN = 10;
+
+  // --- SESI AKUN (1 kode = 1 akun) ---
+  function getAccountSession() {
+    try { var r = localStorage.getItem(KEY_ACCOUNT_SESSION); return r ? JSON.parse(r) : null; } catch (e) { return null; }
+  }
+  function setAccountSession(s) { try { localStorage.setItem(KEY_ACCOUNT_SESSION, JSON.stringify(s)); return true; } catch (e) { return false; } }
+  function clearAccountSession() { try { localStorage.removeItem(KEY_ACCOUNT_SESSION); } catch (e) {} }
+
+  function makeSessionFromServer(serverResp, username, passwordHash, role) {
+    return {
+      username: username,
+      passwordHash: passwordHash,
+      fullname: serverResp.fullname || '',
+      madrasah: serverResp.madrasah || '',
+      role: role || serverResp.role || 'user',
+      licenseCode: serverResp.license_code || '',
+      tier: 'full',
+      activatedAt: new Date().toISOString(),
+      lastVerifiedAt: new Date().toISOString()
+    };
+  }
+
+  // Aktivasi lisensi dari hasil register/login akun (akun-based)
+  function activateFromAccount(session) {
+    if (!session) return false;
+    setAccountSession(session);
+    setLicense({
+      tier: 'full',
+      activatedAt: session.activatedAt || new Date().toISOString(),
+      activatedWith: session.licenseCode || '',
+      accountUsername: session.username,
+      deviceId: getDeviceId(),
+      lastVerifiedAt: new Date().toISOString()
+    });
+    return true;
+  }
+
+  function hasAccountSession() {
+    var s = getAccountSession();
+    return !!(s && s.username && s.tier === 'full');
+  }
 
   // Load/save helpers
   function load(k, def) { try { var r = localStorage.getItem(k); return r ? JSON.parse(r) : def; } catch (e) { return def; } }
@@ -54,16 +97,21 @@
   function getStatus() {
     // Admin bypass — admin selalu full access (admin key di sessionStorage)
     if (sessionStorage.getItem('pkkm_admin_key')) {
-      return { tier: 'full', isTrial: false, isExpired: false, daysLeft: Infinity, count: 0, limitReached: false };
+      return { tier: 'full', isTrial: false, isExpired: false, daysLeft: Infinity, count: 0, limitReached: false, isAccount: false };
+    }
+    // Akun aktif (1 kode = 1 akun) → full, bisa login lintas perangkat
+    if (hasAccountSession()) {
+      var acc = getAccountSession();
+      return { tier: 'full', isTrial: false, isExpired: false, daysLeft: Infinity, count: 0, limitReached: false, isAccount: true, account: acc };
     }
     var l = getLicense();
-    if (l.tier === 'full') return { tier: 'full', isTrial: false, isExpired: false, daysLeft: Infinity, count: 0, limitReached: false };
+    if (l.tier === 'full') return { tier: 'full', isTrial: false, isExpired: false, daysLeft: Infinity, count: 0, limitReached: false, isAccount: false };
     var ms = new Date(l.trialExpiresAt).getTime() - Date.now();
     var daysLeft = Math.ceil(ms / 86400000);
     var isExpired = ms <= 0;
     var count = 0;
     try { count = (load('pkkm_v1_penilaian', []) || []).length; } catch (e) {}
-    return { tier: 'trial', isTrial: true, isExpired: isExpired, daysLeft: Math.max(0, daysLeft), count: count, limitReached: count >= TRIAL_MAX_PENILAIAN };
+    return { tier: 'trial', isTrial: true, isExpired: isExpired, daysLeft: Math.max(0, daysLeft), count: count, limitReached: count >= TRIAL_MAX_PENILAIAN, isAccount: false };
   }
 
   function canMutate(kind) {
@@ -155,8 +203,28 @@
   }
 
   // Verifikasi lisensi ke server (validasi berkala)
+  // Mode AKUN (1 kode = 1 akun) → verifikasi via login_account (tanpa sentuh last_login)
   async function verifyWithServer(code, deviceId) {
     if (!window.SupabaseSync) return { valid: null, reason: 'no_sync' };
+
+    // Mode akun: verifikasi sesi akun ke server
+    var acc = getAccountSession();
+    if (acc && acc.username && acc.passwordHash) {
+      try {
+        var ra = await window.SupabaseSync.verifyAccount(acc.username, acc.passwordHash);
+        if (ra.valid === true) {
+          acc.lastVerifiedAt = new Date().toISOString();
+          acc.tier = 'full';
+          setAccountSession(acc);
+        }
+        return ra;
+      } catch (e) {
+        console.warn('[LIC] verifyWithServer (account) error:', e.message);
+        return { valid: null, reason: 'network_error' };
+      }
+    }
+
+    // Mode legacy: berbasis perangkat
     try {
       var result = await window.SupabaseSync.verifyLicense(code, deviceId);
       if (result.valid === true) {
@@ -185,6 +253,21 @@
         return 'Kode belum diaktivasi. Lakukan aktivasi pertama terlebih dahulu.';
       case 'network_error':
         return 'Aktivasi membutuhkan koneksi internet. Periksa koneksi internet Anda kemudian coba kembali.';
+      // === Sistem akun (1 kode = 1 akun) ===
+      case 'code_used':
+        return 'Kode aktivasi ini sudah dipakai oleh akun lain. Satu kode hanya untuk satu akun. Hubungi Admin bila perlu.';
+      case 'account_exists':
+        return 'Username sudah dipakai. Pilih username lain atau login dengan akun Anda.';
+      case 'username_invalid':
+        return 'Username minimal 4 karakter dan tidak boleh kosong.';
+      case 'password_invalid':
+        return 'Password kosong atau tidak valid.';
+      case 'invalid_credentials':
+        return 'Username atau Password salah.';
+      case 'revoked':
+        return 'Akun ini dinonaktifkan oleh Admin. Silakan hubungi Admin.';
+      case 'account_not_found':
+        return 'Akun tidak ditemukan di server. Hubungi Admin.';
       default:
         return 'Aktivasi gagal. Silakan coba lagi.';
     }
@@ -193,6 +276,7 @@
   // Reset lisensi ke trial (untuk testing)
   function reset() {
     var deviceId = getDeviceId();
+    clearAccountSession();
     setLicense({
       tier: 'trial',
       startedAt: new Date().toISOString(),
@@ -206,6 +290,10 @@
 
   function bannerHtml() {
     var s = getStatus();
+    if (s.tier === 'full' && s.isAccount) {
+      var nm = (s.account && (s.account.fullname || s.account.username)) || 'akun';
+      return '<div class="alert alert-success py-2 px-3 mb-3" style="font-size:.85rem"><b>✅ Lisensi Aktif</b> — akun <b>' + escapeHtmlLocal(nm) + '</b>.</div>';
+    }
     if (s.tier === 'full') return '<div class="alert alert-success py-2 px-3 mb-3" style="font-size:.85rem"><b>✅ Lisensi Aktif</b> — perangkat terdaftar.</div>';
     var cls, icon, msg;
     if (s.isExpired) { cls = 'alert-danger'; icon = '⛔'; msg = '<b>Trial habis.</b> Aplikasi read-only. Aktivasi kode untuk lanjut.'; }
@@ -450,6 +538,11 @@
     reset: reset,
     getDeviceId: getDeviceId,
     verifyWithServer: verifyWithServer,
+    // === Sistem akun (1 kode = 1 akun) ===
+    activateFromAccount: activateFromAccount,
+    getAccountSession: getAccountSession,
+    clearAccountSession: clearAccountSession,
+    hasAccountSession: hasAccountSession,
     applyTrialPrintMark: function () { try { var s = getStatus(); document.body.classList.toggle('is-trial-print', !!(s && s.isTrial)); } catch (e) {} }
   };
   window.addEventListener('beforeprint', function () { try { window.LIC && window.LIC.applyTrialPrintMark && window.LIC.applyTrialPrintMark(); } catch (e) {} });
