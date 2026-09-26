@@ -360,6 +360,49 @@
   }
 
   // ================================================================
+  // ADMIN LOGIN (server-side, tanpa password/kunci di file publik)
+  // ================================================================
+  // Verifikasi admin di server. Kunci admin didapat dari server dan
+  // hanya disimpan per-sesi (sessionStorage) oleh pemanggil.
+  // Returns: { success, reason, admin_key?, username?, fullname? }
+  async function adminLogin(username, passwordHash) {
+    try {
+      return await callRpc('admin_login', {
+        p_app_slug: APP_SLUG,
+        p_username: username,
+        p_password_hash: passwordHash,
+      });
+    } catch (e) {
+      console.warn('[SupabaseSync] adminLogin error:', e.message);
+      return { success: false, reason: 'network_error' };
+    }
+  }
+
+  // Admin: ganti admin key (butuh key lama)
+  async function adminChangeKey(oldKey, newKey) {
+    try {
+      return await callRpc('admin_change_key', { p_old_key: oldKey, p_new_key: newKey });
+    } catch (e) {
+      console.warn('[SupabaseSync] adminChangeKey error:', e.message);
+      return { success: false, reason: 'network_error' };
+    }
+  }
+
+  // Admin: ganti password admin (butuh admin key)
+  async function adminChangePassword(adminKey, newPasswordHash) {
+    try {
+      return await callRpc('admin_change_password', {
+        p_admin_key: adminKey,
+        p_app_slug: APP_SLUG,
+        p_new_password_hash: newPasswordHash,
+      });
+    } catch (e) {
+      console.warn('[SupabaseSync] adminChangePassword error:', e.message);
+      return { success: false, reason: 'network_error' };
+    }
+  }
+
+  // ================================================================
   // LEGACY COMPAT (deprecated — redirect ke API baru)
   // ================================================================
   async function isCodeValid(code) {
@@ -399,6 +442,10 @@
     verifyAccount: verifyAccount,
     adminListAccounts: adminListAccounts,
     adminGetAccountStats: adminGetAccountStats,
+    // Admin login & kredensial (server-side)
+    adminLogin: adminLogin,
+    adminChangeKey: adminChangeKey,
+    adminChangePassword: adminChangePassword,
     adminRevokeAccount: adminRevokeAccount,
     adminReactivateAccount: adminReactivateAccount,
     adminDeleteAccount: adminDeleteAccount,

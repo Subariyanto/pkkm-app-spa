@@ -737,16 +737,23 @@
 
       const storedUser = localStorage.getItem(KEY_USER_USERNAME);
       const storedPassHash = localStorage.getItem(KEY_USER_PASSWORD_HASH);
-      // Admin bypass: username='admin', password diverifikasi via SHA-256 (tidak plaintext)
+      // ===== LOGIN ADMIN (server-side, tanpa password/kunci di file publik) =====
+      // Password admin diverifikasi di server via RPC admin_login. Kunci admin
+      // didapat dari server dan hanya disimpan per-sesi (sessionStorage).
       if (username === 'admin') {
-        sha256(password).then(function(hash) {
-          if (hash === '6051fc84a7a0d74c225fb18a496b09952da5642e60723ecae543298edd7d82d6') {
+        accountHash(username, password).then(async function (adminHash) {
+          var res = null;
+          if (window.SupabaseSync && typeof window.SupabaseSync.adminLogin === 'function') {
+            try { res = await window.SupabaseSync.adminLogin(username, adminHash); } catch (e) { res = null; }
+          }
+
+          if (res && res.success === true && res.admin_key) {
             // Admin login — set semua flag, skip aktivasi
             sessionStorage.setItem(KEY_LOGGED_IN, 'true');
             localStorage.setItem(KEY_USER_ROLE, 'admin');
             localStorage.setItem(KEY_USER_USERNAME, 'admin');
             localStorage.setItem(KEY_ACTIVATED, 'true');
-            sessionStorage.setItem('pkkm_admin_key', 'pokjawas-admin-2026');
+            sessionStorage.setItem('pkkm_admin_key', res.admin_key);
             var devId = getDeviceId();
             var code = 'ADMIN-FULL-ACCESS';
             localStorage.setItem(KEY_ACTIVATION_CODE, code);
@@ -763,20 +770,31 @@
                 activatedAt: new Date().toISOString(),
                 lastVerifiedAt: new Date().toISOString()
               }));
-            } catch(e) {}
+            } catch (e) {}
 
             location.hash = '#/';
             overlay.remove();
-            init().then(function() { if (window.rebuildShell) window.rebuildShell(); if (window.render) window.render(); });
-          } else {
-            // Bukan admin password → coba regular login
-            if (storedUser === username && fnv1aHash(password) === storedPassHash) {
-              doRegularLogin();
-            } else {
-              errEl.textContent = 'Username atau Password salah!';
-            }
+            init().then(function () { if (window.rebuildShell) window.rebuildShell(); if (window.render) window.render(); });
+            return;
           }
-        }).catch(function() {
+
+          if (res && res.reason === 'too_many_attempts') {
+            errEl.textContent = 'Terlalu banyak percobaan. Tunggu 15 menit lalu coba lagi.';
+            return;
+          }
+
+          // Bukan admin (atau server menolak) → coba regular login lokal
+          if (storedUser === username && fnv1aHash(password) === storedPassHash) {
+            doRegularLogin();
+            return;
+          }
+
+          if (res && res.reason === 'network_error') {
+            errEl.textContent = 'Butuh koneksi internet untuk login admin. Periksa koneksi Anda.';
+          } else {
+            errEl.textContent = 'Username atau Password salah!';
+          }
+        }).catch(function () {
           errEl.textContent = 'Gagal verifikasi. Coba lagi.';
         });
         return;
