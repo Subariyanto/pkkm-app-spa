@@ -174,6 +174,7 @@
     html += '<div class="card shadow-sm mb-3"><div class="card-body">';
     html += '<div class="d-flex gap-2 flex-wrap mb-2">';
     html += '<button class="btn btn-primary btn-sm" id="btnCreate"><i class="bi bi-plus-circle"></i> Buat Kode Aktivasi</button>';
+    html += '<button class="btn btn-outline-success btn-sm" id="btnExportCodes"><i class="bi bi-file-earmark-excel"></i> Export Excel</button>';
     html += '<button class="btn btn-outline-secondary btn-sm" id="btnRefresh"><i class="bi bi-arrow-clockwise"></i> Refresh</button>';
     html += '<button class="btn btn-outline-info btn-sm" id="btnAuditLog"><i class="bi bi-clock-history"></i> Audit Log</button>';
     html += '</div>';
@@ -215,6 +216,7 @@
     html += '</div>';
     html += '<div class="card shadow-sm mb-3"><div class="card-body">';
     html += '<div class="d-flex gap-2 flex-wrap mb-2">';
+    html += '<button class="btn btn-outline-success btn-sm" id="btnExportAccounts"><i class="bi bi-file-earmark-excel"></i> Export Excel</button>';
     html += '<button class="btn btn-outline-secondary btn-sm" id="btnAccRefresh"><i class="bi bi-arrow-clockwise"></i> Refresh</button>';
     html += '</div>';
     html += '<div class="row g-2 align-items-center">';
@@ -734,6 +736,35 @@
     var btnAudit = $('#btnAuditLog');
     if (btnAudit) btnAudit.addEventListener('click', function () { showAuditModal(root); });
 
+    var btnExportCodes = $('#btnExportCodes');
+    if (btnExportCodes) btnExportCodes.addEventListener('click', function () { exportCodesExcel(btnExportCodes); });
+
+    var btnExportAccounts = $('#btnExportAccounts');
+    if (btnExportAccounts) btnExportAccounts.addEventListener('click', function () { exportAccountsExcel(btnExportAccounts); });
+
+    var btnAccRefresh = $('#btnAccRefresh');
+    if (btnAccRefresh) btnAccRefresh.addEventListener('click', async function () {
+      btnAccRefresh.disabled = true; btnAccRefresh.innerHTML = '<span class="spinner-border spinner-border-sm"></span>';
+      await reloadAccounts();
+      await reloadCodes(root);
+      btnAccRefresh.disabled = false; btnAccRefresh.innerHTML = '<i class="bi bi-arrow-clockwise"></i> Refresh';
+      toast('Data berhasil dimuat ulang.', 'success');
+    });
+
+    var accSearchInput = $('#accSearchInput');
+    if (accSearchInput) accSearchInput.addEventListener('input', function () {
+      accountSearch = this.value.trim();
+      accountPage = 1;
+      renderAccounts();
+    });
+
+    var accFilterSelect = $('#accFilterSelect');
+    if (accFilterSelect) accFilterSelect.addEventListener('change', function () {
+      accountFilter = this.value;
+      accountPage = 1;
+      renderAccounts();
+    });
+
     var btnLogout = $('#btnAdminLogout');
     if (btnLogout) btnLogout.addEventListener('click', function () {
       if (confirm('Keluar dari panel admin?')) {
@@ -1071,6 +1102,176 @@
       applyFilter();
     } catch (e) {
       console.warn('[AdminLicense] reload error:', e.message);
+    }
+  }
+
+  // ================================================================
+  // EXPORT EXCEL (Kode Aktivasi & Akun)
+  // ================================================================
+  function xlsDl(wb, filename) {
+    var buf = wb.xlsx.writeBuffer();
+    return Promise.resolve(buf).then(function (buffer) {
+      var blob = new Blob([buffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+      if (window.saveAs) {
+        window.saveAs(blob, filename);
+      } else {
+        var url = URL.createObjectURL(blob);
+        var a = document.createElement('a');
+        a.href = url; a.download = filename;
+        document.body.appendChild(a); a.click(); document.body.removeChild(a);
+        setTimeout(function () { URL.revokeObjectURL(url); }, 1000);
+      }
+    });
+  }
+
+  function xlsHeader(ws, cols) {
+    var row = ws.addRow(cols);
+    row.font = { bold: true, color: { argb: 'FFFFFFFF' }, size: 11 };
+    row.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF0F3D6E' } };
+    row.alignment = { vertical: 'middle', horizontal: 'center', wrapText: true };
+    row.height = 22;
+    ws.views = [{ state: 'frozen', ySplit: 1 }];
+    return row;
+  }
+
+  function xlsDate(s) {
+    if (!s) return '';
+    var d = new Date(s);
+    return isNaN(d.getTime()) ? s : d;
+  }
+
+  function xlsStamp() { return new Date().toISOString().slice(0, 10); }
+
+  function codeStatusText(c) {
+    if (c.status === 'revoked') return 'Dinonaktifkan';
+    if (c.used_by) return 'Aktif';
+    return 'Belum Digunakan';
+  }
+
+  function accountStatusText(a) {
+    if (a.status === 'revoked') return 'Nonaktif';
+    if (a.license_active === false) return 'Kode Nonaktif';
+    return 'Aktif';
+  }
+
+  function exportCodesExcel(btn) {
+    if (!window.ExcelJS) { toast('Library Excel belum termuat. Muat ulang halaman.', 'danger'); return; }
+    if (!allCodes.length) { toast('Belum ada data kode aktivasi untuk diexport.', 'danger'); return; }
+    var old = btn.innerHTML; btn.disabled = true; btn.innerHTML = '<span class="spinner-border spinner-border-sm"></span> Menyiapkan...';
+
+    try {
+      var wb = new window.ExcelJS.Workbook();
+      wb.creator = 'PKKM - Panel Admin'; wb.created = new Date();
+
+      // Sheet 1: Ringkasan
+      var ws0 = wb.addWorksheet('Ringkasan', { views: [{ showGridLines: false }] });
+      ws0.columns = [{ width: 28 }, { width: 18 }, { width: 30 }];
+      var t0 = ws0.addRow(['REKAP LISENSI PKKM - KODE AKTIVASI']);
+      t0.font = { bold: true, size: 15, color: { argb: 'FF0F3D6E' } };
+      ws0.mergeCells('A1:C1');
+      ws0.addRow(['Produced by Panel Admin Pokjawasmad Kab. Jember']).font = { italic: true, size: 10, color: { argb: 'FF5B6B7C' } };
+      ws0.mergeCells('A2:C2');
+      ws0.addRow(['Diexport:', xlsDate(new Date())]).getCell(1).font = { bold: true };
+      ws0.addRow([]);
+      var tot = allCodes.length;
+      var used = allCodes.filter(function (c) { return !!c.used_by; }).length;
+      var revoked = allCodes.filter(function (c) { return c.status === 'revoked'; }).length;
+      var unused = tot - used - revoked;
+      [['Total Kode', tot], ['Belum Digunakan', unused], ['Sudah Digunakan', used], ['Dinonaktifkan', revoked]].forEach(function (r) {
+        var row = ws0.addRow(r);
+        row.getCell(1).font = { bold: true };
+      });
+      ws0.getColumn(2).eachCell ? null : null;
+
+      // Sheet 2: Data Kode
+      var ws = wb.addWorksheet('Kode Aktivasi', { views: [{ showGridLines: false }] });
+      ws.columns = [
+        { width: 5 }, { width: 30 }, { width: 16 }, { width: 38 },
+        { width: 20 }, { width: 28 }, { width: 20 }, { width: 40 },
+      ];
+      xlsHeader(ws, ['No', 'Kode Aktivasi', 'Status', 'Device ID', 'Digunakan', 'Catatan / Penerima', 'Dibuat', 'Info Perangkat']);
+      allCodes.forEach(function (c, i) {
+        ws.addRow([
+          i + 1,
+          c.code || '',
+          codeStatusText(c),
+          c.used_by || '',
+          xlsDate(c.used_at),
+          c.recipient || c.note || '',
+          xlsDate(c.created_at),
+          c.device_info || '',
+        ]);
+      });
+      ws.getColumn(5).numFmt = 'dd-mmm-yyyy hh:mm';
+      ws.getColumn(7).numFmt = 'dd-mmm-yyyy hh:mm';
+      ws.autoFilter = { from: 'A1', to: 'H1' };
+
+      xlsDl(wb, 'PKKM_Lisensi_Kode_Aktivasi_' + xlsStamp() + '.xlsx').then(function () {
+        toast('Export Excel kode aktivasi berhasil.', 'success');
+      });
+    } catch (e) {
+      console.warn('[AdminLicense] exportCodesExcel error:', e.message);
+      toast('Gagal export: ' + e.message, 'danger');
+    } finally {
+      btn.disabled = false; btn.innerHTML = old;
+    }
+  }
+
+  function exportAccountsExcel(btn) {
+    if (!window.ExcelJS) { toast('Library Excel belum termuat. Muat ulang halaman.', 'danger'); return; }
+    if (!allAccounts.length) { toast('Belum ada data akun untuk diexport.', 'danger'); return; }
+    var old = btn.innerHTML; btn.disabled = true; btn.innerHTML = '<span class="spinner-border spinner-border-sm"></span> Menyiapkan...';
+
+    try {
+      var wb = new window.ExcelJS.Workbook();
+      wb.creator = 'PKKM - Panel Admin'; wb.created = new Date();
+
+      // Sheet 1: Ringkasan
+      var ws0 = wb.addWorksheet('Ringkasan', { views: [{ showGridLines: false }] });
+      ws0.columns = [{ width: 26 }, { width: 16 }];
+      var t0 = ws0.addRow(['REKAP LISENSI PKKM - AKUN PENGGUNA']);
+      t0.font = { bold: true, size: 15, color: { argb: 'FF0F3D6E' } };
+      ws0.mergeCells('A1:B1');
+      ws0.addRow(['Pokjawasmad Kabupaten Jember']).font = { italic: true, size: 10, color: { argb: 'FF5B6B7C' } };
+      ws0.mergeCells('A2:B2');
+      ws0.addRow(['Diexport:', xlsDate(new Date())]).getCell(1).font = { bold: true };
+      ws0.addRow([]);
+      var tot = allAccounts.length;
+      var active = allAccounts.filter(function (a) { return a.status !== 'revoked' && a.license_active !== false; }).length;
+      var revoked = allAccounts.filter(function (a) { return a.status === 'revoked'; }).length;
+      [['Total Akun', tot], ['Akun Aktif', active], ['Akun Nonaktif', revoked]].forEach(function (r) {
+        ws0.addRow(r).getCell(1).font = { bold: true };
+      });
+
+      // Sheet 2: Data Akun
+      var ws = wb.addWorksheet('Akun', { views: [{ showGridLines: false }] });
+      ws.columns = [
+        { width: 5 }, { width: 22 }, { width: 28 }, { width: 34 },
+        { width: 30 }, { width: 16 }, { width: 22 },
+      ];
+      xlsHeader(ws, ['No', 'Username', 'Nama Lengkap', 'Madrasah', 'Kode Aktivasi', 'Status', 'Login Terakhir']);
+      allAccounts.forEach(function (a, i) {
+        ws.addRow([
+          i + 1,
+          a.username || '',
+          a.fullname || '',
+          a.madrasah || '',
+          a.license_code || '',
+          accountStatusText(a),
+          xlsDate(a.last_login_at),
+        ]);
+      });
+      ws.getColumn(7).numFmt = 'dd-mmm-yyyy hh:mm';
+      ws.autoFilter = { from: 'A1', to: 'G1' };
+
+      xlsDl(wb, 'PKKM_Lisensi_Akun_' + xlsStamp() + '.xlsx').then(function () {
+        toast('Export Excel data akun berhasil.', 'success');
+      });
+    } catch (e) {
+      console.warn('[AdminLicense] exportAccountsExcel error:', e.message);
+      toast('Gagal export: ' + e.message, 'danger');
+    } finally {
+      btn.disabled = false; btn.innerHTML = old;
     }
   }
 
