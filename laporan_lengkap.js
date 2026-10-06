@@ -130,10 +130,12 @@
     const pengawas = window.Meta.get('identitas_pengawas', { nama: '', nip: '' });
     const pokjawas = window.Meta.get('identitas_ketua_pokjawas', { nama: 'SUBARIYANTO, S.Pd, M.Pd.I', nip: '197002122005011004' });
     const tempat = window.Meta.get('lokasi_ttd', 'Jember');
+    // Ikuti Data Isian: kabupaten/kota diambil dari Pengaturan (bukan hardcode Jember)
+    const kab = (window.Meta.get('kabupaten_kota', '') || 'Jember').trim();
 
     return {
       kkma, periode, kamadList, rows, dinilai, rataKKMA, tertinggi, terendah,
-      komponenAgg, subAggList, pengawas, pokjawas, tempat, isFourYear,
+      komponenAgg, subAggList, pengawas, pokjawas, tempat, kab, isFourYear,
     };
   }
 
@@ -144,7 +146,7 @@
       <section class="ll-page ll-cover">
         <div class="ll-cover-inner">
           <div class="ll-cover-top">
-            <div class="ll-cover-instansi">KEMENTERIAN AGAMA REPUBLIK INDONESIA<br>KANTOR KEMENTERIAN AGAMA KABUPATEN JEMBER<br>POKJAWAS MADRASAH</div>
+            <div class="ll-cover-instansi">KEMENTERIAN AGAMA REPUBLIK INDONESIA<br>KANTOR KEMENTERIAN AGAMA KABUPATEN ${escapeHTML(String(ctx.kab).toUpperCase())}<br>POKJAWAS MADRASAH</div>
           </div>
           <div class="ll-cover-mid">
             <h1 class="ll-cover-title">LAPORAN<br>PENILAIAN KINERJA<br>KEPALA MADRASAH<br>(PKKM)</h1>
@@ -160,7 +162,7 @@
             <div>Disusun oleh Pengawas Bina:</div>
             <div class="ll-cover-pengawas"><strong>${escapeHTML(ctx.pengawas.nama || '..............................')}</strong></div>
             <div>NIP. ${escapeHTML(ctx.pengawas.nip || '-')}</div>
-            <div class="mt-2"><strong>POKJAWAS MADRASAH KAB. JEMBER</strong></div>
+            <div class="mt-2"><strong>POKJAWAS MADRASAH KAB. ${escapeHTML(String(ctx.kab).toUpperCase())}</strong></div>
             <div>TAHUN ${new Date().getFullYear()}</div>
           </div>
         </div>
@@ -180,12 +182,12 @@
           <tr><td>Wilayah Binaan</td><td>: ${escapeHTML(ctx.kkma)}</td></tr>
           <tr><td>Jumlah Kamad Binaan</td><td>: ${ctx.kamadList.length} orang (${ctx.dinilai.length} dinilai)</td></tr>
         </table>
-        <p style="text-indent:2em;">Laporan ini dinyatakan sah sebagai dokumen resmi pelaksanaan PKKM untuk diteruskan kepada Kepala Kantor Kementerian Agama Kabupaten Jember melalui Pokjawas Madrasah, dan dapat digunakan sebagai bahan pembinaan, evaluasi, serta pengembangan keprofesian Kepala Madrasah secara berkelanjutan.</p>
+        <p style="text-indent:2em;">Laporan ini dinyatakan sah sebagai dokumen resmi pelaksanaan PKKM untuk diteruskan kepada Kepala Kantor Kementerian Agama Kabupaten ${escapeHTML(ctx.kab)} melalui Pokjawas Madrasah, dan dapat digunakan sebagai bahan pembinaan, evaluasi, serta pengembangan keprofesian Kepala Madrasah secara berkelanjutan.</p>
 
         <div class="ll-ttd-grid mt-5">
           <div class="ll-ttd-box">
             <div>Mengetahui,</div>
-            <div>Ketua Pokjawas Madrasah Kab. Jember</div>
+            <div>Ketua Pokjawas Madrasah Kab. ${escapeHTML(ctx.kab)}</div>
             <div class="ll-ttd-spacer"></div>
             <div class="ll-ttd-name">${escapeHTML(ctx.pokjawas.nama || '..............................')}</div>
             <div>NIP. ${escapeHTML(ctx.pokjawas.nip || '-')}</div>
@@ -209,8 +211,8 @@
         <p style="text-indent:2em;">Puji syukur ke hadirat Allah SWT yang telah melimpahkan rahmat, taufik, dan hidayah-Nya sehingga laporan Penilaian Kinerja Kepala Madrasah (PKKM) ini dapat tersusun dengan baik. Shalawat serta salam senantiasa tercurah kepada Nabi Muhammad SAW, keluarga, sahabat, dan para pengikutnya hingga akhir zaman.</p>
         <p style="text-indent:2em;">Penilaian Kinerja Kepala Madrasah merupakan amanat regulasi yang bertujuan menjamin mutu kepemimpinan madrasah, meningkatkan akuntabilitas pengelolaan pendidikan, serta menjadi dasar pembinaan dan pengembangan keprofesian Kepala Madrasah secara berkelanjutan. PKKM dilaksanakan oleh Pengawas Bina dengan melibatkan unsur guru, tenaga kependidikan, komite, dan stakeholder lainnya pada penilaian empat tahunan.</p>
         <p style="text-indent:2em;">Laporan ini disusun sebagai dokumentasi resmi pelaksanaan PKKM pada wilayah binaan <strong>${escapeHTML(ctx.kkma)}</strong> periode <strong>${escapeHTML(ctx.periode.label || '-')}</strong>. Cakupan laporan meliputi <strong>${ctx.kamadList.length} Kepala Madrasah</strong> yang berada dalam tanggung jawab pengawas bina. Penyusunan laporan berpedoman pada PMA Nomor 58 Tahun 2017 jo. PMA Nomor 24 Tahun 2018, PMA Nomor 38 Tahun 2018 tentang Pengembangan Keprofesian Berkelanjutan (PKB), serta SK Dirjen Pendis Nomor 1111 Tahun 2019 yang menjadi juknis dan instrumen PKKM.</p>
-        <p style="text-indent:2em;">Penyusun menyampaikan terima kasih kepada Kepala Kantor Kementerian Agama Kabupaten Jember, Ketua Pokjawas Madrasah, rekan-rekan pengawas, kepala madrasah, dewan guru, tenaga kependidikan, komite, serta seluruh pihak yang telah mendukung kelancaran proses penilaian ini. Saran dan masukan untuk perbaikan laporan sangat penyusun harapkan demi peningkatan kualitas penilaian di masa mendatang.</p>
-        <p style="text-indent:2em;">Semoga laporan ini bermanfaat sebagai bahan refleksi dan acuan pembinaan kepala madrasah di lingkungan Kementerian Agama Kabupaten Jember.</p>
+        <p style="text-indent:2em;">Penyusun menyampaikan terima kasih kepada Kepala Kantor Kementerian Agama Kabupaten ${escapeHTML(ctx.kab)}, Ketua Pokjawas Madrasah, rekan-rekan pengawas, kepala madrasah, dewan guru, tenaga kependidikan, komite, serta seluruh pihak yang telah mendukung kelancaran proses penilaian ini. Saran dan masukan untuk perbaikan laporan sangat penyusun harapkan demi peningkatan kualitas penilaian di masa mendatang.</p>
+        <p style="text-indent:2em;">Semoga laporan ini bermanfaat sebagai bahan refleksi dan acuan pembinaan kepala madrasah di lingkungan Kementerian Agama Kabupaten ${escapeHTML(ctx.kab)}.</p>
         <div class="text-end mt-4">
           <div>${escapeHTML(ctx.tempat)}, ${escapeHTML(tglStr)}</div>
           <div>Penyusun,</div>
@@ -537,7 +539,7 @@
         <div class="ll-ttd-grid mt-5">
           <div class="ll-ttd-box">
             <div>Mengetahui,</div>
-            <div>Ketua Pokjawas Madrasah Kab. Jember</div>
+            <div>Ketua Pokjawas Madrasah Kab. ${escapeHTML(ctx.kab)}</div>
             <div class="ll-ttd-spacer"></div>
             <div class="ll-ttd-name">${escapeHTML(ctx.pokjawas.nama || '..............................')}</div>
             <div>NIP. ${escapeHTML(ctx.pokjawas.nip || '-')}</div>
