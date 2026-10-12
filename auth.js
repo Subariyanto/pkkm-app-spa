@@ -361,6 +361,37 @@
     return String(s).replace(/[&<>"']/g, c => ({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;' }[c]));
   }
 
+  // Injeksi CSS sekali untuk tombol mata (toggle lihat password)
+  function ensurePwEyeStyles() {
+    if (document.getElementById('pkkm-pw-eye-css')) return;
+    var st = document.createElement('style');
+    st.id = 'pkkm-pw-eye-css';
+    st.textContent =
+      '.pw-wrap{position:relative;display:block;}' +
+      '.pw-wrap input{padding-right:2.5rem !important;}' +
+      '.pw-eye{position:absolute;right:.6rem;top:50%;transform:translateY(-50%);cursor:pointer;color:#8a8a8a;font-size:1.05rem;background:none;border:0;padding:0;line-height:1;z-index:2;}' +
+      '.pw-eye:hover{color:#1e40af;}' +
+      '.pw-eye:focus{outline:none;color:#1e40af;}';
+    document.head.appendChild(st);
+  }
+
+  // Pasang listener pada semua tombol mata (data-pw-eye="<id input>")
+  function bindPasswordToggles(container) {
+    if (!container) return;
+    container.querySelectorAll('[data-pw-eye]').forEach(function (btn) {
+      btn.addEventListener('click', function (e) {
+        e.preventDefault();
+        var target = document.getElementById(btn.getAttribute('data-pw-eye'));
+        if (!target) return;
+        var show = target.type === 'password';
+        target.type = show ? 'text' : 'password';
+        var icon = btn.querySelector('i');
+        if (icon) icon.className = show ? 'bi bi-eye-slash' : 'bi bi-eye';
+        btn.setAttribute('aria-label', show ? 'Sembunyikan password' : 'Lihat password');
+      });
+    });
+  }
+
   // --- AUTH STATUS CHECKS ---
   function isActivated() {
     const activated = localStorage.getItem(KEY_ACTIVATED) === 'true';
@@ -472,12 +503,18 @@
 
         <div class="form-group">
           <label>Password</label>
-          <input id="reg-password" type="password" placeholder="Minimal 6 karakter" autocomplete="off">
+          <div class="pw-wrap">
+            <input id="reg-password" type="password" placeholder="Minimal 6 karakter" autocomplete="off">
+            <button type="button" class="pw-eye" data-pw-eye="reg-password" aria-label="Lihat password"><i class="bi bi-eye"></i></button>
+          </div>
         </div>
 
         <div class="form-group">
           <label>Konfirmasi Password</label>
-          <input id="reg-confirm" type="password" placeholder="Ulangi password" autocomplete="off">
+          <div class="pw-wrap">
+            <input id="reg-confirm" type="password" placeholder="Ulangi password" autocomplete="off">
+            <button type="button" class="pw-eye" data-pw-eye="reg-confirm" aria-label="Lihat password"><i class="bi bi-eye"></i></button>
+          </div>
         </div>
 
         <button class="btn-auth-submit" id="btn-reg-submit">Aktifkan & Daftar Akun</button>
@@ -501,6 +538,8 @@
 
     // Semua akun hasil registrasi aplikasi ini menggunakan role Pengawas.
     // Akun Admin hanya melalui kredensial Admin yang telah ditetapkan.
+    ensurePwEyeStyles();
+    bindPasswordToggles(overlay);
     // Link "Sudah Memiliki Akun" → ke halaman login
     const linkLogin = document.getElementById('link-to-login');
     if (linkLogin) {
@@ -701,7 +740,10 @@
 
         <div class="form-group">
           <label>Password</label>
-          <input id="login-password" type="password" placeholder="Masukkan password" autocomplete="off" required>
+          <div class="pw-wrap">
+            <input id="login-password" type="password" placeholder="Masukkan password" autocomplete="off" required>
+            <button type="button" class="pw-eye" data-pw-eye="login-password" aria-label="Lihat password"><i class="bi bi-eye"></i></button>
+          </div>
         </div>
 
         <button class="btn-auth-submit" id="btn-login-submit">Login Masuk</button>
@@ -727,6 +769,9 @@
     const inputUser = document.getElementById('login-username');
     const inputPass = document.getElementById('login-password');
     const errEl = document.getElementById('auth-login-err');
+
+    ensurePwEyeStyles();
+    bindPasswordToggles(overlay);
 
     setTimeout(() => inputUser.focus(), 50);
 
@@ -970,12 +1015,18 @@
 
         <div class="form-group">
           <label>Password Baru</label>
-          <input id="forgot-password" type="password" placeholder="Minimal 6 karakter" autocomplete="off">
+          <div class="pw-wrap">
+            <input id="forgot-password" type="password" placeholder="Minimal 6 karakter" autocomplete="off">
+            <button type="button" class="pw-eye" data-pw-eye="forgot-password" aria-label="Lihat password"><i class="bi bi-eye"></i></button>
+          </div>
         </div>
 
         <div class="form-group">
           <label>Konfirmasi Password Baru</label>
-          <input id="forgot-confirm" type="password" placeholder="Ulangi password baru" autocomplete="off">
+          <div class="pw-wrap">
+            <input id="forgot-confirm" type="password" placeholder="Ulangi password baru" autocomplete="off">
+            <button type="button" class="pw-eye" data-pw-eye="forgot-confirm" aria-label="Lihat password"><i class="bi bi-eye"></i></button>
+          </div>
         </div>
 
         <button class="btn-auth-submit" id="btn-forgot-submit">Simpan Password Baru</button>
@@ -992,6 +1043,9 @@
     const inputConfirm = document.getElementById('forgot-confirm');
     const errEl = document.getElementById('auth-forgot-err');
     const btn = document.getElementById('btn-forgot-submit');
+
+    ensurePwEyeStyles();
+    bindPasswordToggles(overlay);
 
     setTimeout(() => inputUser.focus(), 50);
 
