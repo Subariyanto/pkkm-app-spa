@@ -1099,6 +1099,7 @@ function openPeriodeModal(id, preset) {
     const fd = new FormData(ev.target);
     const data = Object.fromEntries(fd.entries());
     data.tahun = Number(data.tahun);
+    data.tanggal_penilaian = (data.tanggal_penilaian || '').trim() || nowLocal().slice(0, 10);
     if (!data.label) {
       const t = window.PKKM_PERIODE_TYPES.find(x => x.code === data.type);
       const tlabel = t ? t.label : data.type;
@@ -1106,6 +1107,13 @@ function openPeriodeModal(id, preset) {
     }
     if (editMode) {
       Periode.update(id, data);
+      // Sinkronkan tanggal setiap penilaian pada periode ini agar
+      // laporan menampilkan tanggal pelaksanaan yang benar per madrasah.
+      if (data.tanggal_penilaian) {
+        Penilaian.list()
+          .filter(p => p.periode_id === Number(id))
+          .forEach(p => Penilaian.update(p.id, { tanggal: data.tanggal_penilaian }));
+      }
       toast('Periode diperbarui.');
     } else {
       Periode.create(data);
@@ -1755,6 +1763,19 @@ route('#/cetak/:id', (root, params) => {
       </div>
     </div>
 
+    <div class="card shadow-sm mb-3"><div class="card-body">
+      <div class="d-flex justify-content-between align-items-center flex-wrap gap-2">
+        <div>
+          <div class="fw-semibold"><i class="bi bi-calendar-event"></i> Tanggal Penilaian <span class="text-tiny text-muted">(periode terpilih)</span></div>
+          <div class="text-tiny text-muted">Ubah tanggal pelaksanaan sesuai jadwal masing-masing madrasah. Tanggal ini tersimpan per madrasah dan tampil di laporan.</div>
+        </div>
+        <div class="d-flex gap-2 align-items-center">
+          <input class="form-control form-control-sm" type="date" id="tglPenilaianKamad" style="max-width:170px;" value="">
+          <button class="btn btn-sm btn-primary" id="btnSaveTglPenilaian"><i class="bi bi-check2"></i> Simpan Tanggal</button>
+        </div>
+      </div>
+    </div></div>
+
     <div class="card">
       <div class="card-body" id="printArea">
         <div class="print-header text-center">
@@ -1863,6 +1884,24 @@ route('#/cetak/:id', (root, params) => {
       </div>
     </div>
   `;
+
+  // --- Tanggal Penilaian per madrasah (bisa berbeda tiap madrasah) ---
+  const tglInput = root.querySelector('#tglPenilaianKamad');
+  const btnTgl = root.querySelector('#btnSaveTglPenilaian');
+  if (tglInput) tglInput.value = (pen.tanggal || nowLocal().slice(0, 10)).slice(0, 10);
+  if (btnTgl) {
+    btnTgl.addEventListener('click', () => {
+      const v = (tglInput && tglInput.value ? tglInput.value : '').trim();
+      if (!v) { toast('Pilih tanggal terlebih dahulu.', 'error'); return; }
+      // Update sesi penilaian ini + semua sesi lain pada periode yang sama
+      // untuk madrasah ini, agar konsisten di seluruh laporan.
+      Penilaian.list()
+        .filter(x => x.kamad_id === pen.kamad_id && x.periode_id === pen.periode_id)
+        .forEach(x => Penilaian.update(x.id, { tanggal: v }));
+      toast('Tanggal penilaian disimpan.');
+      render();
+    });
+  }
 });
 
 // --- Laporan Lengkap KKMA (Cover, Pengesahan, Kata Pengantar, BAB I-V, Lampiran) ---
