@@ -1332,6 +1332,10 @@ route('#/penilaian/:kamadId/:periodeId/:role', (root, params) => {
                   <label class="form-label text-tiny mb-1">Unit Kerja / Madrasah</label>
                   <input type="text" class="form-control form-control-sm" id="penilaiUnit" value="${escapeHTML(pen.penilai_unit||'')}" placeholder="Unit kerja atau madrasah">
                 </div>
+                <div class="col-md-6">
+                  <label class="form-label text-tiny mb-1"><i class="bi bi-calendar-event"></i> Tanggal Penilaian</label>
+                  <input type="date" class="form-control form-control-sm" id="penilaiTanggal" value="${escapeHTML((pen.tanggal||nowLocal().slice(0,10)).slice(0,10))}">
+                </div>
               </div>
               <div class="text-tiny text-muted mt-2"><i class="bi bi-info-circle"></i> Identitas ini tersimpan khusus untuk sesi <strong>${escapeHTML(roleInfo.label||role)}</strong> dan akan dicantumkan pada laporan serta Export Excel.</div>
 
@@ -1540,6 +1544,13 @@ route('#/penilaian/:kamadId/:periodeId/:role', (root, params) => {
       }), 250);
     };
     ['#penilaiNama', '#penilaiNip', '#penilaiJabatan', '#penilaiUnit'].forEach(sel => $(sel)?.addEventListener('input', saveIdentitasPenilai));
+    $('#penilaiTanggal')?.addEventListener('change', (e) => {
+      const v = (e.target.value || '').trim();
+      if (!v) return;
+      Penilaian.update(pen.id, { tanggal: v });
+      pen.tanggal = v;
+      toast('Tanggal penilaian disimpan.');
+    });
     $('#catatanUmum')?.addEventListener('input', e => {
       clearTimeout(t1); t1 = setTimeout(() => Penilaian.update(pen.id, { catatan_umum: e.target.value }), 350);
     });
