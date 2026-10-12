@@ -1054,7 +1054,9 @@
       }
 
       if (res && res.success === false) {
-        if (res.reason === 'revoked') {
+        if (res.reason === 'not_available') {
+          errEl.textContent = 'Fitur reset belum aktif di server. Hubungi Admin/Ketua Pokjawas.';
+        } else if (res.reason === 'revoked') {
           errEl.textContent = 'Akun ini dinonaktifkan. Hubungi Admin/Ketua Pokjawas.';
         } else if (res.reason === 'username_invalid') {
           errEl.textContent = 'Username minimal 4 karakter.';
