@@ -359,6 +359,22 @@
     }
   }
 
+  // Reset password mandiri (lupa password) — verifikasi via username + kode aktivasi.
+  // Returns: { success, reason: 'password_reset'|'invalid_credentials'|'revoked'|'username_invalid'|'password_invalid' }
+  async function resetAccountPassword(username, licenseCode, newPasswordHash) {
+    try {
+      return await callRpc('reset_account_password', {
+        p_app_slug: APP_SLUG,
+        p_username: username,
+        p_license_code: licenseCode,
+        p_new_password_hash: newPasswordHash,
+      });
+    } catch (e) {
+      console.warn('[SupabaseSync] resetAccountPassword error:', e.message);
+      return { success: null, reason: 'network_error' };
+    }
+  }
+
   // ================================================================
   // ADMIN LOGIN (server-side, tanpa password/kunci di file publik)
   // ================================================================
@@ -440,6 +456,7 @@
     registerAccount: registerAccount,
     loginAccount: loginAccount,
     verifyAccount: verifyAccount,
+    resetAccountPassword: resetAccountPassword,
     adminListAccounts: adminListAccounts,
     adminGetAccountStats: adminGetAccountStats,
     // Admin login & kredensial (server-side)

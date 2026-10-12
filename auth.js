@@ -714,7 +714,11 @@
         </div>
         ` : ''}
 
-        <div style="text-align:center; margin-top:1.25rem; font-size:.85rem;">
+        <div style="text-align:center; margin-top:1rem; font-size:.85rem;">
+          <a id="link-to-forgot" style="color:#6b7280; cursor:pointer; text-decoration:none; font-weight:600;">Lupa Password?</a>
+        </div>
+
+        <div style="text-align:center; margin-top:1rem; font-size:.85rem;">
           <a id="link-to-aktivasi" style="color:#1e40af; cursor:pointer; text-decoration:none;">Buat Akun Baru / Reset Aktivasi</a>
         </div>
       </div>
@@ -875,6 +879,16 @@
       });
     }
 
+    // Link ke halaman Lupa Password (reset password mandiri)
+    const linkForgot = document.getElementById('link-to-forgot');
+    if (linkForgot) {
+      linkForgot.addEventListener('click', () => {
+        const oldOverlay = document.getElementById('pkkm-auth-overlay');
+        if (oldOverlay) oldOverlay.remove();
+        renderForgotPasswordScreen();
+      });
+    }
+
     // Link ke halaman aktivasi (Buat Akun Baru / Reset)
     const linkAktivasi = document.getElementById('link-to-aktivasi');
     if (linkAktivasi) {
@@ -887,6 +901,178 @@
         renderActivationScreen();
       });
     }
+  }
+
+  // 2b. Screen Lupa Password (reset password mandiri)
+  //     Verifikasi: username + kode aktivasi → set password baru.
+  //     Berhasil reset → kembali ke halaman login.
+  function renderForgotPasswordScreen() {
+    let overlay = document.getElementById('pkkm-auth-overlay');
+    if (!overlay) {
+      overlay = document.createElement('div');
+      overlay.id = 'pkkm-auth-overlay';
+      document.body.appendChild(overlay);
+    }
+
+    overlay.innerHTML = `
+      <style>
+        #pkkm-auth-overlay {
+          position: fixed; inset: 0; z-index: 3000;
+          background: linear-gradient(135deg, #1e40af 0%, #1f5d3a 100%);
+          display: flex; align-items: center; justify-content: center;
+          font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+          padding: 1rem; overflow-y: auto;
+        }
+        .auth-card {
+          background: #fff; border-radius: 12px; padding: 2rem;
+          width: 100%; max-width: 420px;
+          box-shadow: 0 12px 40px rgba(0,0,0,.25);
+        }
+        .auth-logo { text-align: center; margin-bottom: 1.5rem; }
+        .auth-logo i { font-size: 3rem; color: #1e40af; }
+        .auth-logo h2 { margin: 0.5rem 0 0; color: #1e40af; font-size: 1.4rem; font-weight: bold; }
+        .auth-logo p { margin: 0; color: #666; font-size: 0.85rem; }
+        .form-group { margin-bottom: 1.1rem; }
+        .form-group label { display: block; font-size: 0.85rem; font-weight: 600; margin-bottom: 0.25rem; color: #333; }
+        .form-group input {
+          width: 100%; padding: 0.65rem; border: 2px solid #ddd; border-radius: 8px; outline: none; font-size: 1rem;
+        }
+        .form-group input:focus { border-color: #1e40af; }
+        .btn-auth-submit {
+          width: 100%; background: #1e40af; color: white; border: 0;
+          padding: 0.75rem; border-radius: 8px; font-weight: 600; cursor: pointer;
+          font-size: 1rem; transition: background 0.2s;
+        }
+        .btn-auth-submit:hover { background: #17328c; }
+        .auth-err { color: #c0392b; font-size: 0.85rem; min-height: 1.2rem; margin-bottom: 0.5rem; text-align: center; }
+        .auth-info { font-size: 0.8rem; background: #f0f4ff; color: #1e40af; padding: 0.6rem; border-radius: 6px; margin-bottom: 1rem; text-align: center; }
+      </style>
+      <div class="auth-card">
+        <div class="auth-logo">
+          <i class="bi bi-key"></i>
+          <h2>Lupa Password</h2>
+          <p>Atur ulang password akun Anda</p>
+        </div>
+        <div class="auth-info">
+          Masukkan <strong>username</strong> dan <strong>kode aktivasi</strong> akun Anda untuk membuat password baru.
+        </div>
+        <div class="auth-err" id="auth-forgot-err"></div>
+
+        <div class="form-group">
+          <label>Nama Pengguna (Username)</label>
+          <input id="forgot-username" type="text" placeholder="Masukkan username" autocomplete="off">
+        </div>
+
+        <div class="form-group">
+          <label>Kode Aktivasi</label>
+          <input id="forgot-code" type="text" placeholder="Contoh: FULL-XXXX-XXXX-XXXX" autocomplete="off" style="text-transform: uppercase;">
+        </div>
+
+        <div class="form-group">
+          <label>Password Baru</label>
+          <input id="forgot-password" type="password" placeholder="Minimal 6 karakter" autocomplete="off">
+        </div>
+
+        <div class="form-group">
+          <label>Konfirmasi Password Baru</label>
+          <input id="forgot-confirm" type="password" placeholder="Ulangi password baru" autocomplete="off">
+        </div>
+
+        <button class="btn-auth-submit" id="btn-forgot-submit">Simpan Password Baru</button>
+
+        <div style="text-align:center; margin-top:1rem; font-size:.85rem;">
+          <a id="link-back-login" style="color:#1e40af; cursor:pointer; text-decoration:none; font-weight:600;">&larr; Kembali ke Halaman Masuk</a>
+        </div>
+      </div>
+    `;
+
+    const inputUser = document.getElementById('forgot-username');
+    const inputCode = document.getElementById('forgot-code');
+    const inputPass = document.getElementById('forgot-password');
+    const inputConfirm = document.getElementById('forgot-confirm');
+    const errEl = document.getElementById('auth-forgot-err');
+    const btn = document.getElementById('btn-forgot-submit');
+
+    setTimeout(() => inputUser.focus(), 50);
+
+    function backToLogin() {
+      const oldOverlay = document.getElementById('pkkm-auth-overlay');
+      if (oldOverlay) oldOverlay.remove();
+      renderLoginScreen();
+    }
+
+    document.getElementById('link-back-login').addEventListener('click', backToLogin);
+
+    async function doReset() {
+      const username = inputUser.value.trim().toLowerCase();
+      const code = inputCode.value.trim().toUpperCase();
+      const password = inputPass.value;
+      const confirm = inputConfirm.value;
+
+      if (!username || !code || !password || !confirm) {
+        errEl.textContent = 'Harap isi semua kolom!';
+        return;
+      }
+      if (username.length < 4) {
+        errEl.textContent = 'Username minimal 4 karakter!';
+        return;
+      }
+      if (password.length < 6) {
+        errEl.textContent = 'Password minimal 6 karakter!';
+        return;
+      }
+      if (password !== confirm) {
+        errEl.textContent = 'Konfirmasi password tidak cocok!';
+        return;
+      }
+
+      if (!window.SupabaseSync || typeof window.SupabaseSync.resetAccountPassword !== 'function') {
+        errEl.textContent = 'Modul server belum termuat. Refresh halaman.';
+        return;
+      }
+
+      btn.disabled = true;
+      btn.textContent = '⏳ Menyimpan...';
+      let res = null;
+      try {
+        const hash = await accountHash(username, password);
+        res = await window.SupabaseSync.resetAccountPassword(username, code, hash);
+      } catch (e) {
+        res = null;
+      }
+      btn.disabled = false;
+      btn.textContent = 'Simpan Password Baru';
+
+      if (res && res.success === true) {
+        // Update cache lokal bila akun ini yang tersimpan di browser
+        if (localStorage.getItem(KEY_USER_USERNAME) === username) {
+          localStorage.setItem(KEY_USER_PASSWORD_HASH, await accountHash(username, password));
+        }
+        alert('Password berhasil diatur ulang!\n\nSilakan login dengan password baru Anda.');
+        backToLogin();
+        return;
+      }
+
+      if (res && res.success === false) {
+        if (res.reason === 'revoked') {
+          errEl.textContent = 'Akun ini dinonaktifkan. Hubungi Admin/Ketua Pokjawas.';
+        } else if (res.reason === 'username_invalid') {
+          errEl.textContent = 'Username minimal 4 karakter.';
+        } else if (res.reason === 'password_invalid') {
+          errEl.textContent = 'Password tidak valid.';
+        } else {
+          errEl.textContent = 'Username atau Kode Aktivasi tidak cocok. Periksa kembali.';
+        }
+        return;
+      }
+
+      errEl.textContent = 'Butuh koneksi internet. Periksa koneksi Anda lalu coba kembali.';
+    }
+
+    btn.addEventListener('click', doReset);
+    [inputUser, inputCode, inputPass, inputConfirm].forEach((el) => {
+      el.addEventListener('keydown', (e) => { if (e.key === 'Enter') { e.preventDefault(); doReset(); } });
+    });
   }
 
   // 3. Lock screen: full-page overlay untuk PIN
