@@ -1232,14 +1232,6 @@ route('#/penilaian/:kamadId/:periodeId/:role', (root, params) => {
                               <button type="button" class="btn btn-sm btn-link p-0 text-primary" data-action="open-penggalian" data-indikator-id="${id}" title="Catatan penggalian data"><i class="bi bi-info-circle"></i></button>
                             </div>
                             ${suggestionHtml}
-                            <div class="mt-2">
-                              <label class="form-label text-tiny mb-1 text-muted"><i class="bi bi-pencil"></i> Catatan Penilaian <span class="fst-italic">(opsional)</span></label>
-                              <textarea class="form-control form-control-sm catatan-indikator" rows="2" data-catatan-id="${id}" placeholder="Catatan penilaian untuk indikator ini..." ${isFinal?'disabled':''}>${escapeHTML(cur.catatan||'')}</textarea>
-                              <div class="mt-1 d-flex flex-wrap align-items-center gap-1" data-bukti-host="${id}">
-                                ${(Array.isArray(cur.bukti) ? cur.bukti : []).map((b, bi) => buktiBadgeHTML(b, bi, isFinal)).join('')}
-                                ${isFinal ? '' : `<label class="btn btn-sm btn-outline-secondary mb-0" title="Upload bukti dukung"><i class="bi bi-paperclip"></i> Bukti<input type="file" class="d-none" data-action="upload-bukti" data-indikator-id="${id}" accept="image/*,application/pdf" multiple></label>`}
-                              </div>
-                            </div>
                           </div>
                           <div class="skor-pill" role="group" aria-label="Skor">
                             ${[1,2,3,4].map(v => `
@@ -1338,21 +1330,6 @@ route('#/penilaian/:kamadId/:periodeId/:role', (root, params) => {
                 </div>
               </div>
               <div class="text-tiny text-muted mt-2"><i class="bi bi-info-circle"></i> Identitas ini tersimpan khusus untuk sesi <strong>${escapeHTML(roleInfo.label||role)}</strong> dan akan dicantumkan pada laporan serta Export Excel.</div>
-
-              <hr class="my-3">
-              <div class="d-flex justify-content-between align-items-center flex-wrap gap-2">
-                <div>
-                  <div class="fw-semibold text-tiny"><i class="bi bi-vector-pen"></i> Tanda Tangan Penilai</div>
-                  <div class="text-tiny text-muted">Opsional. Unggah gambar TTD (PNG/JPG transparan, maks 2 MB). Tampil di laporan pada bagian tanda tangan.</div>
-                </div>
-                <div class="text-end">
-                  <div id="ttdPenilaiWrap">
-                    <label class="btn btn-sm btn-outline-primary mb-0"><i class="bi bi-upload"></i> Unggah TTD<input type="file" class="d-none" id="ttdPenilaiInput" accept="image/*"></label>
-                  </div>
-                  <img id="ttdPenilaiImg" alt="Tanda tangan penilai" style="display:none;max-height:80px;max-width:220px;object-fit:contain;background:#fff;border:1px dashed #ccc;border-radius:6px;padding:2px;">
-                  <button type="button" class="btn btn-sm btn-outline-danger mt-1" id="btnTtdHapus" style="display:none;"><i class="bi bi-trash"></i> Hapus TTD</button>
-                </div>
-              </div>
             </div>
           </div>
           <div class="accordion" id="komponenAcc">
@@ -1440,21 +1417,6 @@ route('#/penilaian/:kamadId/:periodeId/:role', (root, params) => {
         </label>`;
       host.innerHTML = badges + addBtn;
     }
-
-    // Catatan per indikator
-    let tCat;
-    root.addEventListener('input', (ev) => {
-      const ta = ev.target.closest('.catatan-indikator');
-      if (!ta) return;
-      const indikator_id = ta.dataset.catatanId;
-      if (!indikator_id) return;
-      const val = ta.value;
-      clearTimeout(tCat);
-      tCat = setTimeout(() => {
-        const cur = Skor.get(pen.id, indikator_id) || {};
-        Skor.set(pen.id, indikator_id, { skor: cur.skor ?? null, catatan: val, bukti: cur.bukti || [] });
-      }, 350);
-    });
 
     root.addEventListener('change', async (ev) => {
       const inp = ev.target.closest('[data-action="upload-bukti"]');
@@ -1925,7 +1887,7 @@ route('#/cetak/:id', (root, params) => {
             <div class="ttd-tempat">&nbsp;</div>
             <div class="ttd-tempat">${escapeHTML(tempat)}, ${escapeHTML(pen.tanggal||nowLocal().slice(0,10))}</div>
             <div class="ttd-jabatan">${escapeHTML(penilaiLabel)},</div>
-            <div class="ttd-spacer">${pen.tanda_tangan ? `<img src="${pen.tanda_tangan}" alt="TTD" style="max-height:70px;max-width:180px;object-fit:contain;">` : ''}</div>
+            <div class="ttd-spacer"></div>
             <div class="ttd-name">${escapeHTML(penilaiNama||'..............................')}</div>
             <div class="ttd-nip">NIP. ${escapeHTML(penilaiNip||'..............................')}</div>
           </div>
@@ -1933,55 +1895,6 @@ route('#/cetak/:id', (root, params) => {
       </div>
     </div>
   `;
-
-  // --- Tanda tangan penilai pada laporan (opsional) ---
-  const ttdWrap = root.querySelector('#ttdPenilaiWrap');
-  const ttdImg = root.querySelector('#ttdPenilaiImg');
-  const ttdDel = root.querySelector('#btnTtdHapus');
-  function refreshTtd() {
-    const cur = Penilaian.get(pen.id) || pen;
-    if (cur.tanda_tangan) {
-      if (ttdImg) { ttdImg.src = cur.tanda_tangan; ttdImg.style.display = ''; }
-      if (ttdWrap) ttdWrap.style.display = 'none';
-      if (ttdDel) ttdDel.style.display = '';
-    } else {
-      if (ttdImg) { ttdImg.style.display = 'none'; ttdImg.removeAttribute('src'); }
-      if (ttdWrap) ttdWrap.style.display = '';
-      if (ttdDel) ttdDel.style.display = 'none';
-    }
-  }
-  refreshTtd();
-  const ttdInput = root.querySelector('#ttdPenilaiInput');
-  if (ttdInput) {
-    ttdInput.addEventListener('change', async () => {
-      const f = (ttdInput.files || [])[0];
-      if (!f) return;
-      if (!/^image\//.test(f.type)) { toast('File harus berupa gambar (PNG/JPG).', 'error'); return; }
-      if (f.size > 2 * 1024 * 1024) { toast('Ukuran gambar maksimal 2 MB.', 'error'); return; }
-      try {
-        const dataUrl = await new Promise((resolve, reject) => {
-          const rd = new FileReader();
-          rd.onload = () => resolve(rd.result);
-          rd.onerror = () => reject(new Error('Gagal membaca file'));
-          rd.readAsDataURL(f);
-        });
-        Penilaian.update(pen.id, { tanda_tangan: dataUrl });
-        toast('Tanda tangan tersimpan.');
-        refreshTtd();
-      } catch (e) {
-        toast('Gagal menyimpan tanda tangan: ' + e.message, 'error');
-      }
-      ttdInput.value = '';
-    });
-  }
-  ttdDel?.addEventListener('click', () => {
-    if (!confirmAction('Hapus tanda tangan penilai?')) return;
-    const cur = Penilaian.get(pen.id) || {};
-    const patch = { tanda_tangan: '' };
-    Penilaian.update(pen.id, patch);
-    refreshTtd();
-    toast('Tanda tangan dihapus.');
-  });
 
   // --- Tanggal Penilaian per madrasah (bisa berbeda tiap madrasah) ---
   const tglInput = root.querySelector('#tglPenilaianKamad');
