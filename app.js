@@ -1774,7 +1774,7 @@ route('#/cetak/:id', (root, params) => {
       </div>
     </div>
 
-    <div class="card shadow-sm mb-3"><div class="card-body">
+    <div class="card shadow-sm mb-3 no-print"><div class="card-body">
       <div class="d-flex justify-content-between align-items-center flex-wrap gap-2">
         <div>
           <div class="fw-semibold"><i class="bi bi-calendar-event"></i> Tanggal Penilaian <span class="text-tiny text-muted">(periode terpilih)</span></div>
