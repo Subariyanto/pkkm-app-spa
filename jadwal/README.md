@@ -9,3 +9,5 @@ Static front end hosted on GitHub Pages; schedule records and admin operations l
 4. GitHub Pages deploys from `.github/workflows/pages.yml`; custom domain uses `CNAME`.
 
 The admin password is generated separately for the owner. Only its SHA-256 digest is embedded in the SQL. Never add the import CSV, admin password, database password, or service-role key to this repo. Supabase publishable keys are intended for client-side use; authorization is enforced in the SQL RPC functions.
+
+Schedule cards group schools sharing the same date, so the two daily madrasahs appear in one card. To enable editing school names as well as dates/times, run `update-admin-edit.sql` in Supabase SQL Editor once.
