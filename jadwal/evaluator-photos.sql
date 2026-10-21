@@ -22,7 +22,7 @@ begin
  if expected is null or encode(extensions.digest(convert_to(coalesce(p_admin_key,''),'UTF8'),'sha256'),'hex') <> expected then
    raise exception 'unauthorized' using errcode='42501';
  end if;
- if p_slot not in (1,2) or p_image_data is null or length(p_image_data)>500000 or p_image_data not like 'data:image/jpeg;base64,%' then
+ if p_slot not in (1,2) or p_image_data is null or length(p_image_data)>1400000 or p_image_data not like 'data:image/jpeg;base64,%' then
    raise exception 'invalid image or slot';
  end if;
  insert into public.pkkm_evaluators(slot,image_data) values(p_slot,p_image_data)
