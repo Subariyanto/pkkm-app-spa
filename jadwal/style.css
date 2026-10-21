@@ -48,3 +48,8 @@ header:after{content:"";position:absolute;right:-35px;top:-85px;width:230px;heig
 .evaluator-name{white-space:nowrap;max-width:none}
 .evaluator-grid{gap:32px}
 .public-evaluators .evaluator{width:auto}
+
+/* Fix modal stacking: solid overlay above all content */
+#modal{z-index:9999}
+#modal .modal{position:relative;z-index:10000;margin:auto}
+body:has(#modal[style*="flex"]){overflow:hidden}
