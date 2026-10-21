@@ -46,3 +46,15 @@ returns jsonb language sql stable security definer set search_path='' as $$
 $$;
 revoke all on function public.pkkm_admin_list(text),public.pkkm_admin_update(text,bigint,date,text,text,text),public.pkkm_public_schedule(text) from public;
 grant execute on function public.pkkm_admin_list(text),public.pkkm_admin_update(text,bigint,date,text,text,text),public.pkkm_public_schedule(text) to anon,authenticated;
+
+
+-- One public read-only page for all schools; share_id values are not included.
+create or replace function public.pkkm_public_schedules()
+returns jsonb language sql stable security definer set search_path='' as $$
+ select coalesce(jsonb_agg(jsonb_build_object('NO.',no,'Nama Madrasah',nama_madrasah,
+   'Nama Kepala Madrasah',nama_kepala,'Tanggal PKKM',tanggal,'Jam',jam,
+   'Lokasi',lokasi,'Catatan',catatan) order by no),'[]'::jsonb)
+ from public.pkkm_schedules;
+$$;
+revoke all on function public.pkkm_public_schedules() from public;
+grant execute on function public.pkkm_public_schedules() to anon,authenticated;
