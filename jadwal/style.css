@@ -42,3 +42,9 @@ header:after{content:"";position:absolute;right:-35px;top:-85px;width:230px;heig
 
 /* Named evaluator lines */
 .evaluator-name{font-size:12.5px;line-height:1.35;font-weight:600;color:var(--navy-mid);max-width:130px}
+
+/* Keep evaluator names on a single line and space the two evaluators out */
+.evaluator{width:auto;min-width:150px;flex:0 0 auto}
+.evaluator-name{white-space:nowrap;max-width:none}
+.evaluator-grid{gap:32px}
+.public-evaluators .evaluator{width:auto}
