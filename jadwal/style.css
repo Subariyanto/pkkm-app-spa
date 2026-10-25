@@ -53,3 +53,52 @@ header:after{content:"";position:absolute;right:-35px;top:-85px;width:230px;heig
 #modal{z-index:9999}
 #modal .modal{position:relative;z-index:10000;margin:auto}
 body:has(#modal[style*="flex"]){overflow:hidden}
+
+/* ===== v3: Background selaras + kartu full color (navy-gold) ===== */
+body{background:
+  radial-gradient(1100px 560px at 88% -8%,#dbe6f8 0,transparent 58%),
+  radial-gradient(880px 480px at 2% 6%,#f7eeda 0,transparent 55%),
+  linear-gradient(160deg,#edf2fb 0%,#dce5f4 52%,#e8edf7 100%);
+  background-attachment:fixed;color:var(--ink)}
+header{border:1px solid #e6bd5b55;box-shadow:0 12px 28px #0b1e3a3d,inset 0 1px 0 #ffffff33}
+header h1{letter-spacing:.3px}
+
+/* Kartu jadwal: full color navy dengan bingkai emas */
+.schedule,.day-card{
+  background:linear-gradient(160deg,#17396b 0%,#0f2a53 46%,#0a1e3f 100%);
+  border:2px solid var(--gold);color:#e9f0fb;
+  box-shadow:0 6px 0 #061530,0 16px 30px #0a1e3f47,inset 0 1px 0 #ffffff26}
+.schedule:before{inset:6px;border:1px solid #d9a9285c;border-radius:10px}
+.schedule:hover{transform:translateY(-3px);box-shadow:0 9px 0 #061530,0 22px 38px #0a1e3f57,inset 0 1px 0 #ffffff30}
+.day-heading{border-bottom:1px solid #ffffff22;padding-bottom:10px}
+.day-heading .date{color:var(--gold-light);font-weight:800;font-size:16.5px}
+.school-entry{border-top:1px solid #ffffff1c}
+.school-entry .school,.viewer .school{color:#fff}
+.principal,.minor{color:#b8c8e3}
+.schedule .minor a{color:var(--gold-light)}
+.badge{background:linear-gradient(180deg,#f4d279,#d9a928);color:#2b1e03;border:1px solid #f1dc9f;box-shadow:inset 0 1px #ffffff80,0 2px 0 #a87f17}
+.badge.pending{background:linear-gradient(180deg,#e7edf7,#ccd7e9);color:#1d3254;border-color:#dfe6f2}
+.date{background:linear-gradient(145deg,#fff6dc,#f0dca8);border:1px solid #e6cf8f;color:#102a56;box-shadow:0 3px 0 #cbb374,inset 0 1px #fff}
+.map-icon{background:linear-gradient(145deg,#ffe9ab,#e3c162);color:#0f2a53;border:1px solid #f0d89b;box-shadow:0 2px 0 #a87f17}
+.map-icon:hover{background:linear-gradient(145deg,#fff2c4,#dcb64a)}
+.schedule .btn.light{background:linear-gradient(180deg,#f6f9ff,#e3eaf6);color:#0f2a53;border-color:#f0d89b}
+.schedule .error,.viewer .error{color:#ffd4a6}
+
+/* Statistik: full color emas */
+.stat{background:linear-gradient(160deg,#fff6db 0%,#f2dca6 100%);border:2px solid var(--navy);color:#1c2c49;
+  box-shadow:0 5px 0 #0d2348,0 12px 22px #102a5626,inset 0 1px 0 #fff}
+.stat:hover{box-shadow:0 7px 0 #0d2348,0 18px 30px #102a5630,inset 0 1px 0 #fff}
+.stat b{color:#0e2850}
+
+/* Panel Tim Penilai: full color navy */
+.evaluators{background:linear-gradient(150deg,#17396b 0%,#0b2144 100%);border:2px solid var(--gold);color:#e9f0fb;
+  box-shadow:0 6px 0 #061530,0 14px 26px #0a1e3f42,inset 0 1px 0 #ffffff26}
+.evaluators h2{color:var(--gold-light)}
+.evaluator{color:#e9f0fb}
+.evaluator strong{color:var(--gold-light)}
+.evaluator-name{color:#cadcf6}
+.evaluator img{background:linear-gradient(145deg,#19396a,#0b2144);box-shadow:0 4px 0 #061530,0 8px 16px #0a1e3f45}
+
+/* Toolbar & teks pendukung di atas background baru */
+.tools input,.tools select{border-color:#c3d0e4}
+.notice{color:#4c5a74}
