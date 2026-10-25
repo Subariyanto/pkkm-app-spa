@@ -486,6 +486,7 @@ function backupAll() {
       skor: pLoad(PKKM_KEYS.skor, []),
       meta: pLoad(PKKM_KEYS.meta, {}),
       instrumen_overrides: pLoad(PKKM_KEYS.instrumen_overrides, {}),
+      pkb: pLoad(PKKM_KEYS.pkb, []),
     },
   };
   return out;
@@ -500,6 +501,9 @@ function restoreAll(payload) {
   if (d.skor) pSave(PKKM_KEYS.skor, d.skor);
   if (d.meta) pSave(PKKM_KEYS.meta, d.meta);
   if (d.instrumen_overrides) pSave(PKKM_KEYS.instrumen_overrides, d.instrumen_overrides);
+  // pkb bersifat opsional: backup lama (sebelum v20261025f) tidak memuatnya,
+  // jadi hanya ditulis bila kuncinya benar-benar ada agar data PKB tidak terhapus.
+  if (Array.isArray(d.pkb)) pSave(PKKM_KEYS.pkb, d.pkb);
   return true;
 }
 

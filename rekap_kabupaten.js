@@ -100,6 +100,7 @@
     const periode = d.periode || [];
     const penilaian = d.penilaian || [];
     const skor = d.skor || [];
+    const pkb = d.pkb || [];
     const meta = d.meta || {};
 
     const pengawasSet = new Set();
@@ -119,6 +120,7 @@
         periode: periode.length,
         penilaian: penilaian.length,
         skor: skor.length,
+        pkb: pkb.length,
       },
     };
   }
@@ -133,18 +135,20 @@
     base.skor = base.skor || [];
     base.meta = base.meta || {};
     base.instrumen_overrides = base.instrumen_overrides || {};
+    base.pkb = base.pkb || [];
 
     let maxKamad = base.kamad.reduce((m, x) => Math.max(m, Number(x.id) || 0), 0);
     let maxPeriode = base.periode.reduce((m, x) => Math.max(m, Number(x.id) || 0), 0);
     let maxPen = base.penilaian.reduce((m, x) => Math.max(m, Number(x.id) || 0), 0);
+    let maxPkb = base.pkb.reduce((m, x) => Math.max(m, Number(x.id) || 0), 0);
 
     const report = {
       mode,
       files: [],
-      added: { kamad: 0, periode: 0, penilaian: 0, skor: 0 },
-      filled: { skor: 0 },
+      added: { kamad: 0, periode: 0, penilaian: 0, skor: 0, pkb: 0 },
+      filled: { skor: 0, pkb: 0 },
       replaced: { skor: 0 },
-      skipped: { kamad: 0, periode: 0, penilaian: 0, skor: 0 },
+      skipped: { kamad: 0, periode: 0, penilaian: 0, skor: 0, pkb: 0 },
       conflicts: [],
       warnings: [],
     };
@@ -158,6 +162,7 @@
       const fPeriode = d.periode || [];
       const fPen = d.penilaian || [];
       const fSkor = d.skor || [];
+      const fPkb = d.pkb || [];
       const fMeta = d.meta || {};
 
       // -- periode --
@@ -288,6 +293,38 @@
         }
       }
 
+      // -- PKB: kunci kamad + periode + sub_aspek_kode --
+      for (const b of fPkb) {
+        const kamadId = kamadMap[b.kamad_id];
+        const periodeId = periodeMap[b.periode_id];
+        if (kamadId == null || periodeId == null) {
+          report.warnings.push(`${entry.name}: 1 data PKB dilewati (kamad/periode tidak ikut di berkas).`);
+          continue;
+        }
+        const sub = b.sub_aspek_kode || '';
+        const idx = base.pkb.findIndex((x) => x.kamad_id === kamadId
+          && x.periode_id === periodeId
+          && (x.sub_aspek_kode || '') === sub);
+        if (idx < 0) {
+          base.pkb.push(Object.assign({}, b, {
+            id: ++maxPkb,
+            kamad_id: kamadId,
+            periode_id: periodeId,
+          }));
+          report.added.pkb++;
+        } else if (mode === 'safe') {
+          report.skipped.pkb++;
+        } else {
+          const exist = base.pkb[idx];
+          let touched = false;
+          for (const f of ['prioritas', 'unsur_pkb', 'jenis_pkb', 'kegiatan_pkb', 'catatan']) {
+            const kosong = exist[f] == null || exist[f] === '';
+            if (kosong && b[f] != null && b[f] !== '') { exist[f] = b[f]; touched = true; }
+          }
+          if (touched) report.filled.pkb++; else report.skipped.pkb++;
+        }
+      }
+
       // -- meta: lengkapi kunci yang belum ada --
       for (const k of Object.keys(fMeta || {})) {
         if (k.startsWith('next_')) continue;
@@ -307,6 +344,7 @@
     base.meta.next_kamad = maxKamad + 1;
     base.meta.next_periode = maxPeriode + 1;
     base.meta.next_penilaian = maxPen + 1;
+    base.meta.next_pkb = maxPkb + 1;
 
     return { data: base, report };
   }
@@ -369,6 +407,14 @@
         .map((s) => s.penilai_nama || roleLabel(s.role))
         .filter(Boolean);
 
+      // PKB madrasah pada periode ini
+      let pkbList = [];
+      try {
+        pkbList = (window.PKB && typeof window.PKB.forKamadPeriode === 'function')
+          ? window.PKB.forKamadPeriode(k.id, periodeId) : [];
+      } catch (e) { pkbList = []; }
+      const pkbTerisi = pkbList.filter((x) => (x.kegiatan_pkb || '').trim()).length;
+
       rows.push({
         k,
         sessions,
@@ -376,6 +422,8 @@
         detail,
         persen,
         penilai,
+        pkbList,
+        pkbTerisi,
         sebutan: nilaiAkhir != null ? sebutan(nilaiAkhir) : null,
       });
     }
@@ -456,7 +504,8 @@
         <div class="card-body">
           <p class="text-tiny text-muted mb-2">
             Kumpulkan berkas <strong>backup JSON</strong> dari setiap pengawas (menu Backup &rarr; Download Backup JSON),
-            lalu pilih beberapa berkas sekaligus di sini. Aplikasi akan menggabungkan berdasarkan
+            lalu pilih beberapa berkas sekaligus di sini. Aplikasi akan menggabungkan data kamad, periode,
+            penilaian, skor, <strong>dan PKB</strong> berdasarkan
             <em>NSM madrasah + periode + role penilai</em>, bukan berdasarkan nomor id, sehingga data dari
             perangkat berbeda tidak saling menimpa.
           </p>
@@ -515,6 +564,7 @@
                 ${KOMP_META().map((k) => `<th class="text-center text-tiny" title="${esc(k.label)}">${esc(k.code)}</th>`).join('')}
                 <th class="text-center">Nilai Akhir</th>
                 <th class="text-center">Sebutan</th>
+                <th class="text-center" title="Jumlah sub-aspek PKB yang sudah diisi kegiatan">PKB</th>
                 <th class="text-center no-print">Aksi</th>
               </tr>
             </thead>
@@ -572,6 +622,7 @@
             ${r.sessions.length > 1 ? `<div class="text-tiny text-muted">${r.sessions.length} penilai</div>` : ''}
           </td>
           <td class="text-center">${r.sebutan ? `<span class="${r.sebutan.cssClass || 'badge bg-secondary'}">${esc(r.sebutan.label)}</span>` : '-'}</td>
+          <td class="text-center text-tiny">${r.pkbTerisi ? `<span class="badge bg-success">${r.pkbTerisi}</span>` : (r.pkbList.length ? `<span class="badge bg-warning text-dark">0</span>` : '<span class="text-muted">-</span>')}</td>
           <td class="text-center no-print">
             ${r.sessions.length ? `<a href="#/agregat/${r.k.id}/${selected.id}" class="btn btn-sm btn-outline-primary" title="Detail"><i class="bi bi-graph-up"></i></a>` : ''}
           </td>
@@ -643,7 +694,7 @@
         <div class="table-responsive mb-2">
           <table class="table table-sm table-bordered mb-0">
             <thead class="table-light">
-              <tr><th>Berkas</th><th>Pengawas</th><th class="text-center">Kamad</th><th class="text-center">Periode</th><th class="text-center">Penilaian</th><th class="text-center">Skor</th></tr>
+              <tr><th>Berkas</th><th>Pengawas</th><th class="text-center">Kamad</th><th class="text-center">Periode</th><th class="text-center">Penilaian</th><th class="text-center">Skor</th><th class="text-center">PKB</th></tr>
             </thead>
             <tbody>
               ${rp.files.map((f) => `<tr>
@@ -653,6 +704,7 @@
                 <td class="text-center">${f.counts.periode}</td>
                 <td class="text-center">${f.counts.penilaian}</td>
                 <td class="text-center">${f.counts.skor}</td>
+                <td class="text-center">${f.counts.pkb || 0}</td>
               </tr>`).join('')}
             </tbody>
           </table>
@@ -663,7 +715,9 @@
           <span class="badge bg-success">+${rp.added.periode} periode baru</span>
           <span class="badge bg-success">+${rp.added.penilaian} penilaian baru</span>
           <span class="badge bg-success">+${rp.added.skor} skor baru</span>
+          ${rp.added.pkb ? `<span class="badge bg-success">+${rp.added.pkb} data PKB baru</span>` : ''}
           ${rp.filled.skor ? `<span class="badge bg-info text-dark">${rp.filled.skor} skor dilengkapi</span>` : ''}
+          ${rp.filled.pkb ? `<span class="badge bg-info text-dark">${rp.filled.pkb} PKB dilengkapi</span>` : ''}
           ${rp.replaced.skor ? `<span class="badge bg-warning text-dark">${rp.replaced.skor} skor ditimpa</span>` : ''}
           ${rp.conflicts.length ? `<span class="badge bg-danger">${rp.conflicts.length} konflik nilai</span>` : ''}
           <span class="badge bg-secondary">ukuran hasil ${mb} MB</span>
@@ -755,7 +809,7 @@
     ws.addRow([]);
 
     const headers = ['No', 'Nama Madrasah', 'NSM', 'Nama Kepala Madrasah', 'NIP', 'Jenjang', 'KKMA',
-      'Pengawas Penilai', ...komps.map((k) => k.label), 'Nilai Akhir', 'Sebutan', 'Progress (%)'];
+      'Pengawas Penilai', ...komps.map((k) => k.label), 'Nilai Akhir', 'Sebutan', 'PKB Terisi', 'Progress (%)'];
 
     const hr = ws.addRow(headers);
     hr.eachCell((c) => {
@@ -781,6 +835,7 @@
         }),
         r.nilaiAkhir != null && r.persen > 0 ? Number(r.nilaiAkhir.toFixed(2)) : '',
         r.sebutan ? r.sebutan.label : '',
+        r.pkbTerisi || '',
         Number((r.persen || 0).toFixed(1)),
       ]);
     });
@@ -814,6 +869,43 @@
       ws2.addRow([n, v.n, Number((v.sum / v.n).toFixed(2))]);
     });
     ws2.columns.forEach((c, i) => { c.width = i === 0 ? 34 : 24; });
+
+    // Sheet rekap PKB kabupaten
+    const ws3 = wb.addWorksheet('Rekap PKB', { views: [{ showGridLines: false }] });
+    ws3.addRow(['REKAP PKB (PENGEMBANGAN KEPROFESIAN BERKELANJUTAN)']).font = { bold: true, size: 14, color: { argb: 'FF047A3A' } };
+    ws3.addRow([`POKJAWAS MADRASAH KAB. ${String(kab).toUpperCase()}`]).font = { bold: true, size: 12 };
+    ws3.addRow([periode ? periode.label : '-']);
+    ws3.addRow([]);
+    const h3 = ws3.addRow(['No', 'Nama Madrasah', 'Nama Kepala Madrasah', 'Sub Aspek', 'Prioritas', 'Unsur PKB', 'Jenis PKB', 'Kegiatan PKB', 'Catatan']);
+    h3.eachCell((c) => {
+      c.font = { bold: true, color: { argb: 'FFFFFFFF' } };
+      c.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF047A3A' } };
+      c.alignment = { horizontal: 'center', vertical: 'middle', wrapText: true };
+    });
+
+    let pkbRow = 0;
+    let adaPkb = false;
+    rows.forEach((r, i) => {
+      (r.pkbList || []).forEach((b) => {
+        adaPkb = true;
+        pkbRow++;
+        ws3.addRow([
+          i + 1,
+          r.k.nama_madrasah || '',
+          r.k.nama || '',
+          b.sub_aspek_kode || '',
+          b.prioritas || '',
+          b.unsur_pkb || '',
+          b.jenis_pkb || '',
+          b.kegiatan_pkb || '',
+          b.catatan || '',
+        ]);
+      });
+    });
+    if (!adaPkb) {
+      ws3.addRow(['', '', '', '', '', '', '', 'Belum ada data PKB pada periode ini.', '']).font = { italic: true, color: { argb: 'FF888888' } };
+    }
+    ws3.columns.forEach((c, i) => { c.width = i === 1 ? 30 : (i === 7 ? 40 : 16); });
 
     const buf = await wb.xlsx.writeBuffer();
     const blob = new Blob([buf], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
