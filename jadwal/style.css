@@ -102,3 +102,14 @@ header h1{letter-spacing:.3px}
 /* Toolbar & teks pendukung di atas background baru */
 .tools input,.tools select{border-color:#c3d0e4}
 .notice{color:#4c5a74}
+
+/* ===== Narasi PKKM di samping foto penilai ===== */
+.evaluator-layout{display:flex;gap:28px;align-items:flex-start;flex-wrap:wrap}
+.evaluator-layout .evaluator-grid{flex:0 0 auto}
+.pkkm-intro{flex:1 1 380px;min-width:280px;padding:16px 18px;border-radius:14px;
+  background:linear-gradient(150deg,#ffffff12,#ffffff06);border:1px solid #d9a92845}
+.pkkm-intro h3{margin:0 0 10px;font-size:15.5px;letter-spacing:.4px;color:var(--gold-light);text-transform:uppercase}
+.pkkm-intro p{margin:0 0 10px;font-size:13.5px;line-height:1.65;color:#cfdcf2;text-align:justify}
+.pkkm-intro blockquote{margin:12px 0 0;padding:11px 14px;border-left:3px solid var(--gold);border-radius:0 10px 10px 0;
+  background:#ffffff10;font-size:13.5px;line-height:1.6;font-style:italic;color:var(--gold-light)}
+@media(max-width:760px){.evaluator-layout{gap:18px}.pkkm-intro{flex:1 1 100%}.pkkm-intro p{text-align:left}}
