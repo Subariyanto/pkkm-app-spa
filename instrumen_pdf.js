@@ -62,7 +62,7 @@
     };
     try {
       if (window.Meta) {
-        out.kab = window.Meta.get('kabupaten_kota', 'Jember') || 'Jember';
+        out.kab = (typeof window.Meta.kab === 'function') ? window.Meta.kab() : (window.Meta.get('kabupaten_kota', 'Jember') || 'Jember');
         out.pok = window.Meta.get('identitas_ketua_pokjawas', {}) || out.pok;
         out.pengawas = window.Meta.get('identitas_pengawas', {}) || out.pengawas;
       }

@@ -246,6 +246,13 @@ const Meta = {
     return out;
   },
   setBobot(map) { this.set('bobot_overrides', map); },
+  // Nama kabupaten/kota wilayah binaan — fleksibel, bukan hardcode Jember.
+  // Fallback 'Jember' hanya dipakai bila pengguna belum pernah mengisi Pengaturan.
+  kab(def) {
+    const v = (this.get('kabupaten_kota', '') || '').toString().trim();
+    return v || (def || 'Jember');
+  },
+  setKab(nama) { this.set('kabupaten_kota', (nama || '').toString().trim()); },
 };
 
 // === Helper RA: cek apakah penilaian ini untuk kepala madrasah jenjang RA ===

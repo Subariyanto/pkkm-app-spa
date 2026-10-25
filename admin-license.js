@@ -4,6 +4,15 @@
 (function () {
   'use strict';
 
+  // Nama kabupaten/kota mengikuti Pengaturan (fleksibel, tidak hardcode)
+  function getKab() {
+    try {
+      if (window.Meta && typeof window.Meta.kab === 'function') return window.Meta.kab();
+      var m = JSON.parse(localStorage.getItem('pkkm_v1_meta') || '{}');
+      return (m.kabupaten_kota || 'Jember');
+    } catch (e) { return 'Jember'; }
+  }
+
   var ADMIN_KEY_STORAGE = 'pkkm_admin_key'; // sessionStorage only
   var PAGE_SIZE = 25;
   var allCodes = [];
@@ -1169,7 +1178,7 @@
       var t0 = ws0.addRow(['REKAP LISENSI PKKM - KODE AKTIVASI']);
       t0.font = { bold: true, size: 15, color: { argb: 'FF0F3D6E' } };
       ws0.mergeCells('A1:C1');
-      ws0.addRow(['Produced by Panel Admin Pokjawasmad Kab. Jember']).font = { italic: true, size: 10, color: { argb: 'FF5B6B7C' } };
+      ws0.addRow(['Produced by Panel Admin Pokjawasmad Kab. ' + getKab()]).font = { italic: true, size: 10, color: { argb: 'FF5B6B7C' } };
       ws0.mergeCells('A2:C2');
       ws0.addRow(['Diexport:', xlsDate(new Date())]).getCell(1).font = { bold: true };
       ws0.addRow([]);
@@ -1232,7 +1241,7 @@
       var t0 = ws0.addRow(['REKAP LISENSI PKKM - AKUN PENGGUNA']);
       t0.font = { bold: true, size: 15, color: { argb: 'FF0F3D6E' } };
       ws0.mergeCells('A1:B1');
-      ws0.addRow(['Pokjawasmad Kabupaten Jember']).font = { italic: true, size: 10, color: { argb: 'FF5B6B7C' } };
+      ws0.addRow(['Pokjawasmad Kabupaten ' + getKab()]).font = { italic: true, size: 10, color: { argb: 'FF5B6B7C' } };
       ws0.mergeCells('A2:B2');
       ws0.addRow(['Diexport:', xlsDate(new Date())]).getCell(1).font = { bold: true };
       ws0.addRow([]);

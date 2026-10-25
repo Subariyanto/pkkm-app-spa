@@ -131,7 +131,7 @@
     const pokjawas = window.Meta.get('identitas_ketua_pokjawas', { nama: 'SUBARIYANTO, S.Pd, M.Pd.I', nip: '197002122005011004' });
     const tempat = window.Meta.get('lokasi_ttd', 'Jember');
     // Ikuti Data Isian: kabupaten/kota diambil dari Pengaturan (bukan hardcode Jember)
-    const kab = (window.Meta.get('kabupaten_kota', '') || 'Jember').trim();
+    const kab = (window.Meta.kab ? window.Meta.kab() : (window.Meta.get('kabupaten_kota', '') || 'Jember')).trim();
 
     return {
       kkma, periode, kamadList, rows, dinilai, rataKKMA, tertinggi, terendah,

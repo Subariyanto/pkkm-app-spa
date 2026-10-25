@@ -30,7 +30,7 @@
       'KKMA 04 Sukowono',
       '131135090001',
       'MA Contoh Sukowono',
-      'Jl. Contoh No. 1, Sukowono, Jember',
+      'Jl. Contoh No. 1, Sukowono, ' + ((window.Meta && typeof window.Meta.kab === 'function') ? window.Meta.kab() : 'Jember'),
       '2023-01-01',
       '081234567890',
       'kamad@example.sch.id',

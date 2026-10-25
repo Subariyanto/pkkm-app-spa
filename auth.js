@@ -438,8 +438,7 @@
     }
 
     // Isi nama kabupaten/kota dari setting
-    let _kabKota = 'Jember';
-    try { _kabKota = JSON.parse(localStorage.getItem('pkkm_v1_meta') || '{}').kabupaten_kota || 'Jember'; } catch(e) {}
+    const _kabKota = (window.Meta && typeof window.Meta.kab === 'function') ? window.Meta.kab() : 'Jember';
     const _setRegion = () => overlay.querySelectorAll('.auth-region').forEach(el => el.textContent = _kabKota);
     setTimeout(_setRegion, 0);
 
@@ -499,6 +498,12 @@
         <div class="form-group">
           <label>Nama Lengkap</label>
           <input id="reg-fullname" type="text" placeholder="Nama Lengkap beserta gelar" autocomplete="off">
+        </div>
+
+        <div class="form-group">
+          <label>Kabupaten / Kota Wilayah Binaan</label>
+          <input id="reg-kabupaten" type="text" placeholder="Contoh: Jember, Bondowoso, Banyuwangi..." autocomplete="off" value="${_kabKota}">
+          <div style="font-size:.75rem; color:#888; margin-top:.25rem;">Nama ini tampil di navbar, footer, dan kop laporan.</div>
         </div>
 
         <div class="form-group">
@@ -591,7 +596,12 @@
       const role = isTrialCode ? 'trial' : 'pengawas';
       const username = document.getElementById('reg-username').value.trim().toLowerCase();
       const fullname = document.getElementById('reg-fullname').value.trim();
-      const madrasah = 'Pokjawas Jember';
+      const _kabInput = (document.getElementById('reg-kabupaten') || {}).value || '';
+      const _kabReg = _kabInput.toString().trim()
+        || ((window.Meta && typeof window.Meta.kab === 'function') ? window.Meta.kab() : 'Jember');
+      // Simpan pilihan kabupaten agar navbar/footer/kop laporan ikut menyesuaikan
+      if (window.Meta && typeof window.Meta.setKab === 'function') window.Meta.setKab(_kabReg);
+      const madrasah = 'Pokjawas ' + _kabReg;
       const password = document.getElementById('reg-password').value;
       const confirm = document.getElementById('reg-confirm').value;
 
@@ -677,8 +687,7 @@
     }
 
     // Isi nama kabupaten/kota dari setting
-    let _kabKota = 'Jember';
-    try { _kabKota = JSON.parse(localStorage.getItem('pkkm_v1_meta') || '{}').kabupaten_kota || 'Jember'; } catch(e) {}
+    const _kabKota = (window.Meta && typeof window.Meta.kab === 'function') ? window.Meta.kab() : 'Jember';
     const _setRegion = () => overlay.querySelectorAll('.auth-region').forEach(el => el.textContent = _kabKota);
     setTimeout(_setRegion, 0);
 
@@ -1515,8 +1524,7 @@
     }
 
     // Isi nama kabupaten/kota dari setting
-    let _kabKota = 'Jember';
-    try { _kabKota = JSON.parse(localStorage.getItem('pkkm_v1_meta') || '{}').kabupaten_kota || 'Jember'; } catch(e) {}
+    const _kabKota = (window.Meta && typeof window.Meta.kab === 'function') ? window.Meta.kab() : 'Jember';
     const _setRegion = () => overlay.querySelectorAll('.auth-region').forEach(el => el.textContent = _kabKota);
     setTimeout(_setRegion, 0);
 

@@ -302,8 +302,8 @@ function syncAuthUI() {
   // Update navbar region label dari setting kabupaten/kota
   const navRegion = document.getElementById('navRegionLabel');
   const footerRegion = document.getElementById('footerRegion');
-  let _kabKota = 'Jember';
-  try { _kabKota = JSON.parse(localStorage.getItem('pkkm_v1_meta') || '{}').kabupaten_kota || 'Jember'; } catch(e) {}
+  // Nama kabupaten/kota mengikuti Pengaturan (fleksibel, tidak hardcode Jember)
+  const _kabKota = (window.Meta && typeof Meta.kab === 'function') ? Meta.kab() : 'Jember';
   if (navRegion) navRegion.textContent = 'Pokjawasmad Kab. ' + _kabKota;
   if (footerRegion) footerRegion.textContent = _kabKota;
 }
@@ -1174,7 +1174,7 @@ route('#/penilaian/:kamadId/:periodeId/:role', (root, params) => {
       penilai_nama: idPengawas.nama || '',
       penilai_nip: idPengawas.nip || '',
       penilai_jabatan: idPengawas.jabatan || 'Pengawas Madrasah',
-      penilai_unit: idPengawas.unit || `Kemenag Kabupaten ${Meta.get('kabupaten_kota', 'Jember')}`,
+      penilai_unit: idPengawas.unit || `Kemenag Kabupaten ${Meta.kab()}`,
     };
     Penilaian.update(pen.id, patchPengawas);
     Object.assign(pen, patchPengawas);
@@ -3386,7 +3386,7 @@ route('#/pengaturan', (root) => {
   const pengawas = Meta.get('identitas_pengawas', { nama: '', nip: '' });
   const pokjawas = Meta.get('identitas_ketua_pokjawas', { nama: 'SUBARIYANTO, S.Pd, M.Pd.I', nip: '197002122005011004' });
   const tempat = Meta.get('lokasi_ttd', 'Jember');
-  const kabKota = Meta.get('kabupaten_kota', 'Jember');
+  const kabKota = Meta.kab();
 
   // Use META komponen list (5 komp) supaya tidak terpengaruh role aktif
   const KOMP_META = window.PKKM_KOMPONEN_META || window.PKKM_KOMPONEN.map(k => ({ no: k.no, code: k.code, label: k.label, bobot_default: 20 }));
@@ -3532,6 +3532,7 @@ route('#/pengaturan', (root) => {
     Meta.set('lokasi_ttd', fd.get('lokasi_ttd'));
     Meta.set('identitas_pengawas', { nama: fd.get('pengawas_nama'), nip: fd.get('pengawas_nip') });
     Meta.set('identitas_ketua_pokjawas', { nama: fd.get('pokjawas_nama'), nip: fd.get('pokjawas_nip') });
+    syncAuthUI(); // langsung perbarui nama kabupaten di navbar & footer
     toast('Identitas tanda tangan disimpan.');
   });
 });
