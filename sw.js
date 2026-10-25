@@ -1,6 +1,6 @@
 // sw.js - Service worker for PKKM SPA
 // Strategy: network-first for app code, cache-first for static assets.
-const CACHE_VERSION = 'pkkm-v34-2026-10-25-fix-hover-periode';
+const CACHE_VERSION = 'pkkm-v35-2026-10-25-tema-timbul';
 
 const NETWORK_FIRST = [
   'index.html',

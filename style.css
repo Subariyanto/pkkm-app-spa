@@ -987,3 +987,359 @@ pre.bukti-fisik {
 
 /* Responsive table wrapper */
 .table-responsive { border-radius: 12px; }
+
+/* ===================================================================
+   TEMA TIMBUL (EMBOSS / SOFT UI)
+   Kartu, tombol, dan panel dibuat seolah terangkat dari latar,
+   input & header tabel dibuat seolah tertekan ke dalam.
+   Palet tetap hijau-emas Kemenag.
+   =================================================================== */
+:root {
+  --emb-light: #ffffff;
+  --emb-dark: rgba(4, 58, 29, .16);
+  --emb-dark-sm: rgba(4, 58, 29, .10);
+  --emb-bg: #e8f1eb;
+  --emb-surface: #fbfdfb;
+  --emb-out: 7px 7px 16px var(--emb-dark), -7px -7px 16px var(--emb-light);
+  --emb-out-sm: 4px 4px 9px var(--emb-dark-sm), -4px -4px 9px var(--emb-light);
+  --emb-out-xs: 2px 2px 5px var(--emb-dark-sm), -2px -2px 5px var(--emb-light);
+  --emb-in: inset 3px 3px 7px rgba(4, 58, 29, .13), inset -3px -3px 7px var(--emb-light);
+  --emb-in-lg: inset 5px 5px 12px rgba(4, 58, 29, .15), inset -5px -5px 12px var(--emb-light);
+}
+
+body {
+  background:
+    radial-gradient(1100px 620px at 12% -8%, #f6fcf8 0%, rgba(246,252,248,0) 62%),
+    radial-gradient(900px 520px at 92% 4%, #f2f9f5 0%, rgba(242,249,245,0) 58%),
+    linear-gradient(168deg, #eef5f0 0%, var(--emb-bg) 46%, #e2ece6 100%);
+  background-attachment: fixed;
+}
+
+/* --- Navbar: bilah terangkat dengan garis cahaya atas --- */
+.navbar,
+.navbar-dark.bg-primary,
+.pkkm-nav {
+  background: linear-gradient(180deg, #0a8a44 0%, #047a3a 52%, #03672f 100%) !important;
+  box-shadow:
+    0 6px 18px rgba(4, 58, 29, .30),
+    inset 0 1px 0 rgba(255, 255, 255, .22),
+    inset 0 -1px 0 rgba(0, 0, 0, .16);
+  border-bottom: 1px solid rgba(0, 0, 0, .12);
+}
+.pkkm-nav .dropdown-menu {
+  box-shadow: var(--emb-out), 0 0 0 1px rgba(255, 255, 255, .7) inset;
+  border: 1px solid #e4eee7;
+}
+
+/* --- Page header: panel hijau terangkat --- */
+.page-header {
+  background: linear-gradient(158deg, #0b8c46 0%, #047a3a 46%, #035a2a 100%);
+  border: 1px solid rgba(255, 255, 255, .14);
+  box-shadow:
+    9px 9px 22px rgba(4, 58, 29, .24),
+    -7px -7px 18px var(--emb-light),
+    inset 0 1px 0 rgba(255, 255, 255, .26),
+    inset 0 -2px 0 rgba(0, 0, 0, .10);
+}
+.page-header h4, .page-header h5, .page-header h6 {
+  text-shadow: 0 1px 2px rgba(0, 0, 0, .22);
+}
+
+/* --- Kartu: permukaan terangkat --- */
+.card {
+  background: linear-gradient(180deg, #ffffff 0%, var(--emb-surface) 100%);
+  border: 1px solid rgba(255, 255, 255, .9);
+  border-radius: 14px;
+  box-shadow:
+    var(--emb-out),
+    inset 0 1px 0 rgba(255, 255, 255, .95),
+    inset 0 -1px 0 rgba(4, 58, 29, .05);
+}
+.card-header {
+  background: linear-gradient(180deg, #f7fcf9 0%, #e9f3ec 100%);
+  border-bottom: 1px solid #dcebe1;
+  box-shadow:
+    inset 0 1px 0 #fff,
+    0 2px 4px rgba(4, 58, 29, .05);
+  text-shadow: 0 1px 0 rgba(255, 255, 255, .8);
+}
+.card-footer {
+  background: linear-gradient(180deg, #f4faf6 0%, #eaf3ee 100%);
+  border-top: 1px solid #dcebe1;
+  box-shadow: inset 0 1px 0 #fff;
+}
+.komponen-card {
+  border-left: 4px solid var(--pkkm-primary);
+  box-shadow:
+    var(--emb-out-sm),
+    inset 0 1px 0 rgba(255, 255, 255, .95);
+}
+.sub-aspek-block {
+  background: linear-gradient(180deg, #fdfefd, #f7fbf8);
+  box-shadow: inset 0 1px 0 #fff, 0 1px 3px rgba(4, 58, 29, .05);
+}
+
+/* --- Tabel: kepala tabel tertekan, badan tabel bersih --- */
+.table-responsive { border-radius: 12px; }
+.table thead th {
+  background: linear-gradient(180deg, #f6fbf8 0%, #e6f1ea 100%);
+  border-bottom: 1px solid #d3e6da;
+  box-shadow:
+    inset 0 1px 0 #fff,
+    inset 0 -2px 0 var(--pkkm-primary-light);
+  text-shadow: 0 1px 0 rgba(255, 255, 255, .85);
+}
+.table tbody tr { background: rgba(255, 255, 255, .55); }
+.table-hover > tbody > tr:hover {
+  background: #eef8f1;
+  box-shadow: inset 0 0 0 1px rgba(4, 122, 58, .10);
+}
+.table > tbody > tr > td { border-color: #eef4f0; }
+
+/* --- Tombol: terangkat, tertekan saat ditekan --- */
+.btn {
+  border-radius: 10px;
+  box-shadow: var(--emb-out-xs), inset 0 1px 0 rgba(255, 255, 255, .9);
+  transition: all .16s ease;
+}
+.btn-primary {
+  background: linear-gradient(180deg, #0c8f49 0%, #047a3a 58%, #036a31 100%);
+  border: 1px solid #035a2a;
+  color: #fff;
+  box-shadow:
+    0 4px 10px rgba(4, 90, 42, .30),
+    inset 0 1px 0 rgba(255, 255, 255, .34),
+    inset 0 -2px 0 rgba(0, 0, 0, .14);
+}
+.btn-primary:hover, .btn-primary:focus {
+  background: linear-gradient(180deg, #0d9a4f 0%, #058441 58%, #037136 100%);
+  border-color: #045f2c;
+  box-shadow:
+    0 7px 18px rgba(4, 90, 42, .36),
+    inset 0 1px 0 rgba(255, 255, 255, .40),
+    inset 0 -2px 0 rgba(0, 0, 0, .14);
+  transform: translateY(-1px);
+}
+.btn-primary:active {
+  background: linear-gradient(180deg, #036a31 0%, #047a3a 100%);
+  box-shadow: inset 0 3px 8px rgba(0, 0, 0, .30);
+  transform: translateY(1px);
+}
+.btn-outline-primary {
+  background: linear-gradient(180deg, #ffffff 0%, #f4faf6 100%);
+  border: 1px solid #b9dcc6;
+  color: var(--pkkm-primary);
+  box-shadow: var(--emb-out-xs), inset 0 1px 0 #fff;
+}
+.btn-outline-primary:hover {
+  background: linear-gradient(180deg, #0d9a4f 0%, #047a3a 100%);
+  border-color: #035a2a;
+  color: #fff;
+  box-shadow:
+    0 5px 14px rgba(4, 90, 42, .28),
+    inset 0 1px 0 rgba(255, 255, 255, .30);
+  transform: translateY(-1px);
+}
+.btn-outline-primary:active { box-shadow: inset 0 3px 7px rgba(0, 0, 0, .24); transform: translateY(1px); }
+.btn-outline-secondary,
+.btn-outline-danger,
+.btn-outline-success,
+.btn-outline-warning,
+.btn-outline-info {
+  background: linear-gradient(180deg, #ffffff 0%, #f7faf8 100%);
+}
+.btn-light, .btn-secondary, .btn-default {
+  background: linear-gradient(180deg, #ffffff 0%, #eef3f0 100%);
+  border: 1px solid #dfe8e2;
+}
+.btn-link { box-shadow: none; }
+.btn:active { box-shadow: inset 0 2px 6px rgba(4, 58, 29, .22); }
+
+/* Tombol gradien cetak/ekspor: tetap berwarna, ditambah dimensi timbul */
+.btn-gradient-print, .btn-gradient-excel {
+  box-shadow:
+    0 4px 10px rgba(4, 58, 29, .24),
+    inset 0 1px 0 rgba(255, 255, 255, .40),
+    inset 0 -2px 0 rgba(0, 0, 0, .14);
+}
+.btn-gradient-print:hover, .btn-gradient-excel:hover,
+.btn-gradient-print:focus, .btn-gradient-excel:focus {
+  transform: translateY(-1px);
+  box-shadow:
+    0 7px 16px rgba(4, 58, 29, .30),
+    inset 0 1px 0 rgba(255, 255, 255, .45),
+    inset 0 -2px 0 rgba(0, 0, 0, .14);
+}
+
+/* --- Input: cekungan (tertekan ke dalam) --- */
+.form-control, .form-select {
+  background: #f6fbf8;
+  border: 1px solid #dbe7df;
+  border-radius: 9px;
+  box-shadow: var(--emb-in);
+  transition: box-shadow .16s ease, background .16s ease;
+}
+.form-control:focus, .form-select:focus {
+  background: #ffffff;
+  border-color: var(--pkkm-primary);
+  box-shadow: var(--emb-in), 0 0 0 .2rem rgba(4, 122, 58, .15);
+}
+.form-check-input {
+  box-shadow: var(--emb-out-xs);
+  border-color: #c6dbd0;
+}
+.form-check-input:checked {
+  background-color: var(--pkkm-primary);
+  border-color: var(--pkkm-primary);
+  box-shadow: inset 0 2px 5px rgba(0, 0, 0, .25);
+}
+.input-group-text {
+  background: linear-gradient(180deg, #f7fcf9, #ecf4ef);
+  box-shadow: var(--emb-out-xs);
+  border-color: #dbe7df;
+}
+
+/* --- Daftar periode / grup: item terangkat --- */
+.list-group {
+  border-radius: 12px;
+}
+.list-group-item {
+  background: linear-gradient(180deg, #ffffff 0%, #fafdfb 100%);
+  border-color: #e7f0ea;
+  box-shadow: inset 0 1px 0 #fff;
+}
+.list-group-item + .list-group-item { border-top-width: 1px; }
+.list-group-item:not(.active):hover {
+  background: linear-gradient(180deg, #f6fcf8 0%, #eaf5ee 100%);
+  box-shadow: var(--emb-in);
+}
+.list-group-item.active {
+  background: linear-gradient(180deg, #3b8bfd 0%, #0d6efd 55%, #0b5ed7 100%);
+  border-color: transparent;
+  color: #fff;
+  box-shadow:
+    5px 5px 12px rgba(4, 58, 29, .20),
+    -4px -4px 10px var(--emb-light),
+    inset 0 1px 0 rgba(255, 255, 255, .30),
+    inset 0 -2px 0 rgba(0, 0, 0, .10);
+}
+.list-group-item.active .text-muted,
+.list-group-item.active .text-tiny,
+.list-group-item.active .text-tiny.text-muted {
+  color: rgba(255, 255, 255, .85) !important;
+}
+
+/* --- Badge & alert --- */
+.badge {
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, .45), 0 1px 2px rgba(4, 58, 29, .14);
+}
+.alert {
+  border-radius: 12px;
+  box-shadow:
+    var(--emb-out-sm),
+    inset 0 1px 0 rgba(255, 255, 255, .9);
+}
+
+/* --- Modal: benar-benar mengambang --- */
+.modal-content {
+  border-radius: 16px;
+  border: 1px solid rgba(255, 255, 255, .8);
+  box-shadow:
+    0 28px 60px rgba(4, 58, 29, .32),
+    0 6px 18px rgba(4, 58, 29, .18),
+    inset 0 1px 0 rgba(255, 255, 255, .7);
+}
+.modal-header {
+  background: linear-gradient(180deg, #0a8a44 0%, #047a3a 55%, #03672f 100%);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, .22), 0 2px 6px rgba(4, 58, 29, .18);
+}
+.modal-header .modal-title { text-shadow: 0 1px 2px rgba(0, 0, 0, .25); }
+
+/* --- Kartu statistik (dash-stats) --- */
+.dash-stats .card,
+.dash-stats > div > .card {
+  box-shadow:
+    6px 6px 14px var(--emb-dark),
+    -6px -6px 14px var(--emb-light),
+    inset 0 1px 0 #fff;
+}
+
+/* --- Pengantar dasbor: panel terangkat --- */
+.dash-intro {
+  box-shadow:
+    8px 8px 20px rgba(4, 58, 29, .16),
+    -8px -8px 20px var(--emb-light),
+    inset 0 1px 0 rgba(255, 255, 255, .95);
+  border: 1px solid rgba(255, 255, 255, .9);
+}
+
+/* --- Tab --- */
+.nav-tabs {
+  border-bottom: 1px solid #dcebe1;
+  box-shadow: inset 0 -1px 0 rgba(255, 255, 255, .8);
+}
+.nav-tabs .nav-link {
+  border-radius: 10px 10px 0 0;
+  border-color: transparent;
+}
+.nav-tabs .nav-link.active {
+  background: linear-gradient(180deg, #ffffff, #f2faf5);
+  border-color: #dcebe1 #dcebe1 transparent;
+  box-shadow: 0 -2px 6px rgba(4, 58, 29, .07), inset 0 2px 0 var(--pkkm-primary);
+}
+
+/* --- Dropdown & tooltip kecil --- */
+.dropdown-menu {
+  border-radius: 12px;
+  border: 1px solid #e2ece6;
+  box-shadow: var(--emb-out);
+}
+.dropdown-item { border-radius: 8px; }
+.dropdown-item:hover, .dropdown-item:focus { background: #eef8f1; }
+
+/* --- Scrollbar selaras tema --- */
+* { scrollbar-color: #bfd8c8 transparent; }
+::-webkit-scrollbar { width: 10px; height: 10px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb {
+  background: linear-gradient(180deg, #cfe3d6, #b8d3c3);
+  border-radius: 8px;
+  border: 2px solid transparent;
+  background-clip: padding-box;
+}
+::-webkit-scrollbar-thumb:hover { background: linear-gradient(180deg, #b8d3c3, #a2c4b0); background-clip: padding-box; }
+
+/* --- Saat dicetak: matikan efek timbul agar hemat tinta --- */
+@media print {
+  body { background: #fff !important; }
+  .card, .page-header, .btn, .alert, .modal-content, .list-group-item,
+  .dash-intro, .card-header, .form-control, .form-select, .badge {
+    box-shadow: none !important;
+    background-image: none !important;
+  }
+  .table thead th { box-shadow: none !important; background: #f2f2f2 !important; }
+}
+
+/* Header Rekap Kabupaten: kontrol tidak melar mengikuti lebar header */
+.rk-header { gap: 1rem; }
+.rk-header-actions {
+  display: flex;
+  align-items: center;
+  gap: .5rem;
+  flex-wrap: wrap;
+  flex: 0 0 auto;
+}
+.rk-header-actions .form-select {
+  width: 230px;
+  min-width: 230px;
+  max-width: 230px;
+  flex: 0 0 auto;
+  background: rgba(255, 255, 255, .96);
+  box-shadow: inset 2px 2px 5px rgba(4, 58, 29, .14), inset -2px -2px 5px #fff;
+}
+@media (max-width: 767.98px) {
+  .rk-header { flex-direction: column; align-items: stretch !important; }
+  .rk-header-actions { flex-direction: column; align-items: stretch; }
+  .rk-header-actions .form-select { width: 100%; min-width: 0; max-width: none; }
+  .rk-header-actions .btn { width: 100%; }
+}

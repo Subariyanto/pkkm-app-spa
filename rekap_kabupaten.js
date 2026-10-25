@@ -451,12 +451,11 @@
     const pgwSet = Array.from(new Set(rows.flatMap((r) => r.penilai.map((n) => n.trim())))).filter(Boolean).sort();
 
     root.innerHTML = `
-      <div class="page-header flex-wrap gap-2 no-print">
+      <div class="page-header flex-wrap gap-2 no-print rk-header">
         <h5 class="mb-0"><i class="bi bi-diagram-3"></i> Rekap Kabupaten</h5>
-        <div class="d-flex gap-2 align-items-center flex-wrap">
+        <div class="rk-header-actions">
           ${periodeList.length ? `
-          <label class="text-tiny mb-0" style="color:rgba(255,255,255,.85);">Periode:</label>
-          <select class="form-select form-select-sm" id="rkPeriode" style="min-width: 210px;">
+          <select class="form-select form-select-sm" id="rkPeriode" title="Pilih periode">
             ${periodeList.map((p) => `<option value="${p.id}" ${selected && p.id === selected.id ? 'selected' : ''}>${esc(p.label)}</option>`).join('')}
           </select>` : ''}
           <button class="btn btn-sm btn-gradient-excel" id="rkExport" ${rows.length ? '' : 'disabled'}><i class="bi bi-file-earmark-excel"></i> Export Excel</button>
