@@ -433,12 +433,18 @@ route('#/', (root) => {
           <div class="dash-panel-header"><i class="bi bi-info-circle"></i> Komponen Penilaian</div>
           <div class="dash-panel-body">
             <ul class="dash-komponen-list">
-              ${window.PKKM_KOMPONEN.map(k => `
+              ${window.PKKM_KOMPONEN.map(k => {
+                const meta = (window.PKKM_KOMPONEN_META || []).find(m => m.code === k.code);
+                const bobot = (k.bobot_default !== undefined && k.bobot_default !== null)
+                  ? k.bobot_default
+                  : (meta && meta.bobot_default !== undefined ? meta.bobot_default : null);
+                return `
                 <li>
                   <strong>${escapeHTML(k.label)}</strong>
-                  <span class="text-muted"> (${k.aspek.length} aspek, bobot ${k.bobot_default}%)</span>
+                  <span class="text-muted"> (${k.aspek.length} aspek${bobot !== null ? `, bobot ${bobot}%` : ''})</span>
                 </li>
-              `).join('')}
+              `;
+              }).join('')}
             </ul>
             <div class="text-tiny text-muted mt-2" style="border-top:1px solid #f0f3f0; padding-top:.6rem;">
               Skor 1-4 per aspek. Nilai komponen = (Σskor / Σmaks) × 100.
