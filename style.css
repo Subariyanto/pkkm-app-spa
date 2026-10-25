@@ -925,8 +925,21 @@ pre.bukti-fisik {
   padding: .75rem 1.25rem;
   transition: background .15s;
 }
-.list-group-item:hover {
+.list-group-item:not(.active):hover {
   background: #f4faf5;
+}
+/* Item aktif berlatar biru & berteks putih: jangan ganti latarnya saat hover,
+   cukup diredupkan sedikit supaya teks tetap terbaca */
+.list-group-item.active:hover,
+.list-group-item.active:focus {
+  color: #fff;
+  filter: brightness(.92);
+}
+/* Teks sekunder di dalam item aktif harus terang, bukan abu-abu gelap */
+.list-group-item.active .text-muted,
+.list-group-item.active .text-tiny,
+.list-group-item.active .text-tiny.text-muted {
+  color: rgba(255, 255, 255, .85) !important;
 }
 
 /* Form controls: modern */
