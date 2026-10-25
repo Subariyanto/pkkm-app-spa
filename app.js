@@ -347,6 +347,8 @@ async function render() {
 }
 
 window.addEventListener('hashchange', render);
+window.render = render;
+window.navigate = navigate;
 
 // === Routes ====================================================
 
@@ -3309,6 +3311,15 @@ route('#/rekap-tahunan', (root) => {
 });
 
 // --- Backup / Restore ------------------------------------------
+// --- Rekap Kabupaten (gabung berkas dari beberapa pengawas) -----
+route('#/rekap-kabupaten', (root) => {
+  if (typeof window.renderRekapKabupaten === 'function') {
+    window.renderRekapKabupaten(root);
+  } else {
+    root.innerHTML = '<div class="alert alert-warning">Modul Rekap Kabupaten belum termuat. Refresh halaman.</div>';
+  }
+});
+
 route('#/backup', (root) => {
   root.innerHTML = `
     <div class="page-header"><h5><i class="bi bi-cloud-arrow-down"></i> Backup &amp; Restore</h5></div>
