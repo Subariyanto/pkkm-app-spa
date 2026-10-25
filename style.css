@@ -177,6 +177,115 @@ body {
   .dash-hero h2 { font-size: 1.3rem; }
 }
 
+/* ===== Kartu Pengantar PKKM (Beranda) ===== */
+.dash-intro {
+  position: relative;
+  background: linear-gradient(135deg, #ffffff 0%, #f7fdf9 55%, #eef8f1 100%);
+  border: 1px solid #dcece1;
+  border-radius: 14px;
+  padding: 1.5rem 1.6rem 1.4rem 1.5rem;
+  margin-bottom: 1.25rem;
+  box-shadow: 0 3px 16px rgba(4,122,58,.07);
+  overflow: hidden;
+}
+.dash-intro-accent {
+  position: absolute;
+  top: 0; left: 0; bottom: 0;
+  width: 5px;
+  background: linear-gradient(180deg, var(--pkkm-primary) 0%, #0a9c4c 50%, var(--pkkm-accent) 100%);
+}
+.dash-intro::after {
+  content: '';
+  position: absolute;
+  top: -70px; right: -70px;
+  width: 190px; height: 190px;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(4,122,58,.07) 0%, rgba(4,122,58,0) 70%);
+  pointer-events: none;
+}
+.dash-intro-head {
+  display: flex;
+  align-items: center;
+  gap: .7rem;
+  margin-bottom: .9rem;
+  position: relative;
+  z-index: 1;
+}
+.dash-intro-badge {
+  flex: 0 0 auto;
+  width: 38px; height: 38px;
+  border-radius: 10px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: linear-gradient(135deg, var(--pkkm-primary) 0%, #0a9c4c 100%);
+  color: #fff;
+  font-size: 1.15rem;
+  box-shadow: 0 3px 10px rgba(4,122,58,.28);
+}
+.dash-intro-title {
+  font-family: 'Segoe UI', 'Inter', system-ui, -apple-system, sans-serif;
+  font-size: 1.02rem;
+  font-weight: 800;
+  letter-spacing: .35px;
+  line-height: 1.3;
+  margin: 0;
+  color: var(--pkkm-primary-dark);
+  text-transform: uppercase;
+}
+.dash-intro-body {
+  position: relative;
+  z-index: 1;
+  padding-left: .1rem;
+}
+.dash-intro-body p {
+  font-family: 'Segoe UI', 'Inter', system-ui, -apple-system, sans-serif;
+  font-size: .875rem;
+  line-height: 1.7;
+  color: #46564c;
+  margin: 0 0 .65rem;
+  text-align: justify;
+  text-justify: inter-word;
+}
+.dash-intro-body p strong {
+  color: var(--pkkm-primary-dark);
+  font-weight: 700;
+}
+.dash-intro-body p:last-of-type { margin-bottom: 0; }
+.dash-intro-quote {
+  position: relative;
+  margin: 1rem 0 0;
+  padding: .85rem 1rem .85rem 2.6rem;
+  background: #fff;
+  border-left: 3px solid var(--pkkm-accent);
+  border-radius: 0 10px 10px 0;
+  font-family: Georgia, 'Times New Roman', serif;
+  font-style: italic;
+  font-size: .875rem;
+  line-height: 1.65;
+  color: #2f4a3a;
+  box-shadow: 0 1px 6px rgba(0,0,0,.045);
+}
+.dash-intro-quote em {
+  font-style: normal;
+  font-weight: 700;
+  color: var(--pkkm-primary);
+}
+.dash-intro-quote-mark {
+  position: absolute;
+  top: .5rem; left: .7rem;
+  font-size: 1.6rem;
+  line-height: 1;
+  color: var(--pkkm-accent);
+  opacity: .75;
+}
+@media (max-width: 767px) {
+  .dash-intro { padding: 1.15rem 1.1rem 1.1rem 1.15rem; }
+  .dash-intro-title { font-size: .9rem; letter-spacing: .2px; }
+  .dash-intro-body p { font-size: .83rem; text-align: left; }
+  .dash-intro-quote { font-size: .83rem; padding: .75rem .85rem .75rem 2.2rem; }
+}
+
 .dash-panel {
   background: #fff;
   border-radius: 12px;

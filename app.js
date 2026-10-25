@@ -393,6 +393,22 @@ route('#/', (root) => {
       </a>
     </div>
 
+    <section class="dash-intro">
+      <div class="dash-intro-accent"></div>
+      <div class="dash-intro-head">
+        <span class="dash-intro-badge"><i class="bi bi-award-fill"></i></span>
+        <h3 class="dash-intro-title">Penilaian Kinerja Kepala Madrasah (PKKM)</h3>
+      </div>
+      <div class="dash-intro-body">
+        <p><strong>Penilaian Kinerja Kepala Madrasah (PKKM)</strong> merupakan bagian dari upaya pembinaan, evaluasi, dan peningkatan mutu kepemimpinan serta pengelolaan madrasah secara berkelanjutan.</p>
+        <p>Melalui kegiatan PKKM, diharapkan kepala madrasah dapat meningkatkan profesionalisme, akuntabilitas, dan inovasi dalam mewujudkan tata kelola madrasah yang efektif, berkualitas, dan berorientasi pada peningkatan mutu pendidikan.</p>
+        <blockquote class="dash-intro-quote">
+          <i class="bi bi-quote dash-intro-quote-mark"></i>
+          <span>PKKM bukan sekadar penilaian, tetapi momentum refleksi, pembinaan, dan perbaikan berkelanjutan menuju <em>Madrasah Maju, Bermutu, dan Mendunia</em>.</span>
+        </blockquote>
+      </div>
+    </section>
+
     <div class="row g-3">
       <div class="col-md-7">
         <div class="dash-panel">
