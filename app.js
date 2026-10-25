@@ -465,7 +465,11 @@ route('#/kamad', (root) => {
   root.innerHTML = `
     <div class="page-header">
       <h5><i class="bi bi-people"></i> Data Kepala Madrasah</h5>
-      <button class="btn btn-primary btn-sm" id="btnAddKamad"><i class="bi bi-plus-lg"></i> Tambah</button>
+      <div class="d-flex gap-2 flex-wrap">
+        <button class="btn btn-sm btn-outline-light" id="btnTemplateKamad"><i class="bi bi-file-earmark-excel"></i> Template Excel</button>
+        <button class="btn btn-sm btn-outline-light" id="btnOpenImportKamad"><i class="bi bi-file-earmark-arrow-up"></i> Import Excel</button>
+        <button class="btn btn-primary btn-sm" id="btnAddKamad"><i class="bi bi-plus-lg"></i> Tambah</button>
+      </div>
     </div>
     <div class="card">
       <div class="card-body p-0">
@@ -504,6 +508,7 @@ route('#/kamad', (root) => {
             </table></div>`}
       </div>
     </div>
+    ${kamadImportModalHTML(list.length)}
   `;
   $('#btnAddKamad').addEventListener('click', () => navigate('#/kamad/new'));
   $$('[data-action="del-kamad"]').forEach(b => b.addEventListener('click', () => {
@@ -514,7 +519,112 @@ route('#/kamad', (root) => {
       render();
     }
   }));
+  wireKamadImport();
 });
+
+// --- Modal Template & Import Excel untuk halaman Kamad ----------
+function kamadImportModalHTML(jumlahData) {
+  return `
+    <div class="modal fade" id="kamadImportModal" tabindex="-1">
+      <div class="modal-dialog modal-dialog-centered modal-dialog-scrollable">
+        <div class="modal-content">
+          <div class="modal-header">
+            <h5 class="modal-title"><i class="bi bi-file-earmark-arrow-up"></i> Import Data dari Excel</h5>
+            <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+          </div>
+          <div class="modal-body">
+            <div class="alert alert-info py-2 mb-3 text-tiny">
+              <i class="bi bi-info-circle"></i> Belum punya berkasnya? Klik <strong>Template Excel</strong> untuk mengunduh
+              contoh format, isi datanya, lalu unggah kembali di sini.
+            </div>
+
+            <div class="mb-3">
+              <label class="form-label">Berkas Excel <span class="text-danger">*</span></label>
+              <input type="file" class="form-control form-control-sm" id="kamadImportFile" accept=".xlsx,.xlsm,.xls">
+              <div class="form-text text-tiny">Format didukung: <code>.xlsx</code> / <code>.xlsm</code>. Sheet pertama akan dibaca.</div>
+            </div>
+
+            <div class="mb-3">
+              <label class="form-label">Cara menangani data yang sudah ada</label>
+              <select class="form-select form-select-sm" id="kamadImportMode">
+                <option value="create">Tambah baru saja (lewati duplikat)</option>
+                <option value="update">Tambah baru + perbarui yang sudah ada</option>
+              </select>
+              <div class="form-text text-tiny">
+                Pencocokan memakai <strong>NIP</strong>; bila NIP kosong dipakai <strong>Nama + Madrasah</strong>.
+              </div>
+            </div>
+
+            <div id="kamadImportResult"></div>
+          </div>
+          <div class="modal-footer">
+            <button type="button" class="btn btn-light btn-sm" data-bs-dismiss="modal">Tutup</button>
+            <button type="button" class="btn btn-primary btn-sm" id="btnRunImportKamad">
+              <i class="bi bi-upload"></i> Proses Import
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>`;
+}
+
+function wireKamadImport() {
+  const modalEl = $('#kamadImportModal');
+  if (!modalEl) return;
+  const modal = new bootstrap.Modal(modalEl);
+
+  $('#btnTemplateKamad')?.addEventListener('click', async (ev) => {
+    const btn = ev.currentTarget;
+    btn.disabled = true;
+    try { await window.PKKMTools.downloadTemplateKamad(); toast('Template Excel diunduh.'); }
+    catch (e) { toast('Gagal mengunduh template: ' + e.message, 'error'); }
+    finally { btn.disabled = false; }
+  });
+
+  $('#btnOpenImportKamad')?.addEventListener('click', () => {
+    $('#kamadImportFile').value = '';
+    $('#kamadImportResult').innerHTML = '';
+    modal.show();
+  });
+
+  $('#btnRunImportKamad')?.addEventListener('click', async (ev) => {
+    const btn = ev.currentTarget;
+    const file = $('#kamadImportFile').files[0];
+    const out = $('#kamadImportResult');
+    if (!file) { out.innerHTML = `<div class="alert alert-warning py-2 mb-0 text-tiny">Pilih berkas Excel terlebih dahulu.</div>`; return; }
+
+    btn.disabled = true;
+    out.innerHTML = `<div class="text-muted text-tiny"><i class="bi bi-arrow-repeat"></i> Memproses berkas...</div>`;
+    try {
+      const rows = await window.PKKMTools.parseImportKamad(file);
+      if (!rows.length) {
+        out.innerHTML = `<div class="alert alert-warning py-2 mb-0 text-tiny">
+          Tidak ada data terbaca. Pastikan baris judul kolom memuat <strong>Nama</strong>, <strong>NIP</strong>, dan <strong>Madrasah</strong>.
+        </div>`;
+        return;
+      }
+      const mode = $('#kamadImportMode').value;
+      const res = window.PKKMTools.applyImportKamad(rows, { mode });
+      const adaError = res.errors.length > 0;
+      out.innerHTML = `
+        <div class="alert ${adaError ? 'alert-warning' : 'alert-success'} py-2 mb-2 text-tiny">
+          <strong>Selesai.</strong> Data baru: <strong>${res.created}</strong>,
+          diperbarui: <strong>${res.updated}</strong>, dilewati: <strong>${res.skipped}</strong>.
+          ${adaError ? `<div class="text-danger mt-1">${res.errors.length} baris bermasalah.</div>` : ''}
+        </div>
+        ${res.errors.length ? `<details class="text-tiny"><summary class="text-danger" style="cursor:pointer;">Lihat rincian error</summary>
+          <ul class="mb-0 mt-1">${res.errors.slice(0, 15).map(e => `<li>${escapeHTML(e.row?.nama || '(tanpa nama)')}: ${escapeHTML(e.message)}</li>`).join('')}</ul>
+        </details>` : ''}
+      `;
+      toast(`Import selesai: +${res.created} baru, ${res.updated} diperbarui, ${res.skipped} dilewati.`);
+      if (res.created || res.updated) setTimeout(() => { modal.hide(); render(); }, 1400);
+    } catch (e) {
+      out.innerHTML = `<div class="alert alert-danger py-2 mb-0 text-tiny">Gagal memproses: ${escapeHTML(e.message)}</div>`;
+    } finally {
+      btn.disabled = false;
+    }
+  });
+}
 
 // --- Form Kamad (new/edit) -------------------------------------
 route('#/kamad/:id', (root, params) => {
