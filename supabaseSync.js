@@ -10,6 +10,201 @@
   var APP_SLUG = 'pkkm';
   var TIMEOUT_MS = 10000;
 
+  // ===================================================================
+  // === VPS (api.pokjawasjember.com) — PENGGANTI PUSAT LISENSI LAMA ===
+  // ===================================================================
+  // PKKM meng-hash password di browser: sha256(lower(trim(user)) + ':' + pass)
+  // -> sama dengan varian 'sha256_userpass' di VPS. Jadi akun lama bisa
+  // diverifikasi apa adanya, lalu naik ke bcrypt saat login berikutnya.
+  var VPS_URL = 'https://api.pokjawasjember.com';
+  var VPS_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJyb2xlIjoiYW5vbiIsImlzcyI6InN1cGFiYXNlIiwiaWF0IjoxNzkyOTkxMzgyLCJleHAiOjIxMDgzNTEzODJ9.PLdEjj-1BO106pt04M9Xg5Tlx2PuJIiskJRA1P10FlY';
+  var VPS_APP_ID = 'pkkm';
+  var VPS_TOKEN_KEY = 'pkkm_vps_token';
+  var VPS_LATCH_KEY = 'pkkm_vps_users';   // akun yang sudah pernah sukses di VPS
+
+  function vpsGetToken() {
+    try { return localStorage.getItem(VPS_TOKEN_KEY) || ''; } catch (e) { return ''; }
+  }
+  function vpsSaveToken(t) {
+    try { if (t) localStorage.setItem(VPS_TOKEN_KEY, t); } catch (e) {}
+  }
+  function vpsClearToken() {
+    try { localStorage.removeItem(VPS_TOKEN_KEY); } catch (e) {}
+  }
+
+  // === LATCH ANTI-FALLBACK ===
+  // Begitu akun PERNAH sukses login via VPS, akun itu dikunci ke VPS.
+  // Kalau VPS mati, user harus lihat error jujur — bukan diam-diam
+  // dilempar ke server lama yang tidak punya data terbarunya.
+  function vpsLatchedUsers() {
+    try { var r = localStorage.getItem(VPS_LATCH_KEY); return r ? JSON.parse(r) : {}; }
+    catch (e) { return {}; }
+  }
+  function isVpsLatched(username) {
+    var u = String(username || '').trim().toLowerCase();
+    if (!u) return false;
+    return !!vpsLatchedUsers()[u];
+  }
+  function markVpsLatched(username) {
+    var u = String(username || '').trim().toLowerCase();
+    if (!u) return;
+    try {
+      var o = vpsLatchedUsers();
+      if (!o[u]) { o[u] = new Date().toISOString(); localStorage.setItem(VPS_LATCH_KEY, JSON.stringify(o)); }
+    } catch (e) {}
+  }
+  function resetVpsLatch(username) {
+    try {
+      if (!username) { localStorage.removeItem(VPS_LATCH_KEY); return true; }
+      var o = vpsLatchedUsers();
+      delete o[String(username).trim().toLowerCase()];
+      localStorage.setItem(VPS_LATCH_KEY, JSON.stringify(o));
+      return true;
+    } catch (e) { return false; }
+  }
+
+  // Panggil Edge Function VPS. Hasil: { data } | { err:'network' } | { err:'auth' }
+  function vpsPost(path, body, bearer) {
+    var ctrl = new AbortController();
+    var to = setTimeout(function () { ctrl.abort(); }, 15000);
+    return fetch(VPS_URL + path, {
+      method: 'POST',
+      headers: {
+        'apikey': VPS_ANON_KEY,
+        'Authorization': 'Bearer ' + (bearer || VPS_ANON_KEY),
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify(body || {}),
+      signal: ctrl.signal
+    }).then(function (r) {
+      return r.json().then(function (d) { return { status: r.status, data: d }; })
+                     .catch(function () { return { status: r.status, data: null }; });
+    }).then(function (o) {
+      clearTimeout(to);
+      if (o.status === 401) return { err: 'auth', data: o.data };
+      if (o.status >= 400) return { err: 'http', status: o.status, data: o.data };
+      return { data: o.data };
+    }).catch(function (e) {
+      clearTimeout(to);
+      console.warn('[SupabaseSync] VPS', path, 'error:', e.message);
+      return { err: 'network' };
+    });
+  }
+
+  // Login via VPS dengan PASSWORD ASLI -> server bisa upgrade ke bcrypt.
+  function vpsLoginReal(username, password) {
+    return vpsPost('/functions/v1/edusmart-auth/login', {
+      app_id: VPS_APP_ID, username: username, password: password
+    }).then(function (o) {
+      if (o.err) return o;
+      var d = o.data || {};
+      if (!d.ok) return { err: 'auth', data: d };
+      if (d.token) vpsSaveToken(d.token);
+      return { data: d };
+    });
+  }
+
+  // Login via VPS dengan HASH (untuk verifikasi sesi berkala, tanpa password).
+  function vpsLoginHash(username, passwordHash) {
+    return vpsPost('/functions/v1/edusmart-auth/login-hash', {
+      app_id: VPS_APP_ID, username: username, password: passwordHash
+    }).then(function (o) {
+      if (o.err) return o;
+      var d = o.data || {};
+      if (!d.ok) return { err: 'auth', data: d };
+      if (d.token) vpsSaveToken(d.token);
+      return { data: d };
+    });
+  }
+
+  // Aktivasi (daftar akun baru) via VPS dengan hash.
+  function vpsActivateHash(code, username, passwordHash, fullname, madrasah) {
+    return vpsPost('/functions/v1/edusmart-auth/activate-hash', {
+      app_id: VPS_APP_ID, code: code, username: username, password: passwordHash,
+      fullname: fullname || '', madrasah: madrasah || '',
+      hash_algo: 'sha256_userpass'
+    }).then(function (o) {
+      if (o.err) return o;
+      var d = o.data || {};
+      if (!d.ok) return { err: 'auth', data: d };
+      if (d.token) vpsSaveToken(d.token);
+      return { data: d };
+    });
+  }
+
+  function vpsPayloadToResult(d) {
+    return {
+      valid: true,
+      reason: 'ok',
+      fullname: d.fullname || '',
+      madrasah: d.madrasah || '',
+      role: d.role || 'pengawas',
+      tier: d.tier || null,
+      license_code: d.license_code || '',
+      via: 'vps'
+    };
+  }
+
+  // LOGIN CERDAS: VPS dulu, server lama hanya kalau akun BELUM pernah di VPS.
+  // Mengembalikan null -> artinya auth.js boleh memakai jalur lama.
+  async function loginAccountSmart(username, passwordHash, passwordPlain, deviceInfo) {
+    var latched = isVpsLatched(username);
+    var o = null;
+    if (passwordPlain) {
+      o = await vpsLoginReal(username, passwordPlain);
+      // Password asli ditolak VPS: bisa jadi akun belum ada di VPS.
+      // Kalau belum terkunci, coba jalur hash (akun migrasi masih sha256).
+      if (o.err === 'auth' && !latched) o = await vpsLoginHash(username, passwordHash);
+    } else {
+      o = await vpsLoginHash(username, passwordHash);
+    }
+
+    if (o && o.data) {
+      markVpsLatched(username);
+      return vpsPayloadToResult(o.data);
+    }
+
+    // Gagal karena JARINGAN -> jangan hianati akun yang sudah pindah.
+    if (o && (o.err === 'network' || o.err === 'http')) {
+      if (latched) {
+        return {
+          valid: null, reason: 'vps_unreachable', via: 'vps',
+          message: 'Server sedang tidak dapat dihubungi. Data Anda aman di server, silakan coba beberapa saat lagi.'
+        };
+      }
+      return null;
+    }
+
+    // Ditolak tegas (password salah / akun nonaktif).
+    if (o && o.err === 'auth') {
+      if (latched) {
+        return { valid: false, reason: 'invalid_credentials', via: 'vps' };
+      }
+      return null; // biar server lama yang memutuskan (akun belum pindah)
+    }
+
+    return null;
+  }
+
+  // DAFTAR CERDAS: coba VPS dulu, gagal jaringan -> server lama.
+  async function registerAccountSmart(code, username, passwordHash, fullname, madrasah, deviceInfo) {
+    var o = await vpsActivateHash(code, username, passwordHash, fullname, madrasah);
+    if (o && o.data) {
+      markVpsLatched(username);
+      return { success: true, reason: 'claimed', via: 'vps', fullname: o.data.fullname, role: o.data.role };
+    }
+    if (o && o.err === 'auth') {
+      var d = o.data || {};
+      var kode = d.code || '';
+      var peta = {
+        invalid_code: 'invalid_code', code_used: 'code_used',
+        account_exists: 'account_exists', expired: 'invalid_code'
+      };
+      return { success: false, reason: peta[kode] || 'invalid_credentials', message: d.error || '', via: 'vps' };
+    }
+    return null; // jaringan bermasalah -> coba server lama
+  }
+
   function timeoutFetch(url, opts, ms) {
     return Promise.race([
       fetch(url, opts),
@@ -454,6 +649,26 @@
   // Public API
   window.SupabaseSync = {
     // Public
+    VPS_URL: VPS_URL,
+    VPS_ANON_KEY: VPS_ANON_KEY,
+    VPS_APP_ID: VPS_APP_ID,
+    vpsGetToken: vpsGetToken,
+    vpsClearToken: vpsClearToken,
+    loginAccountSmart: loginAccountSmart,
+    registerAccountSmart: registerAccountSmart,
+    isVpsLatched: isVpsLatched,
+    markVpsLatched: markVpsLatched,
+    resetVpsLatch: resetVpsLatch,
+    vpsLatchedUsers: vpsLatchedUsers,
+    backendInfo: function () {
+      return {
+        mode: 'vps-first',
+        vps_url: VPS_URL,
+        app_id: VPS_APP_ID,
+        latched: Object.keys(vpsLatchedUsers()),
+        has_token: !!vpsGetToken()
+      };
+    },
     claimLicense: claimLicense,
     verifyLicense: verifyLicense,
     isOnline: isOnline,

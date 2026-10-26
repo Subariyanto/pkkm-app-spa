@@ -666,6 +666,19 @@
   // Klaim kode aktivasi untuk sebuah akun (1 kode = 1 akun)
   // Return { ok, reason } — reason = pesan siap tampil
   async function registerAccountToServer(code, username, passHash, fullname, madrasah, devId) {
+    // === JALUR CERDAS: daftar akun langsung ke VPS ===
+    if (window.SupabaseSync && typeof window.SupabaseSync.registerAccountSmart === 'function') {
+      let smart = null;
+      try {
+        smart = await window.SupabaseSync.registerAccountSmart(
+          code, username, passHash, fullname, madrasah, navigator.userAgent || '');
+      } catch (e) { smart = null; }
+      if (smart) {
+        if (smart.success === true) return { ok: true, reason: 'claimed', via: 'vps' };
+        return { ok: false, reason: smart.message || accountReasonMsg(smart.reason) };
+      }
+      // jaringan bermasalah -> coba server lama di bawah
+    }
     if (!window.SupabaseSync || typeof window.SupabaseSync.registerAccount !== 'function') {
       return { ok: false, reason: 'Modul sync belum termuat. Refresh halaman.' };
     }
@@ -866,7 +879,33 @@
           (passHash === storedPassHash || fnv1aHash(password) === storedPassHash);
 
         let server = null;
-        if (window.SupabaseSync && typeof window.SupabaseSync.loginAccount === 'function') {
+        // === JALUR CERDAS: VPS dulu (password ASLI -> naik ke bcrypt) ===
+        // Kalau akun ini sudah pernah sukses di VPS, TIDAK boleh fallback
+        // diam-diam ke server lama: server lama tidak punya data terbarunya.
+        var smart = null;
+        if (window.SupabaseSync && typeof window.SupabaseSync.loginAccountSmart === 'function') {
+          try {
+            smart = await window.SupabaseSync.loginAccountSmart(
+              username, passHash, password, navigator.userAgent || '');
+          } catch (e) { smart = null; }
+        }
+
+        // VPS menjawab tegas (akun terkunci / sudah pindah)
+        if (smart) {
+          if (smart.valid === true) {
+            server = smart;
+          } else if (smart.reason === 'vps_unreachable') {
+            errEl.textContent = smart.message ||
+              'Server sedang tidak dapat dihubungi. Data Anda aman di server, silakan coba beberapa saat lagi.';
+            return;
+          } else if (smart.valid === false) {
+            errEl.textContent = 'Username atau Password salah!';
+            return;
+          }
+        }
+
+        // Akun BELUM pernah pindah ke VPS -> pakai jalur lama
+        if (!server && window.SupabaseSync && typeof window.SupabaseSync.loginAccount === 'function') {
           try {
             server = await window.SupabaseSync.loginAccount(username, passHash, navigator.userAgent || '');
           } catch (e) { server = null; }
@@ -882,6 +921,10 @@
             server.madrasah || localStorage.getItem(KEY_USER_MADRASAH) || '',
             serverRole, server.license_code || localStorage.getItem(KEY_ACTIVATION_CODE) || ''
           );
+          // Sinkronkan data dari server setelah login (perangkat baru / akun sama)
+          try {
+            if (window.CloudSyncPkkm && CloudSyncPkkm.afterLogin) CloudSyncPkkm.afterLogin();
+          } catch (e) {}
           doRegularLogin();
           return;
         }

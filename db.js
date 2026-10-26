@@ -30,7 +30,6 @@ function pLoad(key, def) {
 function pSave(key, val) {
   try {
     localStorage.setItem(key, JSON.stringify(val));
-    return true;
   } catch (e) {
     console.error('localStorage save error:', key, e);
     if (e.name === 'QuotaExceededError') {
@@ -38,6 +37,12 @@ function pSave(key, val) {
     }
     return false;
   }
+  // Setiap data kerja yang berubah ikut dikirim ke server (VPS) sebagai cadangan.
+  // Tidak pernah memblokir: kalau offline, masuk antrean dan dikirim nanti.
+  try {
+    if (window.CloudSyncPkkm && CloudSyncPkkm.onSet) CloudSyncPkkm.onSet(key, val);
+  } catch (e) {}
+  return true;
 }
 
 function pNextId(table) {

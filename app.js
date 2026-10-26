@@ -3673,6 +3673,13 @@ $('#appVersionLabel').textContent = `v${APP_VERSION}`;
 if (!location.hash) location.hash = '#/';
 render();
 
+// === Sinkronisasi ke server (VPS) ===
+// Dijalankan setelah render pertama. Memasang badge status, menarik data
+// dari server bila perangkat ini baru, dan mengirim perubahan berikutnya.
+try {
+  if (window.CloudSyncPkkm && CloudSyncPkkm.start) CloudSyncPkkm.start();
+} catch (e) { console.warn('CloudSyncPkkm start gagal:', e && e.message); }
+
 // Service worker register (PWA)
 if ('serviceWorker' in navigator) {
   window.addEventListener('load', () => {
