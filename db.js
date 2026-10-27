@@ -59,6 +59,47 @@ function nowLocal() {
   return `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())} ${pad(d.getHours())}:${pad(d.getMinutes())}:${pad(d.getSeconds())}`;
 }
 
+// === Nama berkas backup =======================================
+// Berkas backup diberi nama madrasah supaya berkas dari madrasah berbeda
+// mudah dibedakan saat dikirim ke ketua pokjawas untuk direkap.
+function slugBerkas(s) {
+  let t = String(s || '');
+  try { t = t.normalize('NFKD').replace(/[\u0300-\u036f]/g, ''); } catch (e) {}
+  t = t.replace(/[\\/:*?"<>|]+/g, ' ')
+       .replace(/['\u2019`]+/g, '')
+       .replace(/\s+/g, '-')
+       .replace(/-{2,}/g, '-')
+       .replace(/^[.\-\s]+|[.\-\s]+$/g, '');
+  if (t.length > 60) t = t.slice(0, 60).replace(/[.\-\s]+$/, '');
+  return t;
+}
+
+function namaMadrasahBackup() {
+  try {
+    const names = [];
+    (pLoad(PKKM_KEYS.kamad, []) || []).forEach(k => {
+      const n = String((k && k.nama_madrasah) || '').trim();
+      if (n && !names.some(x => x.toLowerCase() === n.toLowerCase())) names.push(n);
+    });
+    if (names.length === 1) return names[0];
+    if (names.length > 1) return names[0] + ' dan ' + (names.length - 1) + ' lainnya';
+
+    // Belum ada data kamad: pakai wilayah kerja / madrasah akun
+    const kab = (window.Meta && typeof window.Meta.kab === 'function') ? window.Meta.kab() : '';
+    if (kab) return /^pokjawas/i.test(kab) ? kab : ('Pokjawas ' + kab);
+    const info = (window.PKKMAuth && typeof window.PKKMAuth.getUserInfo === 'function')
+      ? window.PKKMAuth.getUserInfo() : null;
+    if (info && info.madrasah) return info.madrasah;
+  } catch (e) {}
+  return '';
+}
+
+function backupFileName() {
+  const slug = slugBerkas(namaMadrasahBackup());
+  const tgl = nowLocal().slice(0, 10);
+  return 'pkkm_backup' + (slug ? '_' + slug : '') + '_' + tgl + '.json';
+}
+
 // === Kepala Madrasah ===========================================
 const Kamad = {
   list() {
@@ -636,3 +677,6 @@ window.backupAll = backupAll;
 window.restoreAll = restoreAll;
 window.wipeAll = wipeAll;
 window.nowLocal = nowLocal;
+window.backupFileName = backupFileName;
+window.namaMadrasahBackup = namaMadrasahBackup;
+window.slugBerkas = slugBerkas;

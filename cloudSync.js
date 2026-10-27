@@ -263,7 +263,10 @@
       var blob = new Blob([JSON.stringify(bundle, null, 2)], { type: 'application/json' });
       var a = document.createElement('a');
       a.href = URL.createObjectURL(blob);
-      a.download = 'pkkm-backup-' + (username() || 'akun') + '-' + (tag || 'manual') + '.json';
+      a.download = (function () {
+        var slug = (typeof window.slugBerkas === 'function') ? window.slugBerkas(window.namaMadrasahBackup && window.namaMadrasahBackup()) : '';
+        return 'pkkm-backup-' + (slug ? slug + '-' : '') + (username() || 'akun') + '-' + (tag || 'manual') + '.json';
+      })();
       document.body.appendChild(a); a.click();
       setTimeout(function () { URL.revokeObjectURL(a.href); a.remove(); }, 1500);
       return true;
