@@ -126,8 +126,11 @@
   }
 
   // ---------- rencana penggabungan (tanpa menyimpan) ----------
-  function planMerge(entries, mode) {
-    const cur = window.backupAll();
+  // opts.emptyBase = true → gabung berkas-berkas saja (tanpa data perangkat ini),
+  // dipakai menu Backup untuk membuat satu berkas JSON gabungan.
+  function planMerge(entries, mode, opts) {
+    opts = opts || {};
+    const cur = opts.emptyBase ? { data: {} } : window.backupAll();
     const base = JSON.parse(JSON.stringify(cur.data || {}));
     base.kamad = base.kamad || [];
     base.periode = base.periode || [];
@@ -436,7 +439,50 @@
     plan: null,
   };
 
+  // ---------- data server (ketua pokjawas / admin, read-only) ----------
+  const ADMIN_DATA_URL = '/functions/v1/edusmart-auth/admin-data';
+  const isAdminSession = () => !!sessionStorage.getItem('pkkm_admin_key');
+
+  async function fetchServerData() {
+    const S = window.SupabaseSync || {};
+    if (!S.VPS_URL) throw new Error('Alamat server belum dikonfigurasi.');
+    const ctrl = new AbortController();
+    const to = setTimeout(() => ctrl.abort(), 60000);
+    let res;
+    try {
+      res = await fetch(S.VPS_URL.replace(/\/$/, '') + ADMIN_DATA_URL, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', apikey: S.VPS_ANON_KEY },
+        body: JSON.stringify({ admin_key: sessionStorage.getItem('pkkm_admin_key') || '' }),
+        signal: ctrl.signal,
+      });
+    } finally { clearTimeout(to); }
+    const out = await res.json().catch(() => null);
+    if (res.status === 403) throw new Error('Sesi admin tidak valid. Logout lalu login ulang sebagai admin.');
+    if (!out || out.ok !== true) throw new Error((out && out.error) || ('HTTP ' + res.status));
+
+    // Kelompokkan baris per akun pengawas -> satu "berkas" per akun
+    const byUser = {};
+    for (const r of out.rows || []) {
+      const u = r.username;
+      if (!byUser[u]) byUser[u] = { name: r.display_name || u, data: {} };
+      byUser[u].data[r.scope] = r.payload;
+    }
+    const entries = Object.keys(byUser).sort().map((u) => {
+      const x = byUser[u];
+      // Penilai tanpa nama: pakai nama akun supaya filter pengawas berfungsi
+      (x.data.penilaian || []).forEach((p) => {
+        if (!p.penilai_nama && String(p.role || 'pengawas_1').startsWith('pengawas')) p.penilai_nama = x.name;
+      });
+      return { name: x.name + ' (' + u + ')', payload: { schema: 'pkkm_v1', data: x.data } };
+    });
+    const plan = planMerge(entries, 'fill', { emptyBase: true });
+    return { plan, akun: entries.length };
+  }
+
   window.renderRekapKabupaten = function (root) {
+    const viewOn = !!(window.pkkmViewActive && window.pkkmViewActive());
+    const view = window.__PKKM_VIEW || null;
     const periodeList = window.Periode.list();
     const kab = (window.Meta && typeof window.Meta.kab === 'function') ? window.Meta.kab() : 'Jember';
 
@@ -462,6 +508,19 @@
           <button class="btn btn-sm btn-gradient-print" id="rkPrint" ${rows.length ? '' : 'disabled'}><i class="bi bi-printer"></i> Cetak</button>
         </div>
       </div>
+
+      ${isAdminSession() ? `
+      <div class="card mb-3 no-print ${viewOn ? 'border-success' : ''}">
+        <div class="card-body py-2 d-flex flex-wrap align-items-center gap-2">
+          <div class="flex-grow-1 text-tiny">
+            ${viewOn
+              ? `<i class="bi bi-cloud-check text-success"></i> <strong>Mode data server</strong> — menampilkan data ${view.akun} akun pengawas dari VPS (diambil ${esc(view.at)}). Hanya untuk dilihat, tidak disimpan ke perangkat ini.`
+              : `<i class="bi bi-cloud"></i> Ketua pokjawas/admin: ambil data PKKM <strong>semua pengawas</strong> langsung dari server, tanpa perlu kirim file JSON.`}
+          </div>
+          <button class="btn btn-sm btn-success" id="rkServer"><i class="bi bi-cloud-download"></i> ${viewOn ? 'Muat Ulang dari Server' : 'Ambil Data Semua Pengawas dari Server'}</button>
+          ${viewOn ? '<button class="btn btn-sm btn-outline-secondary" id="rkServerOff"><i class="bi bi-x-circle"></i> Kembali ke Data Perangkat</button>' : ''}
+        </div>
+      </div>` : ''}
 
       <div class="print-only text-center mb-3" style="display:none;">
         <div style="font-weight:700; font-size:1.05rem;">REKAP PKKM TINGKAT KABUPATEN/KOTA</div>
@@ -496,7 +555,7 @@
         </div>
       </div>
 
-      <div class="card mb-3 no-print">
+      <div class="card mb-3 no-print" ${viewOn ? 'style="display:none;"' : ''}>
         <div class="card-header">
           <i class="bi bi-collection"></i> Gabung Berkas PKKM dari Pengawas
         </div>
@@ -645,6 +704,30 @@
 
     const btnExport = document.getElementById('rkExport');
     if (btnExport) btnExport.addEventListener('click', () => exportExcel(selected, rows, kab));
+
+    // ---------- data server ----------
+    const btnServer = document.getElementById('rkServer');
+    if (btnServer) btnServer.addEventListener('click', async () => {
+      btnServer.disabled = true;
+      btnServer.innerHTML = '<span class="spinner-border spinner-border-sm"></span> Mengambil data…';
+      try {
+        window.__PKKM_VIEW = null; // planMerge tidak boleh membaca data view lama
+        const r = await fetchServerData();
+        window.__PKKM_VIEW = { data: r.plan.data, akun: r.akun, at: window.nowLocal() };
+        window.toast(r.akun ? `Data ${r.akun} akun pengawas dimuat dari server.` : 'Belum ada data pengawas di server.');
+        window.render();
+      } catch (e) {
+        window.toast('Gagal ambil data server: ' + e.message, 'error');
+        btnServer.disabled = false;
+        btnServer.innerHTML = '<i class="bi bi-cloud-download"></i> Ambil Data Semua Pengawas dari Server';
+      }
+    });
+    const btnServerOff = document.getElementById('rkServerOff');
+    if (btnServerOff) btnServerOff.addEventListener('click', () => {
+      window.__PKKM_VIEW = null;
+      location.hash = '#/rekap-kabupaten';
+      window.render();
+    });
 
     // ---------- gabung berkas ----------
     const inputFiles = document.getElementById('rkFiles');

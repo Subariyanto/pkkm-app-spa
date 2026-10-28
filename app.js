@@ -326,6 +326,9 @@ async function render() {
   const hash = location.hash || '#/';
   const routeHash = hash.split('?')[0];
   const root = $('#appRoot');
+  // Mode data server (read-only) hanya berlaku di Rekap Kabupaten & detail agregat.
+  // Pindah ke halaman lain -> kembali ke data perangkat supaya tidak bingung.
+  if (window.__PKKM_VIEW && !/^#\/(rekap-kabupaten|agregat\/)/.test(routeHash)) window.__PKKM_VIEW = null;
   setActiveNav(routeHash);
   syncAuthUI();
   for (const r of routes) {
@@ -3454,6 +3457,43 @@ route('#/backup', (root) => {
         </div>
       </div>
       <div class="col-12">
+        <div class="card">
+          <div class="card-header"><i class="bi bi-collection"></i> Gabung File JSON</div>
+          <div class="card-body">
+            <p class="text-tiny text-muted mb-2">
+              Untuk pengawas dan ketua pokjawas: pilih beberapa file backup JSON sekaligus (misalnya dari beberapa madrasah
+              atau beberapa pengawas), lalu satukan menjadi <strong>1 file JSON gabungan</strong>.
+              Data dicocokkan berdasarkan <em>NSM madrasah + periode + role penilai</em>, jadi file dari perangkat berbeda tidak saling menimpa.
+            </p>
+            <div class="row g-2 align-items-end">
+              <div class="col-md-6">
+                <label class="form-label text-tiny mb-1" for="gbFiles">File backup (.json) — bisa pilih banyak</label>
+                <input type="file" class="form-control form-control-sm" id="gbFiles" accept=".json,application/json" multiple>
+              </div>
+              <div class="col-md-3">
+                <label class="form-label text-tiny mb-1" for="gbMode">Bila skor berbeda</label>
+                <select class="form-select form-select-sm" id="gbMode">
+                  <option value="fill" selected>Pakai file pertama (aman)</option>
+                  <option value="overwrite">Pakai file terakhir</option>
+                </select>
+              </div>
+              <div class="col-md-3">
+                <button class="btn btn-sm btn-outline-primary w-100" id="gbPreview"><i class="bi bi-search"></i> Pratinjau</button>
+              </div>
+            </div>
+            <div id="gbPreviewBox" class="mt-3" aria-live="polite"></div>
+            <div class="d-flex flex-wrap gap-2 mt-2">
+              <button class="btn btn-primary btn-sm" id="gbDownload" disabled><i class="bi bi-file-earmark-arrow-down"></i> Download JSON Gabungan</button>
+              <button class="btn btn-outline-success btn-sm" id="gbApply" disabled><i class="bi bi-arrow-down-circle"></i> Gabung ke Data Perangkat Ini</button>
+            </div>
+            <div class="text-tiny text-muted mt-2">
+              <strong>Download JSON Gabungan</strong>: hanya menyatukan file yang dipilih, data di perangkat ini tidak berubah. File hasilnya bisa dikirim ke ketua pokjawas atau di-Restore.
+              <strong>Gabung ke Data Perangkat Ini</strong>: file yang dipilih ditambahkan ke data yang sudah ada (tidak menimpa skor yang sudah terisi kecuali memilih "Pakai file terakhir").
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="col-12">
         <div class="card border-danger">
           <div class="card-header bg-danger text-white"><i class="bi bi-exclamation-triangle"></i> Zona Berbahaya</div>
           <div class="card-body">
@@ -3488,6 +3528,107 @@ route('#/backup', (root) => {
       setTimeout(() => navigate('#/'), 600);
     } catch (e) {
       toast('Gagal restore: ' + e.message, 'error');
+    }
+  });
+
+  // --- Gabung file JSON ---
+  const gb = { entries: null, fileOnly: null, toDevice: null };
+  const gbBox = $('#gbPreviewBox');
+  const gbEsc = (s) => String(s == null ? '' : s).replace(/[&<>"']/g, (c) => ({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;' }[c]));
+  const gbReset = () => {
+    gb.entries = gb.fileOnly = gb.toDevice = null;
+    $('#gbDownload').disabled = true;
+    $('#gbApply').disabled = true;
+  };
+  $('#gbFiles').addEventListener('change', () => { gbReset(); gbBox.innerHTML = ''; });
+  $('#gbMode').addEventListener('change', () => { gbReset(); gbBox.innerHTML = ''; });
+
+  $('#gbPreview').addEventListener('click', async () => {
+    gbReset();
+    const M = window.PKKMMerge;
+    if (!M) { toast('Modul gabung belum termuat. Refresh halaman.', 'error'); return; }
+    const files = Array.from($('#gbFiles').files || []);
+    if (files.length < 2) { toast('Pilih minimal 2 file JSON untuk digabung.', 'error'); return; }
+    const entries = [], errors = [];
+    for (const f of files) {
+      try { entries.push(M.readPayload(f.name, await f.text())); }
+      catch (e) { errors.push(e.message); }
+    }
+    if (errors.length) {
+      gbBox.innerHTML = `<div class="alert alert-danger py-2 text-tiny mb-0"><strong>File tidak dapat dibaca:</strong><ul class="mb-0">${errors.map(m => `<li>${gbEsc(m)}</li>`).join('')}</ul></div>`;
+      return;
+    }
+    const mode = $('#gbMode').value;
+    try {
+      gb.entries = entries;
+      gb.fileOnly = M.planMerge(entries, mode, { emptyBase: true });
+      gb.toDevice = M.planMerge(entries, mode);
+    } catch (e) {
+      gbReset();
+      toast('Gagal membaca file: ' + e.message, 'error');
+      return;
+    }
+    const rp = gb.fileOnly.report;
+    const d = gb.fileOnly.data;
+    const mb = (M.planSize(gb.fileOnly) / 1048576).toFixed(2);
+    const dev = gb.toDevice.report;
+    gbBox.innerHTML = `
+      <div class="table-responsive mb-2">
+        <table class="table table-sm table-bordered mb-0">
+          <thead class="table-light"><tr><th>File</th><th>Pengawas</th><th class="text-center">Kamad</th><th class="text-center">Periode</th><th class="text-center">Penilaian</th><th class="text-center">Skor</th><th class="text-center">PKB</th></tr></thead>
+          <tbody>
+            ${rp.files.map(f => `<tr class="text-tiny"><td>${gbEsc(f.name)}</td><td>${gbEsc(f.pengawas || '-')}</td>
+              <td class="text-center">${f.counts.kamad}</td><td class="text-center">${f.counts.periode}</td>
+              <td class="text-center">${f.counts.penilaian}</td><td class="text-center">${f.counts.skor}</td><td class="text-center">${f.counts.pkb || 0}</td></tr>`).join('')}
+            <tr class="fw-semibold table-success"><td colspan="2">Hasil gabungan</td>
+              <td class="text-center">${d.kamad.length}</td><td class="text-center">${d.periode.length}</td>
+              <td class="text-center">${d.penilaian.length}</td><td class="text-center">${d.skor.length}</td><td class="text-center">${d.pkb.length}</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <div class="d-flex flex-wrap gap-2 text-tiny">
+        <span class="badge bg-secondary">ukuran ${mb} MB</span>
+        ${rp.conflicts.length ? `<span class="badge bg-danger">${rp.conflicts.length} skor berbeda antar file (${mode === 'overwrite' ? 'dipakai file terakhir' : 'dipakai file pertama'})</span>` : '<span class="badge bg-success">tidak ada skor yang bentrok</span>'}
+        ${rp.replaced.skor ? `<span class="badge bg-warning text-dark">${rp.replaced.skor} skor diganti file terakhir</span>` : ''}
+      </div>
+      ${rp.warnings.length ? `<div class="alert alert-warning py-2 text-tiny mt-2 mb-0">${rp.warnings.slice(0, 8).map(gbEsc).join('<br>')}${rp.warnings.length > 8 ? '<br>…' : ''}</div>` : ''}
+      <div class="text-tiny text-muted mt-2">Jika digabung ke perangkat ini: +${dev.added.kamad} madrasah, +${dev.added.penilaian} penilaian, +${dev.added.skor} skor baru, ${dev.filled.skor} skor dilengkapi.</div>
+    `;
+    $('#gbDownload').disabled = false;
+    $('#gbApply').disabled = false;
+  });
+
+  $('#gbDownload').addEventListener('click', () => {
+    if (!gb.fileOnly) { toast('Lakukan pratinjau dulu.', 'error'); return; }
+    const payload = {
+      schema: 'pkkm_v1',
+      version: window.PKKM_VERSION,
+      exported_at: nowLocal(),
+      merged_from: gb.fileOnly.report.files.map(f => f.name),
+      data: gb.fileOnly.data,
+    };
+    const blob = new Blob([JSON.stringify(payload, null, 2)], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const kab = (window.Meta && Meta.kab) ? window.slugBerkas(Meta.kab()) : '';
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `pkkm_gabungan_${gb.entries.length}-file${kab ? '_' + kab : ''}_${nowLocal().slice(0,10)}.json`;
+    document.body.appendChild(a); a.click(); a.remove();
+    setTimeout(() => URL.revokeObjectURL(url), 1000);
+    toast('File JSON gabungan diunduh.');
+  });
+
+  $('#gbApply').addEventListener('click', () => {
+    if (!gb.toDevice) { toast('Lakukan pratinjau dulu.', 'error'); return; }
+    const rp = gb.toDevice.report;
+    if (!confirmAction(`Gabungkan ${rp.files.length} file ke data perangkat ini?\n\n+${rp.added.kamad} madrasah, +${rp.added.penilaian} penilaian, +${rp.added.skor} skor.\n\nDisarankan Download Backup JSON dulu.`)) return;
+    try {
+      window.PKKMMerge.applyPlan(gb.toDevice);
+      toast('File berhasil digabung ke data perangkat ini.');
+      gbReset();
+      setTimeout(() => navigate('#/'), 600);
+    } catch (e) {
+      toast('Gagal menggabung: ' + e.message, 'error');
     }
   });
 

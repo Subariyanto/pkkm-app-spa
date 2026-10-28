@@ -17,7 +17,20 @@ const PKKM_KEYS = {
   pkb: 'pkkm_v2_pkb',
 };
 
+// Mode lihat server (read-only): ketua pokjawas/admin melihat data semua
+// pengawas dari VPS tanpa menyimpannya ke browser. Saat aktif, pLoad membaca
+// dari window.__PKKM_VIEW dan pSave ditolak supaya data perangkat aman.
+const PKKM_VIEW_SCOPE = {
+  pkkm_v1_kamad: 'kamad', pkkm_v1_periode: 'periode', pkkm_v1_penilaian: 'penilaian',
+  pkkm_v1_skor: 'skor', pkkm_v1_meta: 'meta', pkkm_v2_pkb: 'pkb',
+};
+function pkkmViewActive() { return !!(window.__PKKM_VIEW && window.__PKKM_VIEW.data); }
+
 function pLoad(key, def) {
+  if (pkkmViewActive() && PKKM_VIEW_SCOPE[key]) {
+    const v = window.__PKKM_VIEW.data[PKKM_VIEW_SCOPE[key]];
+    return v == null ? def : v;
+  }
   try {
     const raw = localStorage.getItem(key);
     return raw ? JSON.parse(raw) : def;
@@ -28,6 +41,10 @@ function pLoad(key, def) {
 }
 
 function pSave(key, val) {
+  if (pkkmViewActive() && PKKM_VIEW_SCOPE[key]) {
+    console.warn('Mode lihat server: perubahan tidak disimpan', key);
+    return false;
+  }
   try {
     localStorage.setItem(key, JSON.stringify(val));
   } catch (e) {
@@ -673,6 +690,7 @@ window.progressPenilaian = progressPenilaian;
 window.statusBadge = statusBadge;
 window.hitungNilaiAgregat = hitungNilaiAgregat;
 window.getBobotRole = getBobotRole;
+window.pkkmViewActive = pkkmViewActive;
 window.backupAll = backupAll;
 window.restoreAll = restoreAll;
 window.wipeAll = wipeAll;
