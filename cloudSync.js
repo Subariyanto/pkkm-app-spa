@@ -237,9 +237,40 @@
   }
 
   // ---------- watcher ----------
+  // Sesi lama (login sebelum sync VPS aktif) belum punya token VPS.
+  // Ambil token otomatis pakai hash password yang tersimpan, supaya
+  // pengawas tidak perlu logout/login ulang agar data masuk server.
+  var _tokTry = 0;
+  function role() {
+    try { return localStorage.getItem('pkkm_v1_user_role') || ''; } catch (e) { return ''; }
+  }
+  function ensureToken() {
+    var s = S();
+    if (token() || !username() || role() === 'admin') return Promise.resolve(!!token());
+    if (!s.vpsLoginHash || Date.now() - _tokTry < 60000) return Promise.resolve(false);
+    _tokTry = Date.now();
+    var h = '';
+    try { h = localStorage.getItem('pkkm_v1_user_password_hash') || ''; } catch (e) {}
+    if (!h) { _status.state = 'need-relogin'; gambarBadge(); return Promise.resolve(false); }
+    return s.vpsLoginHash(username(), h).then(function (o) {
+      if (o && o.data && token()) {
+        if (s.markVpsLatched) s.markVpsLatched(username());
+        _lastUser = '';
+        return true;
+      }
+      if (o && o.err === 'auth') _status.state = 'need-relogin';
+      gambarBadge();
+      return false;
+    });
+  }
+
   function watch() {
     var me = username();
     if (!me) { _lastUser = ''; return; }
+    if (!token() && role() !== 'admin') {
+      ensureToken().then(function (ok) { if (ok) watch(); });
+      return;
+    }
     if (me !== _lastUser) {
       _lastUser = me;
       hydrate().then(function (r) {
@@ -288,6 +319,10 @@
   // ---------- badge status ----------
   function badgeState() {
     if (!username()) return { cls: 'bg-secondary', icon: 'cloud-slash', text: 'Lokal', title: 'Belum login.' };
+    if (role() === 'admin') {
+      return { cls: 'bg-info text-dark', icon: 'cloud', text: 'Admin',
+        title: 'Akun admin/ketua pokjawas: data pengawas dibaca dari server lewat menu Rekap Kab. \u2192 Ambil Data Semua Pengawas dari Server.' };
+    }
     if (_status.state === 'need-relogin') {
       return { cls: 'bg-danger', icon: 'exclamation-triangle', text: 'Perlu login',
         title: 'Sesi server berakhir. Keluar lalu masuk lagi agar data tersimpan ke server.' };

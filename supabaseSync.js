@@ -653,6 +653,7 @@
     VPS_ANON_KEY: VPS_ANON_KEY,
     VPS_APP_ID: VPS_APP_ID,
     vpsGetToken: vpsGetToken,
+    vpsLoginHash: vpsLoginHash,
     vpsClearToken: vpsClearToken,
     loginAccountSmart: loginAccountSmart,
     registerAccountSmart: registerAccountSmart,
