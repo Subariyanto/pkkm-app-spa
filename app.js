@@ -1323,9 +1323,12 @@ route('#/penilaian/:kamadId/:periodeId/:role', (root, params) => {
             <div class="accordion-body p-0">
               ${k.aspek.map((a, ai) => {
                 const ha = hitungNilaiAspek(pen.id, k.code, a.kode);
+                // Mode datar: tiap sub-aspek hanya 1 indikator (instrumen RA) →
+                // header sub-aspek disembunyikan, indikator langsung bernomor 1.1, 1.2, ...
+                const flat = k.aspek.every(x => (x.indikator || []).length === 1);
                 return `
                   <div class="sub-aspek-block border-bottom">
-                    <div class="sub-aspek-header bg-light px-3 py-2">
+                    ${flat ? '' : `<div class="sub-aspek-header bg-light px-3 py-2">
                       <div class="d-flex justify-content-between align-items-center">
                         <div class="flex-grow-1">
                           <strong>${escapeHTML(a.kode)} · ${escapeHTML(a.unsur||'')}</strong>
@@ -1335,7 +1338,7 @@ route('#/penilaian/:kamadId/:periodeId/:role', (root, params) => {
                           <span class="badge bg-secondary">Nilai: ${fmtNilai(ha.nilai)}</span>
                         </span>
                       </div>
-                    </div>
+                    </div>`}
                     ${a.indikator.map(ind => {
                       const id = `${k.code}_${a.kode}_${ind.no}`;
                       const cur = skorMap[id] || {};
@@ -1361,7 +1364,7 @@ route('#/penilaian/:kamadId/:periodeId/:role', (root, params) => {
                         <div class="aspek-row" data-indikator-id="${id}">
                           <div class="flex-grow-1">
                             <div class="d-flex align-items-start gap-2">
-                              <span class="text-muted text-tiny pt-1" style="min-width:24px">${ind.no}.</span>
+                              <span class="text-muted text-tiny pt-1" style="min-width:${flat?'32':'24'}px">${flat ? escapeHTML(a.kode) : ind.no + '.'}</span>
                               <span class="flex-grow-1">
                                 ${escapeHTML(redaksi.indikator||'')}
                                 ${raSkip ? `<div class="text-tiny text-muted mt-1"><i class="bi bi-slash-circle"></i> <em>Tidak wajib untuk jenjang RA — boleh dikosongkan, tidak dihitung dalam nilai.</em></div>` : ''}
