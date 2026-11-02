@@ -89,6 +89,18 @@ function totalMadrasah() {
   return rows.reduce((n, s) => n + (s.madrasah ? s.madrasah.length : 0), 0);
 }
 
+function sessionBlock(s) {
+  const items = s.madrasah || [];
+  return `<section class="session-block">
+    <div class="row session-meta"><span class="jam">${s.Jam ? 'Jam: ' + esc(s.Jam) + ' WIB' : 'Jam belum ditentukan'}</span><span class="badge sm">${items.length} madrasah</span></div>
+    <div class="tempat">Ditempatkan di: <b>${s.Tempat ? esc(s.Tempat) : 'belum ditentukan'}</b></div>
+    ${s.Lokasi ? `<div class="minor">Lokasi: ${mapLink(s.Lokasi)}</div>` : ''}
+    <ol class="school-list">${items.map((m) => `<li><span class="school">${esc(m['Nama Madrasah'])}</span><span class="principal">${esc(m['Nama Kepala Madrasah'])}</span></li>`).join('') || '<li class="minor">Belum ada madrasah</li>'}</ol>
+    ${s.Catatan ? `<div class="minor">Catatan: ${esc(s.Catatan)}</div>` : ''}
+    <div class="actions"><button class="btn" data-edit="${s.id}">Edit</button><button class="btn light" data-share="${s.id}">Salin tautan</button></div>
+  </section>`;
+}
+
 function render() {
   const total = totalMadrasah();
   const terjadwal = rows.filter((s) => s['Tanggal PKKM']).reduce((n, s) => n + (s.madrasah ? s.madrasah.length : 0), 0);
@@ -109,18 +121,24 @@ function render() {
     return;
   }
 
-  $('cards').innerHTML = list.map((s) => {
-    const items = s.madrasah || [];
-    return `<article class="schedule day-card">
-      <div class="row day-heading"><div class="date">${s['Tanggal PKKM'] ? fmt(s['Tanggal PKKM']) : 'Belum ditentukan'}</div><span class="badge">${items.length} madrasah</span></div>
-      <div class="row session-meta"><span class="jam">${s.Jam ? 'Jam: ' + esc(s.Jam) + ' WIB' : 'Jam belum ditentukan'}</span></div>
-      <div class="tempat">Ditempatkan di: <b>${s.Tempat ? esc(s.Tempat) : 'belum ditentukan'}</b></div>
-      ${s.Lokasi ? `<div class="minor">Lokasi: ${mapLink(s.Lokasi)}</div>` : ''}
-      <ol class="school-list">${items.map((m) => `<li><span class="school">${esc(m['Nama Madrasah'])}</span><span class="principal">${esc(m['Nama Kepala Madrasah'])}</span></li>`).join('') || '<li class="minor">Belum ada madrasah</li>'}</ol>
-      ${s.Catatan ? `<div class="minor">${esc(s.Catatan)}</div>` : ''}
-      <div class="actions"><button class="btn" data-edit="${s.id}">Edit</button><button class="btn light" data-share="${s.id}">Salin tautan</button></div>
-    </article>`;
-  }).join('');
+  // satu kartu = satu tanggal, memuat seluruh sesi pada tanggal itu
+  const byDay = list.reduce((m, s) => {
+    const k = s['Tanggal PKKM'] || '_';
+    (m[k] ??= []).push(s);
+    return m;
+  }, {});
+
+  $('cards').innerHTML = Object.entries(byDay)
+    .sort(([a], [b]) => (a === '_' ? 1 : b === '_' ? -1 : a.localeCompare(b)))
+    .map(([day, sessions]) => {
+      sessions.sort((a, b) => String(a.Jam || '').localeCompare(String(b.Jam || '')));
+      const n = sessions.reduce((t, s) => t + (s.madrasah ? s.madrasah.length : 0), 0);
+      return `<article class="schedule day-card">
+        <div class="row day-heading"><div class="date">${day === '_' ? 'Belum ditentukan' : fmt(day)}</div><span class="badge">${n} madrasah</span></div>
+        ${sessions.map(sessionBlock).join('')}
+      </article>`;
+    })
+    .join('');
 
   document.querySelectorAll('[data-edit]').forEach((b) => { b.onclick = () => edit(b.dataset.edit); });
   document.querySelectorAll('[data-share]').forEach((b) => { b.onclick = () => share(b.dataset.share); });
