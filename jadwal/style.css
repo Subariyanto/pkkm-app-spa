@@ -219,3 +219,26 @@ header p{color:#e7d7a8;opacity:1}
   box-shadow:0 5px 0 #3d3009,0 12px 22px #00000026,inset 0 1px 0 #fff}
 .stat:hover{box-shadow:0 7px 0 #3d3009,0 18px 30px #00000033,inset 0 1px 0 #fff}
 .stat b{color:#3d3009}
+
+/* ===== v4: sesi jam berisi banyak madrasah ===== */
+.session-meta{margin:2px 0 4px}
+.session-meta .jam{font-size:12.5px;font-weight:700;color:var(--gold-light);letter-spacing:.2px}
+.tempat{font-size:12.5px;color:#d7e2f5;margin:0 0 6px}
+.tempat b{color:#fff}
+.school-list{margin:8px 0 6px;padding-left:20px;display:grid;gap:7px}
+.school-list li::marker{color:var(--gold);font-weight:800;font-size:12.5px}
+.school-list li{line-height:1.3}
+.school-list .school{display:block;font-size:14px;font-weight:750;margin:0}
+.school-list .principal{display:block;font-size:11.5px;margin:1px 0 0}
+.viewer-list .school{font-size:17px}
+.viewer-list .principal{font-size:13px}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.rows-head{display:flex;justify-content:space-between;align-items:center;gap:8px;margin:14px 0 8px;font-size:13px;color:#53675f}
+.rows{display:grid;gap:8px;max-height:36vh;overflow:auto;padding-right:2px}
+.mrow{display:grid;grid-template-columns:22px 1fr 1fr 34px;gap:6px;align-items:center}
+.mrow-no{font-size:12px;font-weight:700;color:#53675f;text-align:right}
+.mrow input{font:inherit;padding:8px 9px;border:1px solid #cbd5e3;border-radius:8px;background:linear-gradient(#fff,#f8faff);box-shadow:inset 0 2px 3px #102a560a;width:100%}
+.mrow input:focus{outline:2px solid #d9a92870;border-color:var(--gold)}
+.btn.tiny{padding:6px 9px;font-size:12px;border-radius:7px}
+.mrow .btn.tiny{padding:7px 0;text-align:center}
+@media(max-width:600px){.mrow{grid-template-columns:18px 1fr 30px;grid-template-areas:"n nama x" ". kepala ."}.mrow-no{grid-area:n}.m-nama{grid-area:nama}.m-kepala{grid-area:kepala}.mrow [data-drop]{grid-area:x}.grid2{grid-template-columns:1fr}}
