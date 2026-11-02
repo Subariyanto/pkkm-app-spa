@@ -1,6 +1,24 @@
 // sw.js - Service worker for PKKM SPA
 // Strategy: network-first for app code, cache-first for static assets.
-const CACHE_VERSION = 'pkkm-v52-2026-11-02-admin-role-fix';
+const CACHE_VERSION = 'pkkm-v53-2026-11-02-nocache-inti';
+
+// Berkas INTI (kode aplikasi) TIDAK boleh pernah diambil dari cache.
+// Sejarah: service worker sempat menyajikan admin-license.js versi lama
+// berhari-hari walau file di server sudah baru, sehingga perbaikan tidak
+// pernah sampai ke pengguna. Untuk berkas di daftar ini kita selalu
+// langsung ke jaringan dan tidak menyimpan salinan.
+const NO_CACHE = [
+  'index.html',
+  'app.js',
+  'auth.js',
+  'admin-license.js',
+  'supabaseSync.js',
+  'cloudSync.js',
+  'license.js',
+  'db.js',
+  'tools.js',
+  'sw.js',
+];
 
 const NETWORK_FIRST = [
   'index.html',
@@ -68,9 +86,24 @@ function isAppCode(url) {
   return NETWORK_FIRST.some(name => u.pathname.endsWith('/' + name) || u.pathname === '/' || u.pathname.endsWith('pkkm-app-spa/'));
 }
 
+function isNoCache(url) {
+  const u = new URL(url);
+  if (u.origin !== self.location.origin) return false;
+  if (u.pathname === '/' || u.pathname.endsWith('/pkkm-app-spa/')) return true;
+  return NO_CACHE.some(name => u.pathname.endsWith('/' + name) || u.pathname.endsWith(name));
+}
+
 self.addEventListener('fetch', (ev) => {
   const req = ev.request;
   if (req.method !== 'GET') return;
+
+  // --- Berkas inti: selalu jaringan, cache hanya sebagai jaring darurat ---
+  if (isNoCache(req.url)) {
+    ev.respondWith(
+      fetch(req, { cache: 'no-store' }).then(res => res).catch(() => caches.match(req).then(c => c || Response.error()))
+    );
+    return;
+  }
 
   if (isAppCode(req.url)) {
     ev.respondWith(
