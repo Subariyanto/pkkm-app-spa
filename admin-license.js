@@ -49,7 +49,9 @@
   }
 
   function isAdmin() {
-    // Cek via sessionStorage admin key (Tahap 2 admin panel)
+    // Tahap 3 (VPS): sesi admin = token HMAC dari pkkm-api, disimpan di sessionStorage
+    if (window.SupabaseSync && window.SupabaseSync.adminVpsHasSession && window.SupabaseSync.adminVpsHasSession()) return true;
+    // Legacy: admin key Supabase (dihapus saat logout)
     return !!sessionStorage.getItem(ADMIN_KEY_STORAGE);
   }
 
@@ -83,8 +85,9 @@
     var html = '<div class="container py-4" style="max-width:500px">';
     html += '<div class="card shadow-sm"><div class="card-body">';
     html += '<h4 class="card-title mb-3"><i class="bi bi-shield-lock-fill"></i> Admin Login</h4>';
-    html += '<p class="text-muted small">Masukkan Admin Key untuk mengakses panel manajemen kode aktivasi.</p>';
-    html += '<div class="mb-3"><input type="password" id="adminKeyInput" class="form-control" placeholder="Admin Key" autocomplete="off"></div>';
+    html += '<p class="text-muted small">Masuk dengan username &amp; password admin.</p>';
+    html += '<div class="mb-2"><input type="text" id="adminUserInput" class="form-control" placeholder="Username" autocomplete="username"></div>';
+    html += '<div class="mb-3"><input type="password" id="adminKeyInput" class="form-control" placeholder="Password" autocomplete="current-password"></div>';
     html += '<button class="btn btn-primary w-100" id="btnAdminLogin">🔑 Login</button>';
     html += '<div id="loginError" class="text-danger mt-2 small" style="display:none;"></div>';
     html += '</div></div></div>';
@@ -94,32 +97,40 @@
   function bindLogin(root) {
     var btn = root.querySelector('#btnAdminLogin');
     var input = root.querySelector('#adminKeyInput');
+    var userInput = root.querySelector('#adminUserInput');
     var errEl = root.querySelector('#loginError');
 
+    var fail = function (msg) {
+      errEl.textContent = msg;
+      errEl.style.display = '';
+      btn.disabled = false;
+      btn.innerHTML = '🔑 Login';
+    };
+
     var doLogin = async function () {
-      var key = (input.value || '').trim();
-      if (!key) { errEl.textContent = 'Admin Key tidak boleh kosong.'; errEl.style.display = ''; return; }
+      var username = (userInput.value || '').trim();
+      var password = (input.value || '').trim();
+      if (!username || !password) { fail('Username dan password wajib diisi.'); return; }
       btn.disabled = true; btn.textContent = '⏳ Memverifikasi...';
       try {
-        var stats = await window.SupabaseSync.adminGetStats(key);
-        if (stats.success === false) {
-          errEl.textContent = 'Admin Key salah atau koneksi gagal.';
-          errEl.style.display = '';
-          btn.disabled = false; btn.textContent = '🔑 Login';
+        var r = await window.SupabaseSync.adminVpsLogin(username, password);
+        if (!r.success) {
+          var msg = r.reason === 'network_error'
+            ? 'Server tidak dapat dihubungi. Coba beberapa saat lagi.'
+            : 'Username atau password salah.';
+          fail(msg);
           return;
         }
-        // Sukses — simpan key di sessionStorage
-        sessionStorage.setItem(ADMIN_KEY_STORAGE, key);
+        errEl.style.display = 'none';
         await renderPanel(root);
       } catch (e) {
-        errEl.textContent = 'Terjadi kesalahan: ' + e.message;
-        errEl.style.display = '';
-        btn.disabled = false; btn.textContent = '🔑 Login';
+        fail('Terjadi kesalahan: ' + e.message);
       }
     };
 
     btn.addEventListener('click', doLogin);
     input.addEventListener('keypress', function (e) { if (e.key === 'Enter') doLogin(); });
+    userInput.addEventListener('keypress', function (e) { if (e.key === 'Enter') doLogin(); });
   }
 
   async function renderPanel(root) {
@@ -146,7 +157,8 @@
     }
 
     if (!stats || stats.success === false) {
-      // Admin key tidak valid → logout
+      // Sesi admin tidak valid → logout
+      if (window.SupabaseSync && window.SupabaseSync.adminVpsLogout) window.SupabaseSync.adminVpsLogout();
       sessionStorage.removeItem(ADMIN_KEY_STORAGE);
       root.innerHTML = renderLogin(root);
       bindLogin(root);
@@ -341,8 +353,16 @@
 
   function statusBadge(c) {
     if (c.status === 'revoked') return '<span class="badge bg-danger">Dinonaktifkan</span>';
+    if (isInvalidCode(c)) return '<span class="badge bg-warning text-dark">Format Rusak</span>';
     if (c.used_by) return '<span class="badge bg-success">Aktif</span>';
     return '<span class="badge bg-info text-dark">Belum Digunakan</span>';
+  }
+
+  // Kode dianggap rusak bila panjang/format tidak sesuai PKKM-XXXX-XXXX-XXXX (19 char)
+  var CODE_PATTERN = /^PKKM-[A-Z2-9]{4}-[A-Z2-9]{4}-[A-Z2-9]{4}$/;
+  function isInvalidCode(c) {
+    if (c.status === 'invalid') return true;
+    return !CODE_PATTERN.test(String(c.code || ''));
   }
 
   function renderRow(c, num) {
@@ -777,6 +797,7 @@
     var btnLogout = $('#btnAdminLogout');
     if (btnLogout) btnLogout.addEventListener('click', function () {
       if (confirm('Keluar dari panel admin?')) {
+        if (window.SupabaseSync && window.SupabaseSync.adminVpsLogout) window.SupabaseSync.adminVpsLogout();
         sessionStorage.removeItem(ADMIN_KEY_STORAGE);
         if (typeof navigate === 'function') navigate('#/');
         else location.hash = '#/';
@@ -980,6 +1001,15 @@
 
         toast(codes.length + ' kode aktivasi berhasil dibuat.', 'success');
         // Reload data
+        await reloadCodes(document.getElementById('appRoot') || document.body);
+      } else if (r.reason === 'invalid_format') {
+        var badList = (r.badCodes || []).map(function (c) { return '<code>' + esc(c) + '</code>'; }).join(', ');
+        var resultDiv2 = overlay.querySelector('#createResult');
+        resultDiv2.innerHTML = '<div class="alert alert-warning py-2 mb-0"><b>⚠️ Server mengembalikan kode cacat.</b><br>'
+          + '<span class="small">' + badList + '</span><br>'
+          + '<span class="small">Jalankan <code>migration_fix_kode_panjang.sql</code> di Supabase lalu buat ulang kode. Cek menu Aktivasi untuk menandai kode rusak.</span></div>';
+        resultDiv2.style.display = '';
+        toast('Kode yang dihasilkan cacat. Perbaiki generator di Supabase.', 'danger');
         await reloadCodes(document.getElementById('appRoot') || document.body);
       } else {
         toast('Gagal membuat kode: ' + (r.reason || 'unknown'), 'danger');

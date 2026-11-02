@@ -271,19 +271,20 @@
     }
   }
 
-  // Cek koneksi online — gunakan verify_license dengan dummy data (aman, tidak ada side effect)
+  // Cek koneksi online — ping edge function VPS (tanpa efek samping)
   async function isOnline() {
     try {
-      // Pakai admin_get_stats sebagai ping (error jika offline, response jika online)
-      var result = await callRpc('admin_get_stats', { p_admin_key: '__ping__' });
-      // Jika sampai sini berarti server merespon (meskipun key salah)
-      return true;
+      var ctrl = new AbortController();
+      var to = setTimeout(function () { ctrl.abort(); }, TIMEOUT_MS);
+      var res = await fetch(VPS_URL + '/functions/v1/pkkm-api/health', {
+        method: 'GET',
+        headers: { 'apikey': VPS_ANON_KEY, 'Authorization': 'Bearer ' + VPS_ANON_KEY },
+        signal: ctrl.signal,
+      });
+      clearTimeout(to);
+      return res.status < 500;
     } catch (e) {
-      // Network error = offline; RPC error lain = online tapi key salah
-      if (e.message && e.message.indexOf('Timeout') >= 0) return false;
-      if (e.message && e.message.indexOf('Failed to fetch') >= 0) return false;
-      // RPC returned error (bukan network) = online
-      return true;
+      return false;
     }
   }
 
@@ -306,33 +307,88 @@
     }
   }
 
+  // ================================================================
+  // ADMIN KODE AKTIVASI — VPS (api.pokjawasjember.com/functions/v1/pkkm-api)
+  // Menggantikan RPC Supabase. Tidak ada fallback ke server lama:
+  // kalau VPS mati, admin dapat pesan jujur (fail-closed), bukan data basi.
+  // ================================================================
+  var PKKM_API = VPS_URL + '/functions/v1/pkkm-api';
+  var PKKM_ADMIN_TOKEN_KEY = 'pkkm_admin_token';
+
+  function pkkmAdminToken() {
+    try { return sessionStorage.getItem(PKKM_ADMIN_TOKEN_KEY) || ''; } catch (e) { return ''; }
+  }
+  function pkkmSaveAdminToken(t) {
+    try { if (t) sessionStorage.setItem(PKKM_ADMIN_TOKEN_KEY, t); } catch (e) {}
+  }
+  function pkkmClearAdminToken() {
+    try { sessionStorage.removeItem(PKKM_ADMIN_TOKEN_KEY); } catch (e) {}
+  }
+
+  // Panggil pkkm-api. Hasil: { data } | { err:'network'|'auth'|'http', status, data }
+  async function pkkmApi(path, opts) {
+    opts = opts || {};
+    var method = opts.method || 'GET';
+    var headers = { 'apikey': VPS_ANON_KEY, 'Authorization': 'Bearer ' + VPS_ANON_KEY };
+    var tok = pkkmAdminToken();
+    if (tok) headers['X-Admin-Token'] = tok;
+    if (method === 'POST') headers['Content-Type'] = 'application/json';
+
+    var ctrl = new AbortController();
+    var to = setTimeout(function () { ctrl.abort(); }, 20000);
+    try {
+      var res = await fetch(PKKM_API + path, {
+        method: method,
+        headers: headers,
+        body: method === 'POST' ? JSON.stringify(opts.body || {}) : undefined,
+        signal: ctrl.signal,
+      });
+      clearTimeout(to);
+      var data = null;
+      try { data = await res.json(); } catch (e2) { data = null; }
+      if (res.status === 401) { pkkmClearAdminToken(); return { err: 'auth', status: 401, data: data }; }
+      if (res.status >= 400) return { err: 'http', status: res.status, data: data };
+      return { data: data };
+    } catch (e) {
+      clearTimeout(to);
+      console.warn('[SupabaseSync] pkkm-api', path, 'error:', e.message);
+      return { err: 'network' };
+    }
+  }
+
+  function pkkmReason(o) {
+    if (o.err === 'network') return 'network_error';
+    if (o.err === 'auth') return 'session_expired';
+    var d = o.data || {};
+    return d.status || 'server_error';
+  }
+
+  // Login admin PKKM: username/password akun admin (edusmart_legacy.app_admins)
+  async function adminVpsLogin(username, password) {
+    var o = await pkkmApi('/admin-login', { method: 'POST', body: { username: username, password: password } });
+    if (o.data && o.data.ok && o.data.token) {
+      pkkmSaveAdminToken(o.data.token);
+      return { success: true, username: o.data.username, nama: o.data.nama, role: o.data.role };
+    }
+    return { success: false, reason: pkkmReason(o), message: (o.data && o.data.message) || '' };
+  }
+
+  function adminVpsLogout() { pkkmClearAdminToken(); }
+  function adminVpsHasSession() { return !!pkkmAdminToken(); }
+
   // Admin list semua kode (hanya untuk app ini)
   async function adminListCodes(adminKey) {
-    try {
-      var result = await callRpc('admin_list_codes', {
-        p_admin_key: adminKey,
-        p_app_slug: APP_SLUG,
-      });
-      if (result && result.success) return result.codes || [];
-      return [];
-    } catch (e) {
-      console.warn('[SupabaseSync] adminListCodes error:', e.message);
-      return [];
-    }
+    var o = await pkkmApi('/admin/list-codes');
+    if (o.data && o.data.ok) return o.data.data || [];
+    console.warn('[SupabaseSync] adminListCodes gagal:', pkkmReason(o));
+    return [];
   }
 
   // Admin revoke kode
   async function adminRevokeCode(code, adminKey) {
-    try {
-      var result = await callRpc('admin_revoke_code', {
-        p_code: code,
-        p_admin_key: adminKey,
-      });
-      return result;
-    } catch (e) {
-      console.warn('[SupabaseSync] adminRevokeCode error:', e.message);
-      return { success: false, reason: 'network_error' };
-    }
+    var o = await pkkmApi('/admin/revoke-code', { method: 'POST', body: { id: code } });
+    if (o.data && o.data.ok) return { success: true };
+    return { success: false, reason: pkkmReason(o) };
   }
 
   // Admin reset device binding
@@ -349,61 +405,58 @@
     }
   }
 
-  // Admin update recipient
+  // Admin update recipient (catatan kode)
   async function adminUpdateRecipient(code, recipient, adminKey) {
-    try {
-      var result = await callRpc('admin_update_recipient', {
-        p_code: code,
-        p_recipient: recipient,
-        p_admin_key: adminKey,
-      });
-      return result;
-    } catch (e) {
-      console.warn('[SupabaseSync] adminUpdateRecipient error:', e.message);
-      return { success: false, reason: 'network_error' };
-    }
+    var o = await pkkmApi('/admin/edit-code', { method: 'POST', body: { id: code, catatan: recipient } });
+    if (o.data && o.data.ok) return { success: true };
+    return { success: false, reason: pkkmReason(o) };
   }
 
   // Admin reactivate kode
   async function adminReactivateCode(code, adminKey) {
-    try {
-      return await callRpc('admin_reactivate_code', { p_code: code, p_admin_key: adminKey });
-    } catch (e) {
-      console.warn('[SupabaseSync] adminReactivateCode error:', e.message);
-      return { success: false, reason: 'network_error' };
-    }
+    var o = await pkkmApi('/admin/reactivate-code', { method: 'POST', body: { id: code } });
+    if (o.data && o.data.ok) return { success: true };
+    return { success: false, reason: pkkmReason(o) };
   }
 
   // Admin hapus kode yang belum pernah dipakai
   async function adminDeleteUnusedCode(code, adminKey) {
-    try {
-      return await callRpc('admin_delete_unused_code', { p_code: code, p_admin_key: adminKey });
-    } catch (e) {
-      console.warn('[SupabaseSync] adminDeleteUnusedCode error:', e.message);
-      return { success: false, reason: 'network_error' };
-    }
+    var o = await pkkmApi('/admin/delete-code', { method: 'POST', body: { id: code } });
+    if (o.data && o.data.ok) return { success: true, reason: 'deleted' };
+    return { success: false, reason: pkkmReason(o) };
   }
 
-  // Admin hapus kode APA PUN (termasuk yang sudah terpakai) — akses permanen dicabut
+  // Admin hapus kode (VPS: hanya yang belum dipakai — kode terpakai harus dicabut)
   async function adminDeleteCode(code, adminKey) {
-    try {
-      return await callRpc('admin_delete_code', { p_code: code, p_admin_key: adminKey });
-    } catch (e) {
-      console.warn('[SupabaseSync] adminDeleteCode error:', e.message);
-      return { success: false, reason: 'network_error' };
-    }
+    var o = await pkkmApi('/admin/delete-code', { method: 'POST', body: { id: code } });
+    if (o.data && o.data.ok) return { success: true };
+    return { success: false, reason: pkkmReason(o) };
   }
 
   // Admin batch create codes
+  var CODE_PATTERN = /^(PKKM|FULL)-[A-Z2-9]{4}-[A-Z2-9]{4}-[A-Z2-9]{4}$/;
+
   // NOTE: Parameter order di Pusat Lisensi: (p_admin_key, p_count, p_app_slug, p_recipient)
   async function adminBatchCreateCodes(count, recipient, adminKey) {
     try {
-      return await callRpc('admin_batch_create_codes', {
-        p_admin_key: adminKey,
-        p_count: count,
-        p_app_slug: APP_SLUG,
-        p_recipient: recipient || '',
-      });
+      var r = await pkkmApi('/admin/create-codes', { method: 'POST', body: { jumlah: count, catatan: recipient || '' } });
+
+      if (r.data && r.data.ok) {
+        var codes = (r.data.data || []).map(function (x) { return x.code; });
+        // Guard klien: server VPS dijamin 19 karakter, tapi tetap diperiksa
+        var bad = codes.filter(function (c) { return !CODE_PATTERN.test(String(c || '').toUpperCase()); });
+        if (bad.length) {
+          console.warn('[SupabaseSync] kode cacat terdeteksi:', bad);
+          return { success: false, reason: 'invalid_format', codes: codes, badCodes: bad };
+        }
+        return { success: true, codes: codes };
+      }
+      return {
+        success: false,
+        reason: pkkmReason(r),
+        message: (r.data && r.data.message) || '',
+        codes: [],
+      };
     } catch (e) {
       console.warn('[SupabaseSync] adminBatchCreateCodes error:', e.message);
       return { success: false, reason: 'network_error', codes: [] };
@@ -412,22 +465,39 @@
 
   // Admin get stats (hanya untuk app ini)
   async function adminGetStats(adminKey) {
-    try {
-      return await callRpc('admin_get_stats', { p_admin_key: adminKey, p_app_slug: APP_SLUG });
-    } catch (e) {
-      console.warn('[SupabaseSync] adminGetStats error:', e.message);
-      return { success: false, reason: 'network_error' };
+    var o = await pkkmApi('/admin/stats');
+    if (o.data && o.data.ok) {
+      return {
+        success: true,
+        total: o.data.total || 0,
+        unused: o.data.unused || 0,
+        activated: o.data.activated || 0,
+        revoked: o.data.revoked || 0,
+      };
     }
+    return { success: false, reason: pkkmReason(o) };
   }
 
   // Admin get audit log
   async function adminGetAuditLog(adminKey, limit) {
-    try {
-      return await callRpc('admin_get_audit_log', { p_admin_key: adminKey, p_limit: limit || 50, p_app_slug: APP_SLUG });
-    } catch (e) {
-      console.warn('[SupabaseSync] adminGetAuditLog error:', e.message);
-      return { success: false, reason: 'network_error', logs: [] };
+    var o = await pkkmApi('/admin/audit-log?limit=' + encodeURIComponent(limit || 50));
+    if (o.data && o.data.ok) {
+      // Normalkan ke bentuk lama agar UI audit tidak perlu diubah
+      var logs = (o.data.data || []).map(function (l) {
+        var d = l.detail || {};
+        return {
+          id: l.id,
+          action: String(l.action || '').replace(/^pkkm_admin_/, '').toUpperCase(),
+          license_code: (d.codes && d.codes[0]) || d.code || d.from || '-',
+          old_device: d.from || null,
+          new_device: d.to || null,
+          detail: d.catatan || (d.count ? d.count + ' kode' : (d.deleted ? d.deleted + ' kode dihapus' : '')),
+          created_at: l.created_at,
+        };
+      });
+      return { success: true, logs: logs };
     }
+    return { success: false, reason: pkkmReason(o), logs: [] };
   }
 
   // ================================================================
@@ -690,6 +760,9 @@
     adminResetAccountPassword: adminResetAccountPassword,
     // Admin
     adminGenerateCode: adminGenerateCode,
+    adminVpsLogin: adminVpsLogin,
+    adminVpsLogout: adminVpsLogout,
+    adminVpsHasSession: adminVpsHasSession,
     adminListCodes: adminListCodes,
     adminRevokeCode: adminRevokeCode,
     adminResetDevice: adminResetDevice,
