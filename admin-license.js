@@ -49,10 +49,25 @@
   }
 
   function isAdmin() {
-    // Tahap 3 (VPS): sesi admin = token HMAC dari pkkm-api, disimpan di sessionStorage
+    // Cara utama: sesi login APLIKASI dengan role admin (tanpa login kedua).
+    try {
+      if (window.PKKMAuth && typeof window.PKKMAuth.getUserInfo === 'function') {
+        var info = window.PKKMAuth.getUserInfo() || {};
+        if (info.role === 'admin') return true;
+      }
+    } catch (e) { /* lanjut ke pemeriksaan cadangan */ }
+    // Cadangan: sesi admin VPS (token HMAC dari pkkm-api)
     if (window.SupabaseSync && window.SupabaseSync.adminVpsHasSession && window.SupabaseSync.adminVpsHasSession()) return true;
     // Legacy: admin key Supabase (dihapus saat logout)
     return !!sessionStorage.getItem(ADMIN_KEY_STORAGE);
+  }
+
+  // Nama admin yang sedang login di aplikasi (info saja, bukan kunci)
+  function adminName() {
+    try {
+      var info = (window.PKKMAuth && window.PKKMAuth.getUserInfo) ? (window.PKKMAuth.getUserInfo() || {}) : {};
+      return info.fullname || info.username || 'Admin';
+    } catch (e) { return 'Admin'; }
   }
 
   function toast(msg, type) {
@@ -70,67 +85,26 @@
   // RENDER PAGE
   // ================================================================
   async function renderPage(root) {
-    // Guard: cek admin key
+    // Tanpa login kedua: hak akses mengikuti sesi login aplikasi (role admin).
     if (!isAdmin()) {
-      root.innerHTML = renderLogin(root);
-      bindLogin(root);
+      root.innerHTML = renderNoAccess();
       return;
     }
 
-    // Admin sudah login → render panel
     await renderPanel(root);
   }
 
-  function renderLogin(root) {
-    var html = '<div class="container py-4" style="max-width:500px">';
-    html += '<div class="card shadow-sm"><div class="card-body">';
-    html += '<h4 class="card-title mb-3"><i class="bi bi-shield-lock-fill"></i> Admin Login</h4>';
-    html += '<p class="text-muted small">Masuk dengan username &amp; password admin.</p>';
-    html += '<div class="mb-2"><input type="text" id="adminUserInput" class="form-control" placeholder="Username" autocomplete="username"></div>';
-    html += '<div class="mb-3"><input type="password" id="adminKeyInput" class="form-control" placeholder="Password" autocomplete="current-password"></div>';
-    html += '<button class="btn btn-primary w-100" id="btnAdminLogin">🔑 Login</button>';
-    html += '<div id="loginError" class="text-danger mt-2 small" style="display:none;"></div>';
+  // Bukan admin → keterangan singkat, tanpa form login
+  function renderNoAccess() {
+    var html = '<div class="container py-4" style="max-width:520px">';
+    html += '<div class="card shadow-sm"><div class="card-body text-center">';
+    html += '<div style="font-size:2rem;">🔒</div>';
+    html += '<h5 class="mt-2 mb-2">Halaman Khusus Admin</h5>';
+    html += '<p class="text-muted small mb-3">Halaman ini hanya dapat dibuka oleh akun dengan peran <b>admin</b>. '
+         + 'Silakan keluar lalu masuk kembali memakai akun admin aplikasi — tidak ada login tambahan di halaman ini.</p>';
+    html += '<a href="#/" class="btn btn-primary btn-sm"><i class="bi bi-house"></i> Kembali ke Beranda</a>';
     html += '</div></div></div>';
     return html;
-  }
-
-  function bindLogin(root) {
-    var btn = root.querySelector('#btnAdminLogin');
-    var input = root.querySelector('#adminKeyInput');
-    var userInput = root.querySelector('#adminUserInput');
-    var errEl = root.querySelector('#loginError');
-
-    var fail = function (msg) {
-      errEl.textContent = msg;
-      errEl.style.display = '';
-      btn.disabled = false;
-      btn.innerHTML = '🔑 Login';
-    };
-
-    var doLogin = async function () {
-      var username = (userInput.value || '').trim();
-      var password = (input.value || '').trim();
-      if (!username || !password) { fail('Username dan password wajib diisi.'); return; }
-      btn.disabled = true; btn.textContent = '⏳ Memverifikasi...';
-      try {
-        var r = await window.SupabaseSync.adminVpsLogin(username, password);
-        if (!r.success) {
-          var msg = r.reason === 'network_error'
-            ? 'Server tidak dapat dihubungi. Coba beberapa saat lagi.'
-            : 'Username atau password salah.';
-          fail(msg);
-          return;
-        }
-        errEl.style.display = 'none';
-        await renderPanel(root);
-      } catch (e) {
-        fail('Terjadi kesalahan: ' + e.message);
-      }
-    };
-
-    btn.addEventListener('click', doLogin);
-    input.addEventListener('keypress', function (e) { if (e.key === 'Enter') doLogin(); });
-    userInput.addEventListener('keypress', function (e) { if (e.key === 'Enter') doLogin(); });
   }
 
   async function renderPanel(root) {
@@ -157,11 +131,10 @@
     }
 
     if (!stats || stats.success === false) {
-      // Sesi admin tidak valid → logout
+      // Sesi admin tidak valid → bersihkan kredensial cadangan, bukan minta login ulang
       if (window.SupabaseSync && window.SupabaseSync.adminVpsLogout) window.SupabaseSync.adminVpsLogout();
       sessionStorage.removeItem(ADMIN_KEY_STORAGE);
-      root.innerHTML = renderLogin(root);
-      bindLogin(root);
+      root.innerHTML = renderNoAccess();
       return;
     }
 
@@ -170,8 +143,9 @@
     // Header
     html += '<div class="d-flex justify-content-between align-items-center flex-wrap gap-2 mb-3">';
     html += '<div><h4 class="mb-0"><i class="bi bi-shield-lock-fill"></i> Manajemen Lisensi</h4>';
-    html += '<p class="text-muted small mb-0">Kelola kode aktivasi & akun pengguna aplikasi PKKM</p></div>';
-    html += '<button class="btn btn-sm btn-outline-danger" id="btnAdminLogout"><i class="bi bi-box-arrow-right"></i> Keluar Admin</button>';
+    html += '<p class="text-muted small mb-0">Kelola kode aktivasi & akun pengguna aplikasi PKKM'
+         + ' <span class="badge bg-secondary ms-1">Admin: ' + esc(adminName()) + '</span></p></div>';
+    html += '<button class="btn btn-sm btn-outline-secondary" id="btnAdminRefreshTop"><i class="bi bi-arrow-clockwise"></i> Muat Ulang</button>';
     html += '</div>';
 
     // Tab: Kode Aktivasi | Akun
@@ -794,14 +768,13 @@
       renderAccounts();
     });
 
-    var btnLogout = $('#btnAdminLogout');
-    if (btnLogout) btnLogout.addEventListener('click', function () {
-      if (confirm('Keluar dari panel admin?')) {
-        if (window.SupabaseSync && window.SupabaseSync.adminVpsLogout) window.SupabaseSync.adminVpsLogout();
-        sessionStorage.removeItem(ADMIN_KEY_STORAGE);
-        if (typeof navigate === 'function') navigate('#/');
-        else location.hash = '#/';
-      }
+    var btnTopRefresh = $('#btnAdminRefreshTop');
+    if (btnTopRefresh) btnTopRefresh.addEventListener('click', async function () {
+      btnTopRefresh.disabled = true; btnTopRefresh.innerHTML = '<span class="spinner-border spinner-border-sm"></span>';
+      await reloadCodes(root);
+      await reloadAccounts();
+      btnTopRefresh.disabled = false; btnTopRefresh.innerHTML = '<i class="bi bi-arrow-clockwise"></i> Muat Ulang';
+      toast('Data berhasil dimuat ulang.', 'success');
     });
 
     var searchInput = $('#searchInput');
