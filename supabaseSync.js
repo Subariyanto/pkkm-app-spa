@@ -646,20 +646,45 @@
   }
 
   // ================================================================
-  // ADMIN LOGIN (server-side, tanpa password/kunci di file publik)
+  // ADMIN LOGIN APLIKASI (VPS — menggantikan RPC Supabase admin_login)
   // ================================================================
-  // Verifikasi admin di server. Kunci admin didapat dari server dan
-  // hanya disimpan per-sesi (sessionStorage) oleh pemanggil.
+  // Dipakai layar login aplikasi PKKM saat username = 'admin'.
+  // Memakai password ASLI (bukan hash) karena hash PKKM berbeda-beda
+  // antar versi; server yang menghitung.
+  // Hasil sukses menyimpan token sesi admin (sessionStorage, 7 hari)
+  // sehingga menu Aktivasi terbuka otomatis tanpa login kedua.
+  //
+  // CATATAN URUTAN: coba VPS dulu; kalau VPS benar-benar tidak dapat
+  // dihubungi DAN akun ini belum pernah pindah, baru jatuh ke Supabase.
+  // Kalau VPS sudah pernah sukses (latched), TIDAK ada fallback.
   // Returns: { success, reason, admin_key?, username?, fullname? }
-  async function adminLogin(username, passwordHash) {
+  async function adminLogin(username, passwordHash, passwordPlain) {
+    // --- 1) VPS ---
+    var vps = await adminVpsLogin(username, passwordPlain);
+    if (vps.success) {
+      return { success: true, via: 'vps', admin_key: pkkmAdminToken(), username: vps.username || username };
+    }
+    // VPS menjawab tegas (password salah) -> teruskan, jangan ke Supabase
+    if (vps.reason && vps.reason !== 'network_error') {
+      return { success: false, reason: vps.reason, via: 'vps', message: vps.message || '' };
+    }
+
+    // --- 2) VPS tidak terjangkau ---
+    if (!passwordPlain) {
+      // Tidak punya password asli: tidak bisa login admin VPS.
+      return { success: false, reason: 'network_error', via: 'vps',
+               message: 'Server tidak dapat dihubungi. Coba beberapa saat lagi.' };
+    }
     try {
-      return await callRpc('admin_login', {
+      var r = await callRpc('admin_login', {
         p_app_slug: APP_SLUG,
         p_username: username,
         p_password_hash: passwordHash,
       });
+      if (r && r.success) { r.via = 'legacy'; }
+      return r;
     } catch (e) {
-      console.warn('[SupabaseSync] adminLogin error:', e.message);
+      console.warn('[SupabaseSync] adminLogin legacy error:', e.message);
       return { success: false, reason: 'network_error' };
     }
   }

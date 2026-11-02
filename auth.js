@@ -815,7 +815,8 @@
         accountHash(username, password).then(async function (adminHash) {
           var res = null;
           if (window.SupabaseSync && typeof window.SupabaseSync.adminLogin === 'function') {
-            try { res = await window.SupabaseSync.adminLogin(username, adminHash); } catch (e) { res = null; }
+            // VPS dulu (pakai password asli); Supabase hanya bila VPS tak terjangkau
+            try { res = await window.SupabaseSync.adminLogin(username, adminHash, password); } catch (e) { res = null; }
           }
 
           if (res && res.success === true && res.admin_key) {
