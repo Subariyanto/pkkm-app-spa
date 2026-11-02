@@ -979,10 +979,12 @@
             toast('Kode disalin.', 'success');
           });
         });
+        // Salin kode SAJA (tanpa nomor urut) supaya bisa ditempel langsung
+        // ke kolom Excel. Nomor urut tidak disertakan karena kalau ditempel
+        // akan bercampur dengan kolom "NO" yang sudah ada di berkas.
         overlay.querySelector('#btnCopyAll').addEventListener('click', function () {
-          var text = codes.map(function (c, i) { return (i + 1) + '. ' + c; }).join('\n');
-          copyToClipboard(text);
-          toast(codes.length + ' kode disalin ke clipboard.', 'success');
+          copyToClipboard(codes.join('\n'));
+          toast(codes.length + ' kode disalin (siap tempel ke Excel).', 'success');
         });
 
         toast(codes.length + ' kode aktivasi berhasil dibuat.', 'success');
