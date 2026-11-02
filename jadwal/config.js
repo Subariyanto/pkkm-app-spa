@@ -1,1 +1,1 @@
-window.PKKM_SUPABASE_URL='https://rnprnkeoumnunysvuycv.supabase.co';window.PKKM_SUPABASE_KEY='sb_publishable_bumHx_IMs1auqjuDFpZVcw_YmsvTepm';
+window.PKKM_SUPABASE_URL='https://api.pokjawasjember.com';window.PKKM_SUPABASE_KEY='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJyb2xlIjoiYW5vbiIsImlzcyI6InN1cGFiYXNlIiwiaWF0IjoxNzkyOTkxMzgyLCJleHAiOjIxMDgzNTEzODJ9.PLdEjj-1BO106pt04M9Xg5Tlx2PuJIiskJRA1P10FlY';
