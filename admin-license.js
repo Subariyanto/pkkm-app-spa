@@ -49,11 +49,18 @@
   }
 
   function isAdmin() {
-    // Cara utama: sesi login APLIKASI dengan role admin (tanpa login kedua).
+    // Sumber utama: role dari data akun yang sedang login.
+    // CATATAN: admin-license.js dimuat SEBELUM auth.js, jadi window.PKKMAuth
+    // belum tentu ada saat halaman ini dibuka. Karena itu localStorage dibaca
+    // langsung sebagai jalur utama (sama seperti badge "Admin" di navbar),
+    // baru PKKMAuth dipakai sebagai pelengkap bila sudah tersedia.
+    try {
+      if (String(localStorage.getItem('pkkm_v1_user_role') || '').toLowerCase() === 'admin') return true;
+    } catch (e) { /* lanjut */ }
     try {
       if (window.PKKMAuth && typeof window.PKKMAuth.getUserInfo === 'function') {
         var info = window.PKKMAuth.getUserInfo() || {};
-        if (info.role === 'admin') return true;
+        if (String(info.role || '').toLowerCase() === 'admin') return true;
       }
     } catch (e) { /* lanjut ke pemeriksaan cadangan */ }
     // Cadangan: sesi admin VPS (token HMAC dari pkkm-api)
@@ -65,8 +72,14 @@
   // Nama admin yang sedang login di aplikasi (info saja, bukan kunci)
   function adminName() {
     try {
-      var info = (window.PKKMAuth && window.PKKMAuth.getUserInfo) ? (window.PKKMAuth.getUserInfo() || {}) : {};
-      return info.fullname || info.username || 'Admin';
+      if (window.PKKMAuth && typeof window.PKKMAuth.getUserInfo === 'function') {
+        var info = window.PKKMAuth.getUserInfo() || {};
+        if (info.fullname || info.username) return info.fullname || info.username;
+      }
+    } catch (e) { /* lanjut */ }
+    try {
+      return localStorage.getItem('pkkm_v1_user_fullname')
+          || localStorage.getItem('pkkm_v1_user_username') || 'Admin';
     } catch (e) { return 'Admin'; }
   }
 
