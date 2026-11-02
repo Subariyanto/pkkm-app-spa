@@ -1,6 +1,6 @@
 // sw.js - Service worker for PKKM SPA
 // Strategy: network-first for app code, cache-first for static assets.
-const CACHE_VERSION = 'pkkm-v42-2026-10-29-ra-flat-indikator';
+const CACHE_VERSION = 'pkkm-v43-2026-11-02-jadwal-kepala-emas';
 
 const NETWORK_FIRST = [
   'index.html',
