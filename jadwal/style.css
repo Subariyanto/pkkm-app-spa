@@ -251,3 +251,11 @@ header p{color:#e7d7a8;opacity:1}
 .session-block .session-meta{margin:0 0 3px}
 .badge.sm{font-size:10.5px;padding:3px 8px}
 .day-card .day-heading{border-bottom:1px solid #ffffff22;padding-bottom:10px;margin-bottom:4px}
+
+/* ===== v6: perbaikan warna teks input (sebelumnya putih di atas putih) ===== */
+.modal input,.modal textarea{color:#19243a;background:linear-gradient(#fff,#f8faff);caret-color:#102a56}
+.modal input::placeholder,.modal textarea::placeholder{color:#8b96a8}
+.mrow input{color:#19243a;background:#fff;border:1px solid #c3d0e4}
+.mrow input::placeholder{color:#8b96a8}
+.mrow input:focus{background:#fffdf5;border-color:var(--gold);outline:2px solid #d9a92855}
+.modal label{color:#3c4a60}
