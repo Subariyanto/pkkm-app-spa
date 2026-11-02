@@ -1343,3 +1343,20 @@ body {
   .rk-header-actions .form-select { width: 100%; min-width: 0; max-width: none; }
   .rk-header-actions .btn { width: 100%; }
 }
+
+/* Kolom Aksi: semua tombol ikon dalam SATU baris (rapi, tanpa turun baris) */
+.aksi-baris {
+  display: flex;
+  flex-wrap: nowrap;
+  align-items: center;
+  gap: 4px;
+}
+.aksi-baris .btn {
+  padding: .175rem .35rem;
+  line-height: 1.1;
+  flex: 0 0 auto;
+}
+@media (max-width: 576px) {
+  .aksi-baris { gap: 3px; }
+  .aksi-baris .btn { padding: .15rem .3rem; }
+}

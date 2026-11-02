@@ -485,7 +485,7 @@ route('#/kamad', (root) => {
                   <th>Nama / NIP</th>
                   <th>Madrasah</th>
                   <th width="80">Jenjang</th>
-                  <th width="120">Aksi</th>
+                  <th width="150">Aksi</th>
                 </tr>
               </thead>
               <tbody>
@@ -502,9 +502,11 @@ route('#/kamad', (root) => {
                     </td>
                     <td><span class="badge bg-secondary">${escapeHTML(k.jenjang || '-')}</span></td>
                     <td>
-                      <a href="#/kamad/${k.id}" class="btn btn-sm btn-outline-primary" title="Edit"><i class="bi bi-pencil"></i></a>
-                      <a href="#/riwayat/${k.id}" class="btn btn-sm btn-outline-secondary" title="Riwayat"><i class="bi bi-clock-history"></i></a>
-                      <button class="btn btn-sm btn-outline-danger" data-action="del-kamad" data-id="${k.id}"><i class="bi bi-trash"></i></button>
+                      <div class="aksi-baris">
+                        <a href="#/kamad/${k.id}" class="btn btn-sm btn-outline-primary" title="Edit"><i class="bi bi-pencil"></i></a>
+                        <a href="#/riwayat/${k.id}" class="btn btn-sm btn-outline-secondary" title="Riwayat"><i class="bi bi-clock-history"></i></a>
+                        <button class="btn btn-sm btn-outline-danger" data-action="del-kamad" data-id="${k.id}" title="Hapus"><i class="bi bi-trash"></i></button>
+                      </div>
                     </td>
                   </tr>`).join('')}
               </tbody>

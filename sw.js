@@ -1,6 +1,6 @@
 // sw.js - Service worker for PKKM SPA
 // Strategy: network-first for app code, cache-first for static assets.
-const CACHE_VERSION = 'pkkm-v54-2026-11-02-vps-only-login';
+const CACHE_VERSION = 'pkkm-v55-2026-11-02-aksi-satu-baris';
 
 // Berkas INTI (kode aplikasi) TIDAK boleh pernah diambil dari cache.
 // Sejarah: service worker sempat menyajikan admin-license.js versi lama
