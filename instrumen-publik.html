@@ -1,0 +1,259 @@
+<!doctype html>
+<html lang="id">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Download Instrumen PKKM — Pokjawas Madrasah Kab. Jember</title>
+<meta name="description" content="Unduh instrumen dan formulir penilaian PKKM (MI, MTs, MA, RA) dalam format PDF. Pokjawas Madrasah Kabupaten Jember.">
+<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+<style>
+  :root { --hijau:#166534; --hijau-tua:#14532d; --emas:#f59e0b; }
+  body { background:#f8fafc; font-family:system-ui,-apple-system,"Segoe UI",Roboto,Arial,sans-serif; color:#0f172a; }
+  .topbar { background:linear-gradient(135deg,var(--hijau-tua),var(--hijau)); color:#fff; padding:20px 0; }
+  .topbar h1 { font-size:1.35rem; margin:0; font-weight:700; }
+  .topbar .sub { font-size:.82rem; opacity:.88; }
+  .bagian { background:#fff; border:1px solid #e2e8f0; border-radius:14px; margin-bottom:18px; overflow:hidden; }
+  .bagian > .kepala { padding:13px 18px; border-bottom:1px solid #eef2f7; font-weight:700; font-size:.95rem; background:#fbfdff; }
+  .bagian > .isi { padding:18px; }
+  .tbl { font-size:.9rem; margin:0; }
+  .tbl thead th { background:#f1f5f9; font-size:.72rem; letter-spacing:.04em; text-transform:uppercase; color:#475569; border-bottom:1px solid #e2e8f0; }
+  .tbl td, .tbl th { vertical-align:middle; padding:11px 10px; }
+  .badge-j { background:#dcfce7; color:#166534; font-weight:700; border-radius:6px; padding:3px 9px; font-size:.78rem; }
+  .kecil { font-size:.78rem; color:#64748b; line-height:1.5; }
+  .footer { text-align:center; padding:22px 12px 34px; font-size:.78rem; color:#94a3b8; }
+  .btn-pdf { font-size:.82rem; }
+  .catatan { background:#fffbeb; border:1px solid #fde68a; border-radius:10px; padding:12px 14px; font-size:.82rem; color:#78350f; }
+  @media print { .topbar{background:#fff;color:#000;} .noprint{display:none!important;} }
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <div class="container">
+    <h1>Download Instrumen PKKM</h1>
+    <div class="sub">Pokjawas Madrasah Kabupaten Jember &middot; Penilaian Kinerja Kepala Madrasah</div>
+  </div>
+</div>
+
+<div class="container py-4">
+
+  <div class="catatan mb-4">
+    <strong>Petunjuk:</strong> pilih jenjang madrasah Anda, lalu unduh PDF yang sesuai.
+    Instrumen <strong>Pengawas</strong> untuk pegangan pengawas, instrumen <strong>Guru/Tendik</strong> untuk responden di madrasah.
+    Kolom skor sengaja dikosongkan agar dapat dicentang saat penilaian di lapangan.
+  </div>
+
+  <!-- ============ Formulir penilaian manual ============ -->
+  <div class="bagian noprint">
+    <div class="kepala">Formulir Penilaian Manual (untuk dicentang)</div>
+    <div class="isi">
+      <p class="kecil mb-3">
+        Cetak formulir ini untuk penilaian di lapangan. Pengawas memberi <strong>tanda centang (&check;)</strong>
+        pada kotak skor 1 / 2 / 3 / 4, lalu hasilnya diinput ke aplikasi PKKM. Kolom skor <strong>sengaja dikosongkan</strong>.
+      </p>
+      <form id="frmFormulir" class="row g-2 align-items-end">
+        <div class="col-md-3 col-6">
+          <label class="form-label kecil mb-1">Jenjang</label>
+          <select class="form-select form-select-sm" name="jenjang" id="selJenjang"></select>
+        </div>
+        <div class="col-md-3 col-6">
+          <label class="form-label kecil mb-1">Penilai</label>
+          <select class="form-select form-select-sm" name="role_code" id="selRole"></select>
+        </div>
+        <div class="col-md-3">
+          <label class="form-label kecil mb-1">Nama Penilai</label>
+          <input type="text" class="form-control form-control-sm" name="penilai_nama" placeholder="Nama lengkap penilai">
+        </div>
+        <div class="col-md-3">
+          <label class="form-label kecil mb-1">NIP / NIY / NIK Penilai</label>
+          <input type="text" class="form-control form-control-sm" name="penilai_nip" placeholder="Opsional">
+        </div>
+        <div class="col-md-6">
+          <label class="form-label kecil mb-1">Nama Kepala Madrasah <span class="text-muted">(opsional)</span></label>
+          <input type="text" class="form-control form-control-sm" name="kamad_nama" placeholder="Diisi bila sudah diketahui">
+        </div>
+        <div class="col-md-6">
+          <label class="form-label kecil mb-1">Nama Madrasah <span class="text-muted">(opsional)</span></label>
+          <input type="text" class="form-control form-control-sm" name="kamad_madrasah" placeholder="Contoh: MI Al Badri">
+        </div>
+        <div class="col-12">
+          <div class="form-check form-check-inline">
+            <input class="form-check-input" type="checkbox" id="chkCatatan" name="withNotes">
+            <label class="form-check-label kecil" for="chkCatatan">Sertakan catatan kecil: data yang diharapkan &amp; fokus penggalian</label>
+          </div>
+        </div>
+        <div class="col-12 mt-2">
+          <button type="submit" class="btn btn-success btn-sm">
+            <i class="bi bi-download"></i> Download Formulir Penilaian
+          </button>
+          <span id="statusFormulir" class="kecil ms-2"></span>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- ============ Instrumen lengkap ============ -->
+  <div class="bagian">
+    <div class="kepala">Instrumen Lengkap (indikator + data + bukti + rubrik)</div>
+    <div class="isi p-0">
+      <div class="table-responsive">
+        <table class="table tbl mb-0">
+          <thead>
+            <tr>
+              <th width="150">Jenjang</th>
+              <th class="d-none d-md-table-cell">Instrumen Pengawas</th>
+              <th class="d-none d-md-table-cell">Instrumen Guru/Tendik</th>
+              <th class="text-end" width="270">Unduh PDF</th>
+            </tr>
+          </thead>
+          <tbody id="tbodyJenjang"></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <div class="kecil mt-3">
+    Butuh aplikasi lengkapnya? Buka
+    <a href="https://pkkm.pokjawasjember.com">pkkm.pokjawasjember.com</a> (khusus pengawas &amp; operator madrasah).
+  </div>
+</div>
+
+<div class="footer">
+  Aplikasi PKKM &middot; Pokjawas Madrasah Kabupaten Jember &middot;
+  Dibuat oleh Subariyanto, S.Pd., M.Pd.I.
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/jspdf@2.5.2/dist/jspdf.umd.min.js"></script>
+<script src="instrumen.js"></script>
+<script src="instrumen-ra.js"></script>
+<script src="instrumen-mi-v3.js"></script>
+<script src="instrumen_pdf.js"></script>
+<script>
+(function () {
+  'use strict';
+
+  // --- Stub minimal untuk Meta: halaman publik tidak membaca localStorage aplikasi.
+  // Nilai default hanya untuk kop dokumen; pengguna mengisi identitas lewat form.
+  window.Meta = {
+    _d: { kabupaten_kota: 'Jember', lokasi_ttd: 'Jember' },
+    get: function (k, d) { return (this._d && this._d[k] !== undefined) ? this._d[k] : d; },
+    getAll: function () { return Object.assign({}, this._d); },
+    set: function () {},
+    kab: function () { return this._d.kabupaten_kota || 'Jember'; },
+    bobot: function () {
+      var out = {}, meta = window.PKKM_KOMPONEN_META || window.PKKM_KOMPONEN || [];
+      for (var i = 0; i < meta.length; i++) out[meta[i].code] = meta[i].bobot_default != null ? meta[i].bobot_default : 20;
+      return out;
+    }
+  };
+  // Instruksi hanya berlaku di aplikasi internal; di sini redaksi asli dipakai apa adanya.
+  window.InstrumenOverride = { get: function () { return null; } };
+
+  var JENJANG = window.PKKM_JENJANG || ['MI', 'MTs', 'MA', 'RA'];
+  var ROLES = (window.PKKM_ROLES || []).filter(function (r) { return r.instrumen === 'pengawas' || r.group === 'gtk'; });
+
+  function esc(s) { return String(s == null ? '' : s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;'); }
+
+  // --- Isi dropdown
+  var selJ = document.getElementById('selJenjang');
+  selJ.innerHTML = JENJANG.map(function (j) { return '<option value="' + j + '">' + j + '</option>'; }).join('');
+
+  var selR = document.getElementById('selRole');
+  selR.innerHTML = (window.PKKM_ROLES || []).map(function (r) {
+    return '<option value="' + r.code + '">' + esc(r.label) + '</option>';
+  }).join('');
+
+  // --- Tabel per jenjang
+  var tbody = document.getElementById('tbodyJenjang');
+  tbody.innerHTML = JENJANG.map(function (j) {
+    var c = window.InstrumenPDF ? window.InstrumenPDF.countsFor(j, null) : { aspek: '-', indikator: '-' };
+    var cg = window.InstrumenPDF ? window.InstrumenPDF.countsFor(j, 'gtk') : { indikator: '-' };
+    var label = (window.InstrumenPDF && window.InstrumenPDF.JENJANG_LABEL[j]) || j;
+    return '<tr>' +
+      '<td><span class="badge-j">' + j + '</span><div class="kecil mt-1">' + esc(label) + '</div></td>' +
+      '<td class="kecil d-none d-md-table-cell">' + c.aspek + ' sub-aspek<br>' + c.indikator + ' indikator</td>' +
+      '<td class="kecil d-none d-md-table-cell">' + cg.indikator + ' indikator</td>' +
+      '<td class="text-end">' +
+        '<button class="btn btn-sm btn-outline-success btn-pdf me-1" data-j="' + j + '" data-role="">' +
+          'Pengawas</button>' +
+        '<button class="btn btn-sm btn-outline-primary btn-pdf" data-j="' + j + '" data-role="gtk">' +
+          'Guru/Tendik</button>' +
+      '</td>' +
+    '</tr>';
+  }).join('');
+
+  function setStatus(el, msg, ok) {
+    el.textContent = msg;
+    el.style.color = ok ? '#166534' : '#b91c1c';
+  }
+
+  function unduh(namaFile, fn) {
+    try {
+      fn();
+    } catch (e) {
+      alert('Gagal membuat PDF: ' + (e && e.message ? e.message : e) +
+        '\n\nCoba muat ulang halaman ini (refresh), lalu ulangi.');
+    }
+  }
+
+  // --- Tombol unduh instrumen per jenjang
+  tbody.addEventListener('click', function (ev) {
+    var btn = ev.target.closest('.btn-pdf');
+    if (!btn) return;
+    if (!window.InstrumenPDF) { alert('Modul PDF belum termuat. Muat ulang halaman ini.'); return; }
+    var j = btn.dataset.j;
+    var role = btn.dataset.role || null;
+    var lama = btn.innerHTML;
+    btn.disabled = true;
+    btn.innerHTML = 'Menyiapkan...';
+    setTimeout(function () {
+      unduh('instrumen-' + j, function () {
+        window.InstrumenPDF.download(j, { role: role, mode: 'instrumen' });
+      });
+      btn.disabled = false;
+      btn.innerHTML = lama;
+    }, 30);
+  });
+
+  // --- Formulir manual
+  document.getElementById('frmFormulir').addEventListener('submit', function (ev) {
+    ev.preventDefault();
+    var st = document.getElementById('statusFormulir');
+    if (!window.InstrumenPDF) { setStatus(st, 'Modul PDF belum termuat. Muat ulang halaman.', false); return; }
+    var fd = new FormData(ev.target);
+    var jenjang = fd.get('jenjang');
+    var roleCode = fd.get('role_code');
+    var info = (window.PKKM_ROLES || []).filter(function (r) { return r.code === roleCode; })[0] || {};
+    var nama = (fd.get('penilai_nama') || '').trim();
+    var nip = (fd.get('penilai_nip') || '').trim();
+
+    var identity = {
+      role_code: roleCode,
+      role_label: info.label || '',
+      penilai_nama: nama,
+      penilai_nip: nip,
+      penilai_jabatan: info.label || 'Pengawas Madrasah',
+      kamad_nama: (fd.get('kamad_nama') || '').trim(),
+      kamad_nip: '',
+      kamad_madrasah: (fd.get('kamad_madrasah') || '').trim(),
+      kamad_nsm: '',
+      periode: ''
+    };
+
+    setStatus(st, 'Menyiapkan PDF...', true);
+    setTimeout(function () {
+      unduh('formulir', function () {
+        window.InstrumenPDF.download(jenjang, {
+          role: info.instrumen || null,
+          mode: 'formulir',
+          identity: identity,
+          withNotes: !!fd.get('withNotes')
+        });
+        setStatus(st, 'PDF sedang diunduh.', true);
+      });
+    }, 30);
+  });
+})();
+</script>
+</body>
+</html>
