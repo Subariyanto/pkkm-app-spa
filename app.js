@@ -3369,17 +3369,29 @@ route('#/rekap-tahunan', (root) => {
     return null;
   }
 
-  const tahunData = TAHUN_CODES.map((tcode, idx) => {
-    // Prioritas: period e dengan type persis tcode
-    let entry = terisi.find(({ p }) => p.type === tcode) || null;
-    // Fallback: ambil period e terisi ke-(idx+1) yang belum terpakai oleh slot lain
-    if (!entry) {
-      const dipakai = TAHUN_CODES.slice(0, idx)
-        .map(tc => terisi.find(({ p }) => p.type === tc))
-        .filter(Boolean).map(x => x.p.id);
-      entry = terisi.filter(x => !dipakai.includes(x.p.id))[0] || null;
-    }
+  // Pemetaan slot: tiap periode terisi HANYA dipakai satu kali.
+  // Pass 1 — periode yang typenya persis tahun_1..tahun_4 menempati slotnya.
+  // Pass 2 — sisanya (sumatif/formatif/2026 dll) mengisi slot kosong secara
+  // berurutan sesuai kronologi, sehingga tidak ada periode yang tampil berulang
+  // di beberapa slot sekaligus.
+  const slotAssignment = new Array(TAHUN_CODES.length).fill(null);
+  const sudahDipakai = new Set();
 
+  TAHUN_CODES.forEach((tcode, idx) => {
+    const exact = terisi.find(e => e.p.type === tcode && !sudahDipakai.has(e.p.id));
+    if (exact) { slotAssignment[idx] = exact; sudahDipakai.add(exact.p.id); }
+  });
+
+  for (const entry of terisi) {
+    if (sudahDipakai.has(entry.p.id)) continue;
+    const kosong = slotAssignment.findIndex(x => x === null);
+    if (kosong < 0) break;
+    slotAssignment[kosong] = entry;
+    sudahDipakai.add(entry.p.id);
+  }
+
+  const tahunData = TAHUN_CODES.map((tcode, idx) => {
+    const entry = slotAssignment[idx];
     let nilai = null, periode = null, agg = null, pemilik = null;
     if (entry) {
       nilai = nilaiPeriod(entry);
