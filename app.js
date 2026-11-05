@@ -3299,23 +3299,49 @@ route('#/rekap-tahunan', (root) => {
   const kamad = Kamad.get(selKid);
   if (!kamad) { root.innerHTML = '<div class="alert alert-warning">Kamad tidak ditemukan.</div>'; return; }
 
-  // Cari periode tahun_1..tahun_4 yang punya penilaian utk kamad ini
+  // Cari periode tahun_1..tahun_4 yang punya penilaian utk kamad ini.
+  // Period e yang punya penilaian pada kamad ini dipetakan ke slot tahun
+  // berdasarkan (a) type tahun_1..tahun_4 bila ada, atau (b) urutan tahun
+  // penilaian kamad tersebut (tahun ke-1, ke-2, ...), sehingga period e
+  // bertipe sumatif/formatif (mis. "Sumatif 2026") juga ikut terhitung.
   const allPeriode = Periode.list();
-  const tahunData = ['tahun_1', 'tahun_2', 'tahun_3', 'tahun_4'].map(tcode => {
-    const periodes = allPeriode.filter(p => p.type === tcode);
+  const TAHUN_CODES = ['tahun_1', 'tahun_2', 'tahun_3', 'tahun_4'];
+
+  // Kumpulkan semua period e yang punya penilaian untuk kamad ini
+  const perKode = {};
+  for (const p of allPeriode) {
+    const sessions = Penilaian.forKamadPeriode(kamad.id, p.id);
+    if (!sessions.length) continue;
+    perKode[p.id] = { p, sessions };
+  }
+
+  // Urutkan secara kronologis (tahun, lalu semester)
+  const terisi = Object.values(perKode).sort((a, b) => {
+    if ((a.p.tahun || 0) !== (b.p.tahun || 0)) return (a.p.tahun || 0) - (b.p.tahun || 0);
+    return String(a.p.semester || '1').localeCompare(String(b.p.semester || '1'));
+  });
+
+  const tahunData = TAHUN_CODES.map((tcode, idx) => {
+    // Prioritas: period e dengan type persis tcode
+    let entry = terisi.find(({ p }) => p.type === tcode) || null;
+    // Fallback: ambil period e terisi ke-(idx+1) yang belum terpakai oleh slot lain
+    if (!entry) {
+      const dipakai = TAHUN_CODES.slice(0, idx)
+        .map(tc => terisi.find(({ p }) => p.type === tc))
+        .filter(Boolean).map(x => x.p.id);
+      entry = terisi.filter(x => !dipakai.includes(x.p.id))[0] || null;
+    }
+
     let nilai = null, periode = null, agg = null;
-    for (const p of periodes) {
-      const sessions = Penilaian.forKamadPeriode(kamad.id, p.id);
-      if (!sessions.length) continue;
-      // Pakai periode terbaru kalau ada >1 untuk tahun yg sama
+    if (entry) {
+      const sessions = entry.sessions;
       if (sessions.length > 1) {
-        agg = hitungNilaiAgregat(kamad.id, p.id);
+        agg = hitungNilaiAgregat(kamad.id, entry.p.id);
         nilai = agg.nilaiAgregat;
       } else {
         nilai = hitungNilaiAkhir(sessions[0].id).nilaiAkhir;
       }
-      periode = p;
-      break;
+      periode = entry.p;
     }
     return { code: tcode, label: window.PKKM_PERIODE_TYPES.find(x => x.code === tcode)?.label || tcode, nilai, periode, agg };
   });
@@ -3396,6 +3422,7 @@ route('#/rekap-tahunan', (root) => {
                 const vals = tahunData.map(t => {
                   if (!t.periode) return null;
                   const sessions = Penilaian.forKamadPeriode(kamad.id, t.periode.id);
+                  // sessions dipakai di bawah untuk agregasi multi-penilai
                   if (!sessions.length) return null;
                   if (sessions.length > 1) {
                     const v = sessions.map(s => hitungNilaiKomponen(s.id, km.code).nilai);
