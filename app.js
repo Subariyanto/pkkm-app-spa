@@ -277,16 +277,16 @@ function setActiveNav(hash) {
 function syncAuthUI() {
   const btn = document.getElementById('btnNavLogout');
   if (!btn) return;
-  const loggedIn = (window.PKKMAuth && typeof window.PKKMAuth.isLoggedIn === 'function')
-    ? window.PKKMAuth.isLoggedIn()
+  const loggedIn = (window.PKKMuth && typeof window.PKKMuth.isLoggedIn === 'function')
+    ? window.PKKMuth.isLoggedIn()
     : (sessionStorage.getItem('pkkm_v1_logged_in') === 'true');
   btn.style.display = loggedIn ? '' : 'none';
   if (loggedIn && !btn.dataset.bound) {
     btn.dataset.bound = '1';
     btn.addEventListener('click', function () {
       if (confirm('Apakah Anda yakin ingin keluar dari aplikasi?')) {
-        if (window.PKKMAuth && typeof window.PKKMAuth.logout === 'function') {
-          window.PKKMAuth.logout();
+        if (window.PKKMuth && typeof window.PKKMuth.logout === 'function') {
+          window.PKKMuth.logout();
         }
       }
     });
@@ -424,9 +424,9 @@ route('#/', (root) => {
               <a href="#/import" class="dash-quick-btn"><i class="bi bi-file-earmark-arrow-up"></i> Import Excel + PKG</a>
               <a href="#/penilaian" class="dash-quick-btn"><i class="bi bi-clipboard-data"></i> Mulai / Lanjutkan Penilaian</a>
               <a href="#/rekap" class="dash-quick-btn"><i class="bi bi-bar-chart"></i> Lihat Rekap Nilai</a>
-              <a href="#/rekap-kkma" class="dash-quick-btn"><i class="bi bi-diagram-3"></i> Rekap per KKMA</a>
+              <a href="#/rekap-kkma" class="dash-quick-btn"><i class="bi bi-diagram-3"></i> Rekap per KKM</a>
               <a href="#/cetak" class="dash-quick-btn"><i class="bi bi-printer"></i> Cetak Laporan</a>
-              <a href="#/laporan-lengkap" class="dash-quick-btn btn-success-soft"><i class="bi bi-file-earmark-richtext"></i> Laporan Lengkap (KKMA)</a>
+              <a href="#/laporan-lengkap" class="dash-quick-btn btn-success-soft"><i class="bi bi-file-earmark-richtext"></i> Laporan Lengkap (KKM)</a>
               <a href="#/backup" class="dash-quick-btn btn-secondary-soft"><i class="bi bi-cloud-arrow-down"></i> Backup / Restore</a>
             </div>
           </div>
@@ -676,8 +676,8 @@ route('#/kamad/:id', (root, params) => {
             <input class="form-control" name="nsm" value="${escapeHTML(k.nsm||'')}">
           </div>
           <div class="col-md-6">
-            <label class="form-label">KKMA / Wilayah Binaan</label>
-            <input class="form-control" name="kkma" value="${escapeHTML(k.kkma||'')}" placeholder="contoh: KKMA 04 Sukowono">
+            <label class="form-label">KKM / Wilayah Binaan</label>
+            <input class="form-control" name="kkma" value="${escapeHTML(k.kkma||'')}" placeholder="contoh: KKM 04 Sukowono">
           </div>
           <div class="col-12">
             <label class="form-label">Alamat Madrasah</label>
@@ -1087,7 +1087,7 @@ function generateCatatanRekomendasi(penilaian_id, kamad, periode) {
   } else {
     rekomendasi += `1. Pengembangan kompetensi manajerial dan kepemimpinan.\n2. Peningkatan kualitas supervisi guru dan tenaga kependidikan.\n3. Inovasi dalam pengelolaan madrasah.\n`;
   }
-  rekomendasi += `\nDirekomendasikan mengikuti kegiatan PKB (Pengembangan Keprofesian Berkelanjutan) sesuai prioritas yang telah ditetapkan, serta aktif dalam forum KKMA/MGMP untuk pertukaran praktik baik.`;
+  rekomendasi += `\nDirekomendasikan mengikuti kegiatan PKB (Pengembangan Keprofesian Berkelanjutan) sesuai prioritas yang telah ditetapkan, serta aktif dalam forum KKM/MGMP untuk pertukaran praktik baik.`;
 
   return { catatan, rekomendasi };
 }
@@ -1911,7 +1911,7 @@ route('#/cetak/:id', (root, params) => {
     <div class="d-flex justify-content-between align-items-center mb-3 no-print">
       <a href="#/cetak" class="btn btn-sm btn-outline-secondary"><i class="bi bi-arrow-left"></i> Kembali</a>
       <div class="d-flex gap-2">
-        <a href="#/laporan-lengkap" class="btn btn-sm btn-success" title="Cetak Laporan Lengkap per KKMA"><i class="bi bi-file-earmark-richtext"></i> Laporan Lengkap (per KKMA)</a>
+        <a href="#/laporan-lengkap" class="btn btn-sm btn-success" title="Cetak Laporan Lengkap per KKM"><i class="bi bi-file-earmark-richtext"></i> Laporan Lengkap (per KKM)</a>
         <button class="btn btn-sm btn-primary" onclick="window.print()"><i class="bi bi-printer"></i> Cetak / Save PDF</button>
       </div>
     </div>
@@ -2057,7 +2057,7 @@ route('#/cetak/:id', (root, params) => {
   }
 });
 
-// --- Laporan Lengkap KKMA (Cover, Pengesahan, Kata Pengantar, BAB I-V, Lampiran) ---
+// --- Laporan Lengkap KKM (Cover, Pengesahan, Kata Pengantar, BAB I-V, Lampiran) ---
 route('#/laporan-lengkap', (root) => {
   const periodeList = Periode.list();
   const kamadList = Kamad.list();
@@ -2069,7 +2069,7 @@ route('#/laporan-lengkap', (root) => {
   const kkmaArr = [...kkmaSet].sort();
 
   if (kkmaArr.length === 0) {
-    root.innerHTML = `<div class="alert alert-warning">Belum ada Kepala Madrasah dengan field <strong>KKMA</strong> terisi. Silakan lengkapi field KKMA pada data Kepala Madrasah terlebih dahulu di menu <a href="#/kamad">Kepala Madrasah</a>.</div>`;
+    root.innerHTML = `<div class="alert alert-warning">Belum ada Kepala Madrasah dengan field <strong>KKM</strong> terisi. Silakan lengkapi field KKM pada data Kepala Madrasah terlebih dahulu di menu <a href="#/kamad">Kepala Madrasah</a>.</div>`;
     return;
   }
   if (periodeList.length === 0) {
@@ -2078,16 +2078,16 @@ route('#/laporan-lengkap', (root) => {
   }
 
   root.innerHTML = `
-    <div class="page-header"><h5><i class="bi bi-file-earmark-richtext"></i> Cetak Laporan Lengkap PKKM (per KKMA)</h5></div>
+    <div class="page-header"><h5><i class="bi bi-file-earmark-richtext"></i> Cetak Laporan Lengkap PKKM (per KKM)</h5></div>
     <div class="alert alert-info text-tiny">
-      Laporan lengkap dibuat oleh Pengawas Bina dan mencakup seluruh Kepala Madrasah pada satu KKMA dalam satu periode penilaian.
-      Pilih KKMA dan periode di bawah ini.
+      Laporan lengkap dibuat oleh Pengawas Bina dan mencakup seluruh Kepala Madrasah pada satu KKM dalam satu periode penilaian.
+      Pilih KKM dan periode di bawah ini.
     </div>
     <div class="card">
       <div class="card-body">
         <form id="frmLapLengkap" class="row g-2 align-items-end">
           <div class="col-md-6">
-            <label class="form-label">KKMA / Wilayah Binaan</label>
+            <label class="form-label">KKM / Wilayah Binaan</label>
             <select class="form-select" name="kkma" required>
               <option value="">-- pilih --</option>
               ${kkmaArr.map(v => `<option value="${escapeHTML(v)}">${escapeHTML(v)}</option>`).join('')}
@@ -2120,16 +2120,16 @@ route('#/laporan-lengkap', (root) => {
 route('#/laporan-lengkap/:kkma/:periodeId', (root, params) => {
   const kkma = decodeURIComponent(params.kkma || '');
   const pid = Number(params.periodeId);
-  if (typeof window.renderLaporanLengkapKKMA !== 'function') {
+  if (typeof window.renderLaporanLengkapKKM !== 'function') {
     root.innerHTML = `<div class="alert alert-danger">Modul Laporan Lengkap belum termuat. Hard refresh (Ctrl+Shift+R) lalu coba lagi.</div>`;
     return;
   }
   root.innerHTML = `
     <div class="d-flex justify-content-between align-items-center mb-3 no-print">
-      <a href="#/laporan-lengkap" class="btn btn-sm btn-outline-secondary"><i class="bi bi-arrow-left"></i> Pilih KKMA Lain</a>
+      <a href="#/laporan-lengkap" class="btn btn-sm btn-outline-secondary"><i class="bi bi-arrow-left"></i> Pilih KKM Lain</a>
       <button class="btn btn-sm btn-primary" onclick="window.print()"><i class="bi bi-printer"></i> Cetak / Save PDF</button>
     </div>
-    ${window.renderLaporanLengkapKKMA(kkma, pid)}
+    ${window.renderLaporanLengkapKKM(kkma, pid)}
   `;
 });
 
@@ -2385,7 +2385,7 @@ route('#/riwayat/:kamadId', (root, params) => {
   `;
 });
 
-// --- Rekap KKMA -------------------------------------------------
+// --- Rekap KKM -------------------------------------------------
 route('#/rekap-kkma', (root) => {
   const periodeList = Periode.list();
   if (periodeList.length === 0) {
@@ -2399,7 +2399,7 @@ route('#/rekap-kkma', (root) => {
   // group by kkma
   const groups = {};
   for (const k of kamadList) {
-    const key = (k.kkma || '(Tanpa KKMA)').trim();
+    const key = (k.kkma || '(Tanpa KKM)').trim();
     if (!groups[key]) groups[key] = { kkma: key, kamad: [] };
     const pen = Penilaian.byKamadPeriode(k.id, selPid);
     let akhir = null, sebutan = null;
@@ -2420,7 +2420,7 @@ route('#/rekap-kkma', (root) => {
 
   root.innerHTML = `
     <div class="page-header flex-wrap gap-2 no-print">
-      <h5><i class="bi bi-diagram-3"></i> Rekap KKMA</h5>
+      <h5><i class="bi bi-diagram-3"></i> Rekap KKM</h5>
       <div class="d-flex gap-2 align-items-center">
         <label class="text-tiny text-muted mb-0">Periode:</label>
         <select class="form-select form-select-sm" id="periodeSelectKkma" style="min-width: 220px;">
@@ -2432,17 +2432,17 @@ route('#/rekap-kkma', (root) => {
       </div>
     </div>
     <div class="print-only print-header text-center mb-3" style="display:none;">
-      <h5 class="mb-1">REKAP NILAI PKKM PER KKMA</h5>
+      <h5 class="mb-1">REKAP NILAI PKKM PER KKM</h5>
       <div>${escapeHTML(periode.label)}</div>
     </div>
 
     <div class="card mb-3">
-      <div class="card-header"><i class="bi bi-collection"></i> Ringkasan per KKMA — ${escapeHTML(periode.label)}</div>
+      <div class="card-header"><i class="bi bi-collection"></i> Ringkasan per KKM — ${escapeHTML(periode.label)}</div>
       <div class="card-body p-0">
         <div class="table-responsive"><table class="table table-hover mb-0 align-middle">
           <thead class="table-light">
             <tr>
-              <th>KKMA / Wilayah</th>
+              <th>KKM / Wilayah</th>
               <th class="text-end">Jumlah Kamad</th>
               <th class="text-end">Sudah Dinilai</th>
               <th class="text-end">Rata-rata</th>
@@ -2515,14 +2515,14 @@ route('#/rekap-kkma', (root) => {
   });
 
   $('#btnExportKkma').addEventListener('click', async () => {
-    if (window.LIC && window.LIC.getStatus){const s=window.LIC.getStatus();if(s&&s.isTrial){toast('Export Excel KKMA hanya tersedia untuk akun FULL. Cetak Preview (Ctrl+P) tetap bisa dengan watermark TRIAL.','error');return;}}
+    if (window.LIC && window.LIC.getStatus){const s=window.LIC.getStatus();if(s&&s.isTrial){toast('Export Excel KKM hanya tersedia untuk akun FULL. Cetak Preview (Ctrl+P) tetap bisa dengan watermark TRIAL.','error');return;}}
     if (typeof ExcelJS === 'undefined') { toast('ExcelJS belum siap.', 'error'); return; }
     const wb = new ExcelJS.Workbook();
-    const ws = wb.addWorksheet('Rekap KKMA');
-    ws.addRow(['Rekap PKKM per KKMA']).font = { bold: true, size: 14 };
+    const ws = wb.addWorksheet('Rekap KKM');
+    ws.addRow(['Rekap PKKM per KKM']).font = { bold: true, size: 14 };
     ws.addRow([periode.label]);
     ws.addRow([]);
-    const hdr = ws.addRow(['KKMA','Jumlah Kamad','Dinilai','Rata-rata','Tertinggi','Terendah']);
+    const hdr = ws.addRow(['KKM','Jumlah Kamad','Dinilai','Rata-rata','Tertinggi','Terendah']);
     hdr.eachCell(c => { c.font = { bold: true, color: { argb: 'FFFFFFFF' } }; c.fill = { type:'pattern', pattern:'solid', fgColor:{ argb:'FF047A3A' } }; });
     groupRows.forEach(g => ws.addRow([
       g.kkma, g.kamad.length, g.dinilai,
@@ -2532,7 +2532,7 @@ route('#/rekap-kkma', (root) => {
     ]));
     ws.addRow([]);
     ws.addRow(['Detail per Kamad']).font = { bold: true };
-    const hdr2 = ws.addRow(['KKMA','Nama','NIP','Madrasah','Jenjang','Nilai Akhir','Sebutan','Status']);
+    const hdr2 = ws.addRow(['KKM','Nama','NIP','Madrasah','Jenjang','Nilai Akhir','Sebutan','Status']);
     hdr2.eachCell(c => { c.font = { bold: true, color: { argb: 'FFFFFFFF' } }; c.fill = { type:'pattern', pattern:'solid', fgColor:{ argb:'FF047A3A' } }; });
     groupRows.forEach(g => g.kamad.forEach(row => ws.addRow([
       g.kkma, row.k.nama, row.k.nip||'', row.k.nama_madrasah||'', row.k.jenjang||'',
@@ -2544,21 +2544,21 @@ route('#/rekap-kkma', (root) => {
     const buf = await wb.xlsx.writeBuffer();
     const blob = new Blob([buf], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
     const url = URL.createObjectURL(blob);
-    const a = document.createElement('a'); a.href = url; a.download = `Rekap_KKMA_${periode.label.replace(/\s+/g,'_')}.xlsx`;
+    const a = document.createElement('a'); a.href = url; a.download = `Rekap_KKM_${periode.label.replace(/\s+/g,'_')}.xlsx`;
     document.body.appendChild(a); a.click(); a.remove();
     setTimeout(() => URL.revokeObjectURL(url), 1000);
-    toast('Rekap KKMA diunduh.');
+    toast('Rekap KKM diunduh.');
   });
 
   $('#btnPrintKkma').addEventListener('click', () => window.print());
 
   $('#btnLapLengkapKkma').addEventListener('click', () => {
-    // Cek apakah ada KKMA yang terisi pada kamad list di periode ini
+    // Cek apakah ada KKM yang terisi pada kamad list di periode ini
     const kkmaSet = new Set();
     for (const k of Kamad.list()) { const v = (k.kkma||'').trim(); if (v) kkmaSet.add(v); }
     const kkmaArr = [...kkmaSet].sort();
     if (kkmaArr.length === 0) {
-      toast('Belum ada KKMA terisi di data Kepala Madrasah.', 'warning');
+      toast('Belum ada KKM terisi di data Kepala Madrasah.', 'warning');
       return;
     }
     if (kkmaArr.length === 1) {

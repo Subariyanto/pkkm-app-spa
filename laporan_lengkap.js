@@ -1,6 +1,6 @@
-// laporan_lengkap.js — Generator Laporan Lengkap PKKM per KKMA
-// Cakupan: SATU KKMA (wilayah binaan Pengawas), berisi rekap penilaian semua
-// Kepala Madrasah dalam KKMA tersebut pada periode tertentu.
+// laporan_lengkap.js — Generator Laporan Lengkap PKKM per KKM
+// Cakupan: SATU KKM (wilayah binaan Pengawas), berisi rekap penilaian semua
+// Kepala Madrasah dalam KKM tersebut pada periode tertentu.
 //
 // Struktur:
 //   Cover → Lembar Pengesahan → Kata Pengantar → Daftar Isi
@@ -13,7 +13,7 @@
 //   Lampiran B: Rincian Skor per Kamad (ringkas per komponen)
 //   TTD
 //
-// Penggunaan: window.renderLaporanLengkapKKMA(kkma, periode_id) → return HTML string
+// Penggunaan: window.renderLaporanLengkapKKM(kkma, periode_id) → return HTML string
 
 (function () {
   'use strict';
@@ -88,11 +88,11 @@
     }).sort((a, b) => (a.k.nama_madrasah || '').localeCompare(b.k.nama_madrasah || ''));
 
     const dinilai = rows.filter(r => r.nilaiAkhir != null);
-    const rataKKMA = dinilai.length ? dinilai.reduce((s, r) => s + r.nilaiAkhir, 0) / dinilai.length : null;
+    const rataKKM = dinilai.length ? dinilai.reduce((s, r) => s + r.nilaiAkhir, 0) / dinilai.length : null;
     const tertinggi = dinilai.length ? dinilai.reduce((a, b) => a.nilaiAkhir > b.nilaiAkhir ? a : b) : null;
     const terendah = dinilai.length ? dinilai.reduce((a, b) => a.nilaiAkhir < b.nilaiAkhir ? a : b) : null;
 
-    // Agregat per komponen di seluruh KKMA
+    // Agregat per komponen di seluruh KKM
     const KOMP = window.PKKM_KOMPONEN_META || window.PKKM_KOMPONEN || [];
     const komponenAgg = KOMP.map(km => {
       const vals = [];
@@ -105,7 +105,7 @@
       return { code: km.code, label: km.label, no: km.no, bobot: km.bobot_default || 20, rata, n: vals.length };
     });
 
-    // Identifikasi sub-aspek terendah lintas KKMA (top 5)
+    // Identifikasi sub-aspek terendah lintas KKM (top 5)
     const subAggMap = {};
     const KOMP_LIST = window.PKKM_INSTRUMEN_PENGAWAS || window.PKKM_KOMPONEN || [];
     for (const r of dinilai) {
@@ -134,7 +134,7 @@
     const kab = (window.Meta.kab ? window.Meta.kab() : (window.Meta.get('kabupaten_kota', '') || 'Jember')).trim();
 
     return {
-      kkma, periode, kamadList, rows, dinilai, rataKKMA, tertinggi, terendah,
+      kkma, periode, kamadList, rows, dinilai, rataKKM, tertinggi, terendah,
       komponenAgg, subAggList, pengawas, pokjawas, tempat, kab, isFourYear,
     };
   }
@@ -247,7 +247,7 @@
           <tr><td><strong>BAB IV HASIL DAN PEMBAHASAN</strong></td><td class="text-end">7</td></tr>
           <tr><td class="ps-4">A. Daftar Kepala Madrasah Binaan</td><td class="text-end">7</td></tr>
           <tr><td class="ps-4">B. Rekapitulasi Nilai per Kepala Madrasah</td><td class="text-end">8</td></tr>
-          <tr><td class="ps-4">C. Rata-rata KKMA per Komponen</td><td class="text-end">9</td></tr>
+          <tr><td class="ps-4">C. Rata-rata KKM per Komponen</td><td class="text-end">9</td></tr>
           <tr><td class="ps-4">D. Pembahasan</td><td class="text-end">9</td></tr>
           <tr><td><strong>BAB V PENUTUP</strong></td><td class="text-end">10</td></tr>
           <tr><td class="ps-4">A. Simpulan</td><td class="text-end">10</td></tr>
@@ -265,7 +265,7 @@
 
         <h3 class="ll-h3">A. Latar Belakang</h3>
         <p style="text-indent:2em;">Kepala Madrasah memegang peran strategis dalam mewujudkan madrasah yang bermutu, berdaya saing, dan berkarakter. Kualitas kepemimpinan kepala madrasah berbanding lurus dengan mutu proses pendidikan dan capaian peserta didik. Untuk menjamin mutu kepemimpinan tersebut, diperlukan mekanisme penilaian kinerja yang sistematis, terukur, akuntabel, dan dilaksanakan secara berkelanjutan.</p>
-        <p style="text-indent:2em;">Pengawas Madrasah selaku Pengawas Bina memiliki tanggung jawab melaksanakan Penilaian Kinerja Kepala Madrasah (PKKM) terhadap seluruh kepala madrasah dalam wilayah binaannya. Laporan ini menyajikan hasil PKKM atas <strong>${ctx.kamadList.length} Kepala Madrasah</strong> di wilayah binaan <strong>${escapeHTML(ctx.kkma)}</strong> sebagai bahan pembinaan, evaluasi, dan tindak lanjut yang dikonsolidasikan di tingkat KKMA.</p>
+        <p style="text-indent:2em;">Pengawas Madrasah selaku Pengawas Bina memiliki tanggung jawab melaksanakan Penilaian Kinerja Kepala Madrasah (PKKM) terhadap seluruh kepala madrasah dalam wilayah binaannya. Laporan ini menyajikan hasil PKKM atas <strong>${ctx.kamadList.length} Kepala Madrasah</strong> di wilayah binaan <strong>${escapeHTML(ctx.kkma)}</strong> sebagai bahan pembinaan, evaluasi, dan tindak lanjut yang dikonsolidasikan di tingkat KKM.</p>
         <p style="text-indent:2em;">Berdasarkan SK Dirjen Pendis Nomor 1111 Tahun 2019 dan regulasi pendukung, PKKM dilaksanakan setiap tahun (penilaian tahunan) dan diakhiri dengan penilaian empat tahunan yang melibatkan tim penilai lebih lengkap. Hasil PKKM diolah untuk menghasilkan nilai akhir dan sebutan yang menggambarkan kinerja kepala madrasah pada periode tertentu.</p>
 
         <h3 class="ll-h3">B. Dasar Hukum</h3>
@@ -282,7 +282,7 @@
         <ol class="ll-ol">
           <li>Mengukur capaian kinerja seluruh kepala madrasah dalam wilayah binaan ${escapeHTML(ctx.kkma)} pada lima komponen utama PKKM;</li>
           <li>Memberikan umpan balik objektif sebagai bahan refleksi dan perbaikan;</li>
-          <li>Menyediakan data dasar pembinaan dan pengembangan keprofesian berkelanjutan (PKB) di tingkat KKMA;</li>
+          <li>Menyediakan data dasar pembinaan dan pengembangan keprofesian berkelanjutan (PKB) di tingkat KKM;</li>
           <li>Menjadi bahan pertimbangan kebijakan kepegawaian, termasuk perpanjangan masa tugas dan promosi;</li>
           <li>Mendorong peningkatan mutu pengelolaan madrasah secara berkelanjutan.</li>
         </ol>
@@ -299,7 +299,7 @@
 
         <h3 class="ll-h3">A. Konsep Penilaian Kinerja Kepala Madrasah</h3>
         <p style="text-indent:2em;">Penilaian Kinerja Kepala Madrasah merupakan proses pengumpulan, pengolahan, dan analisis data terhadap pelaksanaan tugas pokok dan fungsi kepala madrasah dalam mengelola lembaga pendidikan. PKKM bersifat formatif (untuk pembinaan) dan sumatif (untuk pengambilan keputusan), serta dilaksanakan secara berkala oleh Pengawas Bina dengan melibatkan stakeholder pendidikan.</p>
-        <p style="text-indent:2em;">Hasil PKKM diharapkan dapat memberi gambaran utuh tentang capaian kepemimpinan kepala madrasah, baik pada aspek manajerial maupun supervisi akademik, sekaligus mengidentifikasi area pengembangan profesional yang masih perlu ditingkatkan, baik pada level individu maupun pada level kelompok kerja madrasah (KKMA).</p>
+        <p style="text-indent:2em;">Hasil PKKM diharapkan dapat memberi gambaran utuh tentang capaian kepemimpinan kepala madrasah, baik pada aspek manajerial maupun supervisi akademik, sekaligus mengidentifikasi area pengembangan profesional yang masih perlu ditingkatkan, baik pada level individu maupun pada level kelompok kerja madrasah (KKM).</p>
 
         <h3 class="ll-h3">B. Komponen dan Indikator PKKM</h3>
         <p>Sesuai instrumen resmi yang berlaku, PKKM terdiri atas <strong>5 komponen</strong> dan <strong>29 sub-aspek (108 indikator)</strong>:</p>
@@ -346,10 +346,10 @@
         <p style="text-indent:2em;">Instrumen yang digunakan adalah instrumen baku PKKM yang merujuk pada SK Dirjen Pendis Nomor 1111 Tahun 2019, terdiri atas <strong>5 komponen, 29 sub-aspek, dan 108 indikator</strong>. Setiap indikator dinilai dengan skala 1-4 (Kurang, Cukup, Baik, Amat Baik) berdasarkan bukti dokumen, hasil observasi langsung, serta wawancara dengan kepala madrasah dan stakeholder terkait.</p>
         <p>Prosedur penilaian meliputi:</p>
         <ol class="ll-ol">
-          <li><strong>Pra-penilaian</strong> — koordinasi jadwal, penyiapan instrumen, sosialisasi kepada kepala madrasah pada forum KKMA.</li>
+          <li><strong>Pra-penilaian</strong> — koordinasi jadwal, penyiapan instrumen, sosialisasi kepada kepala madrasah pada forum KKM.</li>
           <li><strong>Pelaksanaan</strong> — pengumpulan data melalui telaah dokumen, observasi, dan wawancara terstruktur di masing-masing madrasah binaan.</li>
-          <li><strong>Pengolahan</strong> — pemberian skor per indikator, perhitungan nilai sub-aspek, nilai komponen, dan nilai akhir terbobot per kepala madrasah, dilanjutkan agregasi tingkat KKMA.</li>
-          <li><strong>Pelaporan</strong> — penyusunan laporan KKMA, klarifikasi hasil, serta penyampaian rekomendasi pembinaan dan PKB pada forum KKMA.</li>
+          <li><strong>Pengolahan</strong> — pemberian skor per indikator, perhitungan nilai sub-aspek, nilai komponen, dan nilai akhir terbobot per kepala madrasah, dilanjutkan agregasi tingkat KKM.</li>
+          <li><strong>Pelaporan</strong> — penyusunan laporan KKM, klarifikasi hasil, serta penyampaian rekomendasi pembinaan dan PKB pada forum KKM.</li>
         </ol>
       </section>`;
   }
@@ -377,7 +377,7 @@
       </tr>`;
     }).join('');
 
-    // Tabel rata-rata KKMA per komponen
+    // Tabel rata-rata KKM per komponen
     const rowsKomp = ctx.komponenAgg.map(km => {
       const seb = safeSebutan(km.rata);
       return `<tr>
@@ -390,7 +390,7 @@
     }).join('');
 
     const top3 = ctx.subAggList.slice(0, 5);
-    const sebRata = safeSebutan(ctx.rataKKMA);
+    const sebRata = safeSebutan(ctx.rataKKM);
 
     return `
       <section class="ll-page">
@@ -401,7 +401,7 @@
           <thead>
             <tr><th width="40">No</th><th>Nama Kepala Madrasah</th><th>Madrasah</th><th class="text-center" width="80">Jenjang</th></tr>
           </thead>
-          <tbody>${rowsKamad || '<tr><td colspan="4" class="text-center"><em>Tidak ada kamad terdaftar pada KKMA ini.</em></td></tr>'}</tbody>
+          <tbody>${rowsKamad || '<tr><td colspan="4" class="text-center"><em>Tidak ada kamad terdaftar pada KKM ini.</em></td></tr>'}</tbody>
         </table>
 
         <h3 class="ll-h3">B. Rekapitulasi Nilai per Kepala Madrasah</h3>
@@ -412,14 +412,14 @@
           <tbody>${rowsRekap || '<tr><td colspan="4" class="text-center"><em>Belum ada data penilaian.</em></td></tr>'}</tbody>
           <tfoot>
             <tr class="ll-row-total">
-              <th colspan="2" class="text-end">RATA-RATA KKMA (${ctx.dinilai.length}/${ctx.kamadList.length} dinilai)</th>
-              <th class="text-end">${fmtNilai(ctx.rataKKMA)}</th>
+              <th colspan="2" class="text-end">RATA-RATA KKM (${ctx.dinilai.length}/${ctx.kamadList.length} dinilai)</th>
+              <th class="text-end">${fmtNilai(ctx.rataKKM)}</th>
               <th class="text-center"><strong>${sebRata ? sebRata.label : '-'}</strong></th>
             </tr>
           </tfoot>
         </table>
 
-        <h3 class="ll-h3">C. Rata-rata KKMA per Komponen</h3>
+        <h3 class="ll-h3">C. Rata-rata KKM per Komponen</h3>
         <table class="ll-table">
           <thead>
             <tr><th width="40">No</th><th>Komponen</th><th class="text-end" width="80">Bobot</th><th class="text-end" width="100">Rata-rata</th><th class="text-center" width="120">Sebutan</th></tr>
@@ -428,18 +428,18 @@
         </table>
 
         <h3 class="ll-h3">D. Pembahasan</h3>
-        <p style="text-indent:2em;">Berdasarkan rekapitulasi di atas, wilayah binaan <strong>${escapeHTML(ctx.kkma)}</strong> memperoleh nilai rata-rata <strong>${fmtNilai(ctx.rataKKMA)}</strong> dengan sebutan <strong>${sebRata ? sebRata.label : '-'}</strong>${ctx.dinilai.length < ctx.kamadList.length ? ` (dari ${ctx.dinilai.length} dari total ${ctx.kamadList.length} kamad yang sudah dinilai)` : ''}. ${ctx.tertinggi ? `Capaian tertinggi pada wilayah ini diraih oleh <strong>${escapeHTML(ctx.tertinggi.k.nama || '-')}</strong> (${escapeHTML(ctx.tertinggi.k.nama_madrasah || '-')}) dengan nilai <strong>${fmtNilai(ctx.tertinggi.nilaiAkhir)}</strong>${ctx.tertinggi.sebutan ? ` (${ctx.tertinggi.sebutan.label})` : ''}.` : ''} ${ctx.terendah && ctx.tertinggi && ctx.terendah.k.id !== ctx.tertinggi.k.id ? `Sebaliknya, capaian terendah dengan nilai <strong>${fmtNilai(ctx.terendah.nilaiAkhir)}</strong> menjadi prioritas pembinaan agar mencapai sebutan yang lebih baik.` : ''}</p>
+        <p style="text-indent:2em;">Berdasarkan rekapitulasi di atas, wilayah binaan <strong>${escapeHTML(ctx.kkma)}</strong> memperoleh nilai rata-rata <strong>${fmtNilai(ctx.rataKKM)}</strong> dengan sebutan <strong>${sebRata ? sebRata.label : '-'}</strong>${ctx.dinilai.length < ctx.kamadList.length ? ` (dari ${ctx.dinilai.length} dari total ${ctx.kamadList.length} kamad yang sudah dinilai)` : ''}. ${ctx.tertinggi ? `Capaian tertinggi pada wilayah ini diraih oleh <strong>${escapeHTML(ctx.tertinggi.k.nama || '-')}</strong> (${escapeHTML(ctx.tertinggi.k.nama_madrasah || '-')}) dengan nilai <strong>${fmtNilai(ctx.tertinggi.nilaiAkhir)}</strong>${ctx.tertinggi.sebutan ? ` (${ctx.tertinggi.sebutan.label})` : ''}.` : ''} ${ctx.terendah && ctx.tertinggi && ctx.terendah.k.id !== ctx.tertinggi.k.id ? `Sebaliknya, capaian terendah dengan nilai <strong>${fmtNilai(ctx.terendah.nilaiAkhir)}</strong> menjadi prioritas pembinaan agar mencapai sebutan yang lebih baik.` : ''}</p>
         ${top3.length ? `
-          <p>Lima sub-aspek dengan capaian terendah lintas KKMA dan menjadi prioritas pembinaan kolektif:</p>
+          <p>Lima sub-aspek dengan capaian terendah lintas KKM dan menjadi prioritas pembinaan kolektif:</p>
           <ol class="ll-ol">
             ${top3.map(sa => `<li><strong>${escapeHTML(sa.kode)}</strong> ${escapeHTML(sa.unsur)} (${escapeHTML(sa.komponen)}) — rata-rata ${fmtNilai(sa.rata)}.</li>`).join('')}
           </ol>` : ''}
-        <p style="text-indent:2em;">Pembinaan terhadap sub-aspek tersebut dilaksanakan secara terstruktur melalui kegiatan Pengembangan Keprofesian Berkelanjutan (PKB) tingkat KKMA, baik berupa workshop, bimbingan teknis, kegiatan kolektif kepala madrasah, maupun pendampingan langsung oleh Pengawas Bina.</p>
+        <p style="text-indent:2em;">Pembinaan terhadap sub-aspek tersebut dilaksanakan secara terstruktur melalui kegiatan Pengembangan Keprofesian Berkelanjutan (PKB) tingkat KKM, baik berupa workshop, bimbingan teknis, kegiatan kolektif kepala madrasah, maupun pendampingan langsung oleh Pengawas Bina.</p>
       </section>`;
   }
 
   function buildBabV(ctx) {
-    const sebRata = safeSebutan(ctx.rataKKMA);
+    const sebRata = safeSebutan(ctx.rataKKM);
     const top3 = ctx.subAggList.slice(0, 5);
     return `
       <section class="ll-page">
@@ -448,19 +448,19 @@
         <h3 class="ll-h3">A. Simpulan</h3>
         <ol class="ll-ol">
           <li>Penilaian Kinerja Kepala Madrasah pada wilayah binaan <strong>${escapeHTML(ctx.kkma)}</strong> telah dilaksanakan terhadap <strong>${ctx.dinilai.length} dari ${ctx.kamadList.length}</strong> kepala madrasah sesuai pedoman dan instrumen yang berlaku.</li>
-          <li>Hasil penilaian menunjukkan rata-rata KKMA sebesar <strong>${fmtNilai(ctx.rataKKMA)}</strong> dengan sebutan <strong>${sebRata ? sebRata.label : '-'}</strong>.</li>
+          <li>Hasil penilaian menunjukkan rata-rata KKM sebesar <strong>${fmtNilai(ctx.rataKKM)}</strong> dengan sebutan <strong>${sebRata ? sebRata.label : '-'}</strong>.</li>
           <li>Capaian tersebut mencerminkan dedikasi dan komitmen para kepala madrasah dalam menjalankan tugas kepemimpinan, sekaligus mengidentifikasi sub-aspek yang masih memerlukan pembinaan kolektif.</li>
         </ol>
 
         <h3 class="ll-h3">B. Rekomendasi Pembinaan</h3>
-        <p>Berdasarkan analisis terhadap sub-aspek dengan capaian terendah, prioritas pembinaan tingkat KKMA diarahkan pada hal-hal berikut:</p>
+        <p>Berdasarkan analisis terhadap sub-aspek dengan capaian terendah, prioritas pembinaan tingkat KKM diarahkan pada hal-hal berikut:</p>
         ${top3.length ? `
           <ol class="ll-ol">
-            ${top3.map(sa => `<li>Penguatan <strong>${escapeHTML(sa.kode)}</strong> ${escapeHTML(sa.unsur)} (${escapeHTML(sa.komponen)}) — rata-rata KKMA ${fmtNilai(sa.rata)}, perlu kegiatan PKB kolektif.</li>`).join('')}
+            ${top3.map(sa => `<li>Penguatan <strong>${escapeHTML(sa.kode)}</strong> ${escapeHTML(sa.unsur)} (${escapeHTML(sa.komponen)}) — rata-rata KKM ${fmtNilai(sa.rata)}, perlu kegiatan PKB kolektif.</li>`).join('')}
           </ol>` : `
           <ol class="ll-ol">
             <li>Mengikutsertakan kepala madrasah pada diklat penguatan kompetensi yang diselenggarakan Kemenag/Pokjawas;</li>
-            <li>Menggiatkan forum KKMA sebagai sarana pertukaran praktik baik antar kepala madrasah binaan;</li>
+            <li>Menggiatkan forum KKM sebagai sarana pertukaran praktik baik antar kepala madrasah binaan;</li>
             <li>Menyusun rencana PKB tahunan yang terstruktur, baik secara individu maupun kolektif.</li>
           </ol>`}
         <p style="text-indent:2em;">Demikian laporan ini disusun untuk dapat dipergunakan sebagaimana mestinya. Semoga laporan ini dapat menjadi bahan refleksi dan dasar pembinaan kepala madrasah pada wilayah binaan ${escapeHTML(ctx.kkma)} dalam meningkatkan kualitas pengelolaan madrasah secara berkelanjutan.</p>
@@ -557,12 +557,12 @@
 
   // ===== Public entry =====
 
-  function renderLaporanLengkapKKMA(kkma, periode_id) {
-    if (!kkma) return `<div class="alert alert-warning">KKMA tidak ditentukan.</div>`;
+  function renderLaporanLengkapKKM(kkma, periode_id) {
+    if (!kkma) return `<div class="alert alert-warning">KKM tidak ditentukan.</div>`;
     const ctx = buildContext(kkma, Number(periode_id));
     if (!ctx) return `<div class="alert alert-warning">Periode tidak ditemukan.</div>`;
     if (ctx.kamadList.length === 0) {
-      return `<div class="alert alert-info">Tidak ada Kepala Madrasah terdaftar pada KKMA <strong>${escapeHTML(kkma)}</strong>. Silakan tambahkan kamad dengan field KKMA = "${escapeHTML(kkma)}" terlebih dahulu.</div>`;
+      return `<div class="alert alert-info">Tidak ada Kepala Madrasah terdaftar pada KKM <strong>${escapeHTML(kkma)}</strong>. Silakan tambahkan kamad dengan field KKM = "${escapeHTML(kkma)}" terlebih dahulu.</div>`;
     }
 
     return `
@@ -582,5 +582,5 @@
       </div>`;
   }
 
-  window.renderLaporanLengkapKKMA = renderLaporanLengkapKKMA;
+  window.renderLaporanLengkapKKM = renderLaporanLengkapKKM;
 })();

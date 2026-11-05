@@ -63,7 +63,7 @@
       ['Jenjang', kamad.jenjang || '-'],
       ['NSM', kamad.nsm || '-'],
       ['Alamat', kamad.alamat || '-'],
-      ['KKMA / Wilayah Binaan', kamad.kkma || '-'],
+      ['KKM / Wilayah Binaan', kamad.kkma || '-'],
     ];
     let row = 5;
     madrasah.forEach(([label, val]) => {

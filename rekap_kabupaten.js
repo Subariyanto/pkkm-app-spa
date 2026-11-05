@@ -600,7 +600,7 @@
           <div class="d-flex gap-2 no-print">
             <input class="form-control form-control-sm" id="rkSearch" placeholder="Cari madrasah / kepala madrasah" style="min-width:200px;">
             <select class="form-select form-select-sm" id="rkFilterKkma" style="min-width:150px;">
-              <option value="">Semua KKMA</option>
+              <option value="">Semua KKM</option>
               ${kkmaSet.map((v) => `<option value="${esc(v)}">${esc(v)}</option>`).join('')}
             </select>
             <select class="form-select form-select-sm" id="rkFilterPgw" style="min-width:170px;">
@@ -617,7 +617,7 @@
                 <th width="40">#</th>
                 <th>Madrasah / Kepala Madrasah</th>
                 <th class="text-center">Jenjang</th>
-                <th>KKMA</th>
+                <th>KKM</th>
                 <th>Pengawas Penilai</th>
                 ${KOMP_META().map((k) => `<th class="text-center text-tiny" title="${esc(k.label)}">${esc(k.code)}</th>`).join('')}
                 <th class="text-center">Nilai Akhir</th>
@@ -890,7 +890,7 @@
     ws.addRow([periode ? periode.label : '-']).font = { size: 11 };
     ws.addRow([]);
 
-    const headers = ['No', 'Nama Madrasah', 'NSM', 'Nama Kepala Madrasah', 'NIP', 'Jenjang', 'KKMA',
+    const headers = ['No', 'Nama Madrasah', 'NSM', 'Nama Kepala Madrasah', 'NIP', 'Jenjang', 'KKM',
       'Pengawas Penilai', ...komps.map((k) => k.label), 'Nilai Akhir', 'Sebutan', 'PKB Terisi', 'Progress (%)'];
 
     const hr = ws.addRow(headers);

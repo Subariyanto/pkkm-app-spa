@@ -308,7 +308,7 @@ if ($('cards')) {
       ${x.Lokasi ? `<p><b>Lokasi:</b> ${mapLink(x.Lokasi)}</p>` : ''}
       <ol class="school-list viewer-list">${items.map((m) => `<li><span class="school">${esc(m['Nama Madrasah'])}</span><span class="principal">Kepala Madrasah: ${esc(m['Nama Kepala Madrasah'])}</span></li>`).join('')}</ol>
       ${x.Catatan ? `<p><b>Catatan:</b> ${esc(x.Catatan)}</p>` : ''}
-      <p class="minor">KKMA 04 Jember · PKKM 2026</p>`;
+      <p class="minor">KKM 04 Jember · PKKM 2026</p>`;
   }).catch(() => {
     $('card').innerHTML = '<p class="error">Tautan jadwal tidak valid atau belum tersedia.</p>';
   });

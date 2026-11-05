@@ -9,7 +9,7 @@
     const wb = new ExcelJS.Workbook();
     const ws = wb.addWorksheet('Kepala Madrasah');
     const headers = ['nama','nip','jabatan','jenjang','kkma','nsm','nama_madrasah','alamat','masa_jabatan_mulai','telp','email'];
-    const headerLabels = ['Nama Lengkap (dengan gelar)','NIP','Jabatan','Jenjang (MI/MTs/MA/RA)','KKMA / Wilayah','NSM','Nama Madrasah','Alamat','Masa Jabatan Mulai (YYYY-MM-DD)','Telp/HP','Email'];
+    const headerLabels = ['Nama Lengkap (dengan gelar)','NIP','Jabatan','Jenjang (MI/MTs/MA/RA)','KKM / Wilayah','NSM','Nama Madrasah','Alamat','Masa Jabatan Mulai (YYYY-MM-DD)','Telp/HP','Email'];
 
     ws.addRow(['Template Import Kepala Madrasah - PKKM App']).font = { bold: true, size: 14 };
     ws.addRow(['Petunjuk: Jangan ubah baris header (baris 4). Mulai isi data dari baris 5.']);
@@ -27,7 +27,7 @@
       '197002122005011004',
       'Kepala Madrasah',
       'MA',
-      'KKMA 04 Sukowono',
+      'KKM 04 Sukowono',
       '131135090001',
       'MA Contoh Sukowono',
       'Jl. Contoh No. 1, Sukowono, ' + ((window.Meta && typeof window.Meta.kab === 'function') ? window.Meta.kab() : 'Jember'),
