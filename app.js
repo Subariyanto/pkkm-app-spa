@@ -667,9 +667,20 @@ route('#/kamad/:id', (root, params) => {
             <label class="form-label">Masa Jabatan Mulai</label>
             <input class="form-control" type="date" name="masa_jabatan_mulai" value="${escapeHTML(k.masa_jabatan_mulai||'')}">
           </div>
+          <div class="col-md-4">
+            <label class="form-label">Masa Jabatan Selesai <span class="text-muted">(opsional)</span></label>
+            <input class="form-control" type="date" name="masa_jabatan_selesai" value="${escapeHTML(k.masa_jabatan_selesai||'')}">
+            <div class="form-text">Diisi bila sudah berakhir/pindah.</div>
+          </div>
           <div class="col-md-8">
             <label class="form-label">Nama Madrasah*</label>
-            <input class="form-control" name="nama_madrasah" value="${escapeHTML(k.nama_madrasah||'')}" required>
+            <input class="form-control" name="nama_madrasah" value="${escapeHTML(k.nama_madrasah||'')}" required list="madrasahList" id="inputNamaMadrasah">
+            <datalist id="madrasahList">
+              ${[...new Set(Kamad.list().map(x => x.nama_madrasah).filter(Boolean))]
+                 .filter(n => !k.id || n !== k.nama_madrasah)
+                 .map(n => `<option value="${escapeHTML(n)}"></option>`).join('')}
+            </datalist>
+            <div class="form-text">Pilih dari daftar bila madrasahnya sudah ada — record otomatis terkait ke unit madrasah tersebut.</div>
           </div>
           <div class="col-md-4">
             <label class="form-label">NSM</label>
@@ -3299,6 +3310,16 @@ route('#/rekap-tahunan', (root) => {
   const kamad = Kamad.get(selKid);
   if (!kamad) { root.innerHTML = '<div class="alert alert-warning">Kamad tidak ditemukan.</div>'; return; }
 
+  // Mode unit madrasah: bila ada lebih dari satu camad pada madrasah yang sama
+  // (kasus pergantian kepala madrasah), tampilkan riwayat berkelanjutan.
+  const unitMode = String(location.hash.match(/[?&]mode=([a-z]+)/)?.[1] || 'individu') === 'unit';
+  const unitMembers = Kamad.unitMembersOf(kamad);
+  const unitInduk = Kamad.unitIndukOf(kamad);
+  const hasUnit = unitMembers.length > 1;
+  const scopeIds = (unitMode && hasUnit) ? unitMembers.map(x => x.id) : [kamad.id];
+  const kamadById = {};
+  for (const m of unitMembers) kamadById[m.id] = m;
+
   // Cari periode tahun_1..tahun_4 yang punya penilaian utk kamad ini.
   // Period e yang punya penilaian pada kamad ini dipetakan ke slot tahun
   // berdasarkan (a) type tahun_1..tahun_4 bila ada, atau (b) urutan tahun
@@ -3310,7 +3331,7 @@ route('#/rekap-tahunan', (root) => {
   // Kumpulkan semua period e yang punya penilaian untuk kamad ini
   const perKode = {};
   for (const p of allPeriode) {
-    const sessions = Penilaian.forKamadPeriode(kamad.id, p.id);
+    const sessions = scopeIds.flatMap(kid => Penilaian.forKamadPeriode(kid, p.id));
     if (!sessions.length) continue;
     perKode[p.id] = { p, sessions };
   }
@@ -3320,6 +3341,33 @@ route('#/rekap-tahunan', (root) => {
     if ((a.p.tahun || 0) !== (b.p.tahun || 0)) return (a.p.tahun || 0) - (b.p.tahun || 0);
     return String(a.p.semester || '1').localeCompare(String(b.p.semester || '1'));
   });
+
+  // Nilai untuk satu period e pada scope (individu / seluruh camad di unit)
+  function nilaiPeriod(entry) {
+    if (entry.sessions.length > 1) {
+      const kids = [...new Set(entry.sessions.map(s => s.kamad_id))];
+      if (kids.length > 1) {
+        // Unit mode: agregasi lintas camad pada unit yang sama → rata-rata
+        const perKamad = kids.map(kid => {
+          const sub = entry.sessions.filter(s => s.kamad_id === kid);
+          if (sub.length > 1) return hitungNilaiAgregat(kid, entry.p.id).nilaiAgregat;
+          return hitungNilaiAkhir(sub[0].id).nilaiAkhir;
+        });
+        const val = perKamad.filter(v => v != null);
+        return val.length ? val.reduce((a,b)=>a+b,0)/val.length : null;
+      }
+      const agg = hitungNilaiAgregat(kids[0], entry.p.id);
+      return agg.nilaiAgregat;
+    }
+    return hitungNilaiAkhir(entry.sessions[0].id).nilaiAkhir;
+  }
+
+  // Peta period e → camad pemiliknya (untuk menampilkan nama kamad di tiap tahun)
+  function pemilikNama(entry) {
+    const kids = [...new Set(entry.sessions.map(s => s.kamad_id))];
+    if (kids.length === 1) return kamadById[kids[0]] || (kids[0] === kamad.id ? kamad : null);
+    return null;
+  }
 
   const tahunData = TAHUN_CODES.map((tcode, idx) => {
     // Prioritas: period e dengan type persis tcode
@@ -3332,18 +3380,14 @@ route('#/rekap-tahunan', (root) => {
       entry = terisi.filter(x => !dipakai.includes(x.p.id))[0] || null;
     }
 
-    let nilai = null, periode = null, agg = null;
+    let nilai = null, periode = null, agg = null, pemilik = null;
     if (entry) {
-      const sessions = entry.sessions;
-      if (sessions.length > 1) {
-        agg = hitungNilaiAgregat(kamad.id, entry.p.id);
-        nilai = agg.nilaiAgregat;
-      } else {
-        nilai = hitungNilaiAkhir(sessions[0].id).nilaiAkhir;
-      }
+      nilai = nilaiPeriod(entry);
       periode = entry.p;
+      pemilik = pemilikNama(entry);
+      if (entry.sessions.length > 1) agg = { nilaiAgregat: nilai };
     }
-    return { code: tcode, label: window.PKKM_PERIODE_TYPES.find(x => x.code === tcode)?.label || tcode, nilai, periode, agg };
+    return { code: tcode, label: window.PKKM_PERIODE_TYPES.find(x => x.code === tcode)?.label || tcode, nilai, periode, agg, pemilik };
   });
 
   const validNilai = tahunData.filter(t => t.nilai != null).map(t => t.nilai);
@@ -3357,17 +3401,31 @@ route('#/rekap-tahunan', (root) => {
         <select class="form-select form-select-sm" id="kamadSelect" style="min-width: 280px;">
           ${kamadList.map(k => `<option value="${k.id}" ${k.id===selKid?'selected':''}>${escapeHTML(k.nama)} · ${escapeHTML(k.nama_madrasah||'-')}</option>`).join('')}
         </select>
+        ${hasUnit ? `
+        <div class="btn-group btn-group-sm" role="group">
+          <a href="#/rekap-tahunan?k=${selKid}&mode=individu" class="btn btn-outline-primary ${!unitMode?'active':''}"><i class="bi bi-person"></i> Per Kepala Madrasah</a>
+          <a href="#/rekap-tahunan?k=${selKid}&mode=unit" class="btn btn-outline-primary ${unitMode?'active':''}"><i class="bi bi-buildings"></i> Per Unit Madrasah</a>
+        </div>` : ''}
         <button class="btn btn-sm btn-success" id="btnExportXlsx"><i class="bi bi-file-earmark-excel"></i> Export Excel Resmi</button>
       </div>
     </div>
+
+    ${hasUnit ? `<div class="alert ${unitMode?'alert-primary':'alert-info'} py-2 mb-3">
+      <i class="bi bi-buildings"></i>
+      ${unitMode
+        ? `Mode <strong>Per Unit Madrasah</strong> — riwayat digabung dari <strong>${unitMembers.length} kepala madrasah</strong> pada ${escapeHTML(kamad.nama_madrasah||'-')} secara berurutan menurut masa jabatan.`
+        : `Madrasah ini pernah dipimpin oleh <strong>${unitMembers.length} kepala madrasah</strong> (pergantian jabatan terdeteksi). Tampilkan <a href="#/rekap-tahunan?k=${selKid}&mode=unit">Rekap Per Unit Madrasah</a> untuk riwayat 4 tahun berkelanjutan.`}
+    </div>` : ''}
 
     <div class="card mb-3">
       <div class="card-body">
         <div class="row g-3 align-items-center">
           <div class="col-md-4">
             <div class="text-tiny text-muted">Kepala Madrasah</div>
-            <div class="fw-semibold">${escapeHTML(kamad.nama)}</div>
-            <div class="text-tiny text-muted">NIP: ${escapeHTML(kamad.nip||'-')} · ${escapeHTML(kamad.nama_madrasah||'-')}</div>
+            <div class="fw-semibold">${unitMode && hasUnit ? escapeHTML(kamad.nama_madrasah||'-') : escapeHTML(kamad.nama)}</div>
+            <div class="text-tiny text-muted">${unitMode && hasUnit
+              ? `Unit madrasah · ${unitMembers.length} kamad (${escapeHTML(unitMembers.map(m=>m.nama.split(',')[0]).join(' → '))})`
+              : `NIP: ${escapeHTML(kamad.nip||'-')} · ${escapeHTML(kamad.nama_madrasah||'-')}`}</div>
           </div>
           <div class="col-md-4 text-center">
             <div class="text-tiny text-muted">Tahun terisi</div>
@@ -3394,7 +3452,8 @@ route('#/rekap-tahunan', (root) => {
                   ? `<div class="display-6 fw-bold mb-1">${fmtNilai(t.nilai)}</div>
                      <div class="${sb.cssClass} mb-2">${sb.label}</div>
                      <div class="text-tiny text-muted">${escapeHTML(t.periode.label)}</div>
-                     <a href="#/agregat/${kamad.id}/${t.periode.id}" class="btn btn-sm btn-outline-primary mt-2"><i class="bi bi-eye"></i> Detail</a>`
+                     ${t.pemilik && !(!unitMode && t.pemilik.id === kamad.id) ? `<div class="text-tiny text-muted"><i class="bi bi-person"></i> ${escapeHTML(t.pemilik.nama)}</div>` : ''}
+                     <a href="#/agregat/${t.pemilik ? t.pemilik.id : kamad.id}/${t.periode.id}" class="btn btn-sm btn-outline-primary mt-2"><i class="bi bi-eye"></i> Detail</a>`
                   : `<div class="display-6 fw-bold mb-1 text-muted">-</div>
                      <div class="text-tiny text-muted mb-2">Belum dinilai</div>
                      <a href="#/penilaian" class="btn btn-sm btn-outline-secondary mt-2"><i class="bi bi-plus"></i> Mulai</a>`
@@ -3421,14 +3480,11 @@ route('#/rekap-tahunan', (root) => {
               ${(window.PKKM_KOMPONEN_META || window.PKKM_KOMPONEN).map(km => {
                 const vals = tahunData.map(t => {
                   if (!t.periode) return null;
-                  const sessions = Penilaian.forKamadPeriode(kamad.id, t.periode.id);
-                  // sessions dipakai di bawah untuk agregasi multi-penilai
+                  const sessions = scopeIds.flatMap(kid => Penilaian.forKamadPeriode(kid, t.periode.id));
                   if (!sessions.length) return null;
-                  if (sessions.length > 1) {
-                    const v = sessions.map(s => hitungNilaiKomponen(s.id, km.code).nilai);
-                    return v.reduce((a,b)=>a+b,0)/v.length;
-                  }
-                  return hitungNilaiKomponen(sessions[0].id, km.code).nilai;
+                  const v = sessions.map(s => hitungNilaiKomponen(s.id, km.code).nilai).filter(x => x != null);
+                  if (!v.length) return null;
+                  return v.reduce((a,b)=>a+b,0)/v.length;
                 });
                 const filled = vals.filter(v => v != null);
                 const rata = filled.length ? filled.reduce((a,b)=>a+b,0)/filled.length : null;
@@ -3447,7 +3503,7 @@ route('#/rekap-tahunan', (root) => {
   `;
 
   $('#kamadSelect').addEventListener('change', e => {
-    location.hash = `#/rekap-tahunan?k=${e.target.value}`;
+    location.hash = `#/rekap-tahunan?k=${e.target.value}${unitMode ? '&mode=unit' : ''}`;
   });
   $('#btnExportXlsx').addEventListener('click', async () => {
     if (typeof window.exportPKKMExcel !== 'function') { toast('Modul export belum siap.', 'error'); return; }

@@ -127,6 +127,17 @@ const Kamad = {
   },
   create(data) {
     const all = pLoad(PKKM_KEYS.kamad, []);
+    let madrasah_induk = data.madrasah_induk != null && data.madrasah_induk !== '' ? Number(data.madrasah_induk) : null;
+    // Bila record pertama untuk madrasah tersebut, jadikan induk otomatis
+    if (madrasah_induk == null && data.nama_madrasah) {
+      const sama = all.filter(x => x.nama_madrasah === data.nama_madrasah);
+      if (sama.length) {
+        const induk = sama.find(x => x.is_induk) || sama.slice().sort((a,b)=>a.id-b.id)[0];
+        madrasah_induk = induk.id;
+      }
+      // Bila belum ada record sama sekali untuk madrasah ini, record baru
+      // otomatis jadi induk (is_induk=true) lewat penugasan di obj di bawah.
+    }
     const obj = {
       id: pNextId('kamad'),
       nama: data.nama || '',
@@ -138,8 +149,14 @@ const Kamad = {
       nama_madrasah: data.nama_madrasah || '',
       alamat: data.alamat || '',
       masa_jabatan_mulai: data.masa_jabatan_mulai || '',
+      masa_jabatan_selesai: data.masa_jabatan_selesai || '',
       telp: data.telp || '',
       email: data.email || '',
+      // Kaitan ke unit madrasah (induk). Dipakai saat ada pergantian kepala
+      // madrasah: record kamad baru tetap menunjuk madrasah yang sama supaya
+      // riwayat bisa direkap per unit, bukan hanya per orang.
+      madrasah_induk: madrasah_induk,
+      is_induk: data.is_induk === true || data.is_induk === 'true' || data.is_induk === 'on' || (madrasah_induk == null && !!data.nama_madrasah),
       foto: data.foto || null,
       created_at: nowLocal(),
     };
@@ -154,6 +171,40 @@ const Kamad = {
     all[i] = { ...all[i], ...patch, id };
     pSave(PKKM_KEYS.kamad, all);
     return all[i];
+  },
+  // Unit madrasah (induk): record kamad dengan is_induk=true, atau record
+  // pertama pada madrasah yang sama bila belum ada yang ditandai.
+  unitIndukOf(kamad) {
+    if (!kamad) return null;
+    const all = pLoad(PKKM_KEYS.kamad, []);
+    if (kamad.madrasah_induk) {
+      const induk = all.find(x => x.id === kamad.madrasah_induk);
+      if (induk) return induk;
+    }
+    if (kamad.is_induk) return kamad;
+    const same = all.filter(x => x.is_induk && x.nama_madrasah && x.nama_madrasah === kamad.nama_madrasah);
+    if (same.length) return same.sort((a,b)=>a.id-b.id)[0];
+    const peers = all.filter(x => x.nama_madrasah && x.nama_madrasah === kamad.nama_madrasah);
+    if (peers.length) return peers.sort((a,b)=>a.id-b.id)[0];
+    return kamad;
+  },
+  // Semua camad yang terqait madrasah yang sama (termasuk induk)
+  unitMembersOf(kamad) {
+    if (!kamad) return [];
+    const induk = this.unitIndukOf(kamad);
+    if (!induk) return [kamad];
+    const all = pLoad(PKKM_KEYS.kamad, []);
+    const ids = new Set([induk.id]);
+    all.forEach(x => {
+      if (x.madrasah_induk === induk.id) ids.add(x.id);
+      if (x.id === induk.id) return;
+      if (!x.madrasah_induk && x.nama_madrasah && x.nama_madrasah === induk.nama_madrasah) ids.add(x.id);
+    });
+    return all.filter(x => ids.has(x.id)).sort((a,b) => {
+      const am = a.masa_jabatan_mulai || '', bm = b.masa_jabatan_mulai || '';
+      if (am !== bm) return am.localeCompare(bm);
+      return a.id - b.id;
+    });
   },
   remove(id) {
     const all = pLoad(PKKM_KEYS.kamad, []).filter(x => x.id !== id);
