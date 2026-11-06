@@ -299,8 +299,9 @@
 
     var colGap = 6;
     var colW = (ctx.CW - colGap) / 2;
-    var rowH = 9.6;
-    ctx.space(rowH * rows.length + 6);
+    // Baris identitas dibuat rapat (1 spasi) agar ringkas dan rapi.
+    var rowH = 7.2;
+    ctx.space(rowH * rows.length + 4);
     var boxTop = ctx.y - 5.2;
     doc.setDrawColor(200);
     doc.rect(ctx.ML, boxTop, ctx.CW, rowH * rows.length);
@@ -313,17 +314,17 @@
         var label = rows[ri][ci * 2], val = rows[ri][ci * 2 + 1];
         if (!label) continue;
         var cx = ctx.ML + (ci === 0 ? 0 : colW + colGap) + 2;
-        doc.setFont('helvetica', 'normal'); doc.setFontSize(8); doc.setTextColor(110);
-        doc.text(safeText(label), cx, ry + 3.6);
-        doc.setFont('helvetica', 'bold'); doc.setFontSize(9); doc.setTextColor(0);
+        doc.setFont('helvetica', 'normal'); doc.setFontSize(7.6); doc.setTextColor(110);
+        doc.text(safeText(label), cx, ry + 2.9);
+        doc.setFont('helvetica', 'bold'); doc.setFontSize(8.6); doc.setTextColor(0);
         var v = safeText(val);
         var vx = cx + 34;
-        if (v) doc.text(v, vx, ry + 7.3);
-        else { doc.setDrawColor(140); doc.line(vx, ry + 7.6, cx + colW - 4, ry + 7.6); }
+        if (v) doc.text(v, vx, ry + 5.7);
+        else { doc.setDrawColor(140); doc.line(vx, ry + 6, cx + colW - 4, ry + 6); }
       }
     }
     doc.setTextColor(0);
-    ctx.y = boxTop + rowH * rows.length + 5;
+    ctx.y = boxTop + rowH * rows.length + 4;
 
     // ---- Petunjuk ----
     ctx.line('Petunjuk: berilah tanda centang (V) pada kotak skor 1 / 2 / 3 / 4 sesuai penilaian Anda. ' +
