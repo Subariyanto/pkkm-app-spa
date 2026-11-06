@@ -314,13 +314,19 @@
         var label = rows[ri][ci * 2], val = rows[ri][ci * 2 + 1];
         if (!label) continue;
         var cx = ctx.ML + (ci === 0 ? 0 : colW + colGap) + 2;
+        // Teks dipusatkan secara vertikal di tengah baris (baseline tengah).
+        var midY = ry + rowH / 2;
+        var BASELINE = 3.0; // koreksi dari titik tengah ke baseline huruf
         doc.setFont('helvetica', 'normal'); doc.setFontSize(7.6); doc.setTextColor(110);
-        doc.text(safeText(label), cx, ry + 2.9);
+        doc.text(safeText(label), cx, midY + BASELINE / 2 + 0.6);
         doc.setFont('helvetica', 'bold'); doc.setFontSize(8.6); doc.setTextColor(0);
         var v = safeText(val);
         var vx = cx + 34;
-        if (v) doc.text(v, vx, ry + 5.7);
-        else { doc.setDrawColor(140); doc.line(vx, ry + 6, cx + colW - 4, ry + 6); }
+        if (v) doc.text(v, vx, midY + 1.0);
+        else {
+          doc.setDrawColor(140);
+          doc.line(vx, midY + 0.9, cx + colW - 4, midY + 0.9);
+        }
       }
     }
     doc.setTextColor(0);
