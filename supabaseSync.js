@@ -558,70 +558,70 @@
     }
   }
 
-  // Admin: daftar semua akun
+  // ================================================================
+  // ADMIN: AKUN PENGGUNA — VPS (konsisten dengan modul admin lain)
+  // ----------------------------------------------------------------
+  // Sebelumnya fungsi-fungsi ini masih memanggil RPC Supabase lama
+  // (admin_list_accounts, dst) yang butuh p_admin_key. Karena login admin
+  // sekarang lewat VPS, admin_key tidak pernah cocok -> RPC menjawab
+  // "invalid_admin_key" -> daftar akun selalu kosong (stat card 0).
+  // Sekarang semuanya lewat pkkm-api + token sesi admin (X-Admin-Token),
+  // sama seperti adminListCodes/adminGetStats di atas.
+  // ================================================================
+
+  // Admin: daftar semua akun pengguna aplikasi ini
   async function adminListAccounts(adminKey) {
-    try {
-      var r = await callRpc('admin_list_accounts', { p_admin_key: adminKey, p_app_slug: APP_SLUG });
-      if (r && r.success) return r.accounts || [];
-      return [];
-    } catch (e) {
-      console.warn('[SupabaseSync] adminListAccounts error:', e.message);
-      return [];
-    }
+    var o = await pkkmApi('/admin/list-accounts');
+    if (o.data && o.data.ok) return o.data.accounts || o.data.data || [];
+    console.warn('[SupabaseSync] adminListAccounts gagal:', pkkmReason(o));
+    return [];
   }
 
-  // Admin: statistik akun
+  // Admin: statistik akun (normalkan ke bentuk yang dipakai UI)
   async function adminGetAccountStats(adminKey) {
-    try {
-      return await callRpc('admin_get_account_stats', { p_admin_key: adminKey, p_app_slug: APP_SLUG });
-    } catch (e) {
-      console.warn('[SupabaseSync] adminGetAccountStats error:', e.message);
-      return { success: false, reason: 'network_error' };
+    var o = await pkkmApi('/admin/account-stats');
+    if (o.data && o.data.ok) {
+      var d = o.data.data || o.data;
+      return {
+        success: true,
+        total_accounts: d.total_accounts || 0,
+        active_accounts: d.active_accounts || 0,
+        revoked_accounts: d.revoked_accounts || 0,
+        codes_with_account: d.codes_with_account || 0,
+      };
     }
+    return { success: false, reason: pkkmReason(o) };
   }
 
   // Admin: nonaktifkan akun
   async function adminRevokeAccount(accountId, adminKey) {
-    try {
-      return await callRpc('admin_revoke_account', { p_admin_key: adminKey, p_account_id: accountId });
-    } catch (e) {
-      console.warn('[SupabaseSync] adminRevokeAccount error:', e.message);
-      return { success: false, reason: 'network_error' };
-    }
+    var o = await pkkmApi('/admin/revoke-account', { method: 'POST', body: { id: accountId } });
+    if (o.data && o.data.ok) return { success: true };
+    return { success: false, reason: pkkmReason(o) };
   }
 
   // Admin: aktifkan kembali akun
   async function adminReactivateAccount(accountId, adminKey) {
-    try {
-      return await callRpc('admin_reactivate_account', { p_admin_key: adminKey, p_account_id: accountId });
-    } catch (e) {
-      console.warn('[SupabaseSync] adminReactivateAccount error:', e.message);
-      return { success: false, reason: 'network_error' };
-    }
+    var o = await pkkmApi('/admin/reactivate-account', { method: 'POST', body: { id: accountId } });
+    if (o.data && o.data.ok) return { success: true };
+    return { success: false, reason: pkkmReason(o) };
   }
 
   // Admin: hapus akun (kode bebas dipakai akun baru)
   async function adminDeleteAccount(accountId, adminKey) {
-    try {
-      return await callRpc('admin_delete_account', { p_admin_key: adminKey, p_account_id: accountId });
-    } catch (e) {
-      console.warn('[SupabaseSync] adminDeleteAccount error:', e.message);
-      return { success: false, reason: 'network_error' };
-    }
+    var o = await pkkmApi('/admin/delete-account', { method: 'POST', body: { id: accountId } });
+    if (o.data && o.data.ok) return { success: true };
+    return { success: false, reason: pkkmReason(o) };
   }
 
   // Admin: reset password akun
   async function adminResetAccountPassword(accountId, newPasswordHash, adminKey) {
-    try {
-      return await callRpc('admin_reset_account_password', {
-        p_admin_key: adminKey,
-        p_account_id: accountId,
-        p_new_password_hash: newPasswordHash,
-      });
-    } catch (e) {
-      console.warn('[SupabaseSync] adminResetAccountPassword error:', e.message);
-      return { success: false, reason: 'network_error' };
-    }
+    var o = await pkkmApi('/admin/reset-account-password', {
+      method: 'POST',
+      body: { id: accountId, password_hash: newPasswordHash },
+    });
+    if (o.data && o.data.ok) return { success: true };
+    return { success: false, reason: pkkmReason(o) };
   }
 
   // Reset password mandiri (lupa password) — verifikasi via username + kode aktivasi.
