@@ -301,11 +301,11 @@ function syncAuthUI() {
 
   // Update navbar region label dari setting kabupaten/kota
   const navRegion = document.getElementById('navRegionLabel');
-  const footerRegion = document.getElementById('footerRegion');
   // Nama kabupaten/kota mengikuti Pengaturan (fleksibel, tidak hardcode Jember)
   const _kabKota = (window.Meta && typeof Meta.kab === 'function') ? Meta.kab() : 'Jember';
   if (navRegion) navRegion.textContent = 'Pokjawasmad Kab. ' + _kabKota;
-  if (footerRegion) footerRegion.textContent = _kabKota;
+  // Catatan: kredit pembuat di footer sengaja tetap "Kab. Jember" (identitas
+  // pembuat aplikasi), tidak ikut berubah walau Pengaturan diubah ke kabupaten lain.
 }
 
 // === Router ====================================================
