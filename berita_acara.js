@@ -242,17 +242,20 @@
     y += 8;
 
     // ---- Tanda tangan
+    // Ruang tanda tangan sengaja dikosongkan (tanpa titik-titik) agar bisa
+    // ditandatangani langsung setelah dicetak. Jarak tetap dijaga.
     function blokTtd(x, lebar, judul, nama, nipLabel, nipVal) {
       var yy = y;
       biasa(11.5);
       doc.text(judul, x, yy); yy += 5.2;
-      doc.text(titik(24), x, yy); yy += 5.2;
-      doc.text(titik(24), x, yy); yy += 5.2;
-      doc.text(titik(24), x, yy); yy += 4;
-      tebal(11.5);
-      doc.text(nama || titik(30), x, yy); yy += 5.2;
+      yy += 5.2 * 3 + 4;   // ruang kosong untuk tanda tangan
+      if (nama) {
+        tebal(11.5);
+        doc.text(nama, x, yy);
+      }
+      yy += 5.2;
       biasa(11);
-      doc.text(nipLabel + (nipVal || titik(22)), x, yy);
+      if (nipVal) doc.text(nipLabel + nipVal, x, yy);
     }
 
     if (!is4) {
@@ -267,13 +270,14 @@
       biasa(11.5);
       doc.text('Wakil Tim Penilai', ML + colW2, yy2); yy2 += 5.2;
       doc.text('Penilai 1,', ML + colW2, yy2); yy2 += 5.2;
-      doc.text(titik(24), ML + colW2, yy2); yy2 += 5.2;
-      doc.text(titik(24), ML + colW2, yy2); yy2 += 5.2;
-      doc.text(titik(24), ML + colW2, yy2); yy2 += 4;
-      tebal(11.5);
-      doc.text(d.penilai1.nama || titik(30), ML + colW2, yy2); yy2 += 5.2;
+      yy2 += 5.2 * 3 + 4;  // ruang kosong untuk tanda tangan
+      if (d.penilai1.nama) {
+        tebal(11.5);
+        doc.text(d.penilai1.nama, ML + colW2, yy2);
+      }
+      yy2 += 5.2;
       biasa(11);
-      doc.text('NIP. ' + (d.penilai1.nip || titik(22)), ML + colW2, yy2);
+      if (d.penilai1.nip) doc.text('NIP. ' + d.penilai1.nip, ML + colW2, yy2);
     }
 
     // ---- Halaman 2: Daftar Hadir
@@ -373,6 +377,10 @@
     }
     function t(n) { return esc(titik(n)); }
     function val(v, n) { return esc((v == null ? '' : String(v)).trim() || titik(n)); }
+    // Untuk area tanda tangan: kosong = kosong (tanpa titik-titik), agar bisa
+    // ditandatangani langsung setelah dicetak.
+    function ttdVal(v) { return esc((v == null ? '' : String(v)).trim()); }
+    function ttdNip(v) { var s = (v == null ? '' : String(v)).trim(); return s ? 'NIP. ' + esc(s) : ''; }
     var T = '<td style="border:1px solid #000;padding:3px 5px;">';
     var baris = '';
     for (var r = 1; r <= 16; r++) {
@@ -412,34 +420,34 @@
     var ttd = is4
       ? '<table style="width:100%;margin-top:24px;"><tr>' +
         '<td width="50%" style="text-align:center;">Kepala Madrasah,<br><br><br><br><br>' +
-        '<b>' + val(d.kamad.nama, 34) + '</b><br>NIP. ' + val(d.kamad.nip, 22) + '</td>' +
+        '<b>' + ttdVal(d.kamad.nama) + '</b><br>' + ttdNip(d.kamad.nip) + '</td>' +
         '<td width="50%" style="text-align:center;">Wakil Tim Penilai<br>Penilai 1,<br><br><br><br><br>' +
-        '<b>' + val(d.penilai1.nama, 34) + '</b><br>NIP. ' + val(d.penilai1.nip, 22) + '</td>' +
+        '<b>' + ttdVal(d.penilai1.nama) + '</b><br>' + ttdNip(d.penilai1.nip) + '</td>' +
         '</tr></table>'
       : '<table style="width:100%;margin-top:24px;"><tr>' +
         '<td width="33%" style="text-align:center;">Kepala Madrasah,<br><br><br><br><br>' +
-        '<b>' + val(d.kamad.nama, 28) + '</b><br>NIP. ' + val(d.kamad.nip, 18) + '</td>' +
+        '<b>' + ttdVal(d.kamad.nama) + '</b><br>' + ttdNip(d.kamad.nip) + '</td>' +
         '<td width="33%" style="text-align:center;">Penilai 1,<br><br><br><br><br>' +
-        '<b>' + val(d.penilai1.nama, 28) + '</b><br>NIP. ' + val(d.penilai1.nip, 18) + '</td>' +
+        '<b>' + ttdVal(d.penilai1.nama) + '</b><br>' + ttdNip(d.penilai1.nip) + '</td>' +
         '<td width="33%" style="text-align:center;">Penilai 2,<br><br><br><br><br>' +
-        '<b>' + val(d.penilai2.nama, 28) + '</b><br>NIP. ' + val(d.penilai2.nip, 18) + '</td>' +
+        '<b>' + ttdVal(d.penilai2.nama) + '</b><br>' + ttdNip(d.penilai2.nip) + '</td>' +
         '</tr></table>';
 
     var ttdDafdir = is4
       ? '<p>' + esc(d.tempat) + ', ' + esc(tanggalIndonesia(d.tanggal)) + '</p>' +
         '<table style="width:100%;"><tr>' +
         '<td width="50%" style="text-align:center;">Kepala Madrasah,<br><br><br><br><br>' +
-        '<b>' + val(d.kamad.nama, 34) + '</b><br>NIP. ' + val(d.kamad.nip, 22) + '</td>' +
+        '<b>' + ttdVal(d.kamad.nama) + '</b><br>' + ttdNip(d.kamad.nip) + '</td>' +
         '<td width="50%" style="text-align:center;">Penilai 1,<br><br><br><br><br>' +
-        '<b>' + val(d.penilai1.nama, 34) + '</b><br>NIP. ' + val(d.penilai1.nip, 22) + '</td>' +
+        '<b>' + ttdVal(d.penilai1.nama) + '</b><br>' + ttdNip(d.penilai1.nip) + '</td>' +
         '</tr></table>'
       : '<table style="width:100%;"><tr>' +
         '<td width="33%" style="text-align:center;">Kepala Madrasah,<br><br><br><br><br>' +
-        '<b>' + val(d.kamad.nama, 28) + '</b><br>NIP. ' + val(d.kamad.nip, 18) + '</td>' +
+        '<b>' + ttdVal(d.kamad.nama) + '</b><br>' + ttdNip(d.kamad.nip) + '</td>' +
         '<td width="33%" style="text-align:center;">Penilai 1,<br><br><br><br><br>' +
-        '<b>' + val(d.penilai1.nama, 28) + '</b><br>NIP. ' + val(d.penilai1.nip, 18) + '</td>' +
+        '<b>' + ttdVal(d.penilai1.nama) + '</b><br>' + ttdNip(d.penilai1.nip) + '</td>' +
         '<td width="33%" style="text-align:center;">Penilai 2,<br><br><br><br><br>' +
-        '<b>' + val(d.penilai2.nama, 28) + '</b><br>NIP. ' + val(d.penilai2.nip, 18) + '</td>' +
+        '<b>' + ttdVal(d.penilai2.nama) + '</b><br>' + ttdNip(d.penilai2.nip) + '</td>' +
         '</tr></table>';
 
     var html =
