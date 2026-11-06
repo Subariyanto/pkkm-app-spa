@@ -2980,6 +2980,257 @@ route('#/instrumen-pdf', (root) => {
   });
 });
 
+// --- Berita Acara & Daftar Hadir -------------------------------
+route('#/berita-acara', (root) => {
+  const periodeList = Periode.list();
+  const kamadList = Kamad.list();
+
+  if (kamadList.length === 0) {
+    root.innerHTML = `<div class="alert alert-warning">Belum ada data Kepala Madrasah. Lengkapi dulu di menu <a href="#/kamad">Kamad</a>.</div>`;
+    return;
+  }
+  if (periodeList.length === 0) {
+    root.innerHTML = `<div class="alert alert-info">Belum ada periode. Buat dulu di menu <a href="#/penilaian">Penilaian</a>.</div>`;
+    return;
+  }
+
+  const selPid = Number(location.hash.match(/[?&]p=(\d+)/)?.[1]) || periodeList[0].id;
+  const selKid = Number(location.hash.match(/[?&]k=(\d+)/)?.[1]) || kamadList[0].id;
+  const metaST = Meta.get('berita_acara', {}) || {};
+
+  function opsiKamad(pid, kid) {
+    return kamadList.map(k => {
+      const adaSesi = Penilaian.forKamadPeriode(k.id, pid).length > 0;
+      const tanda = adaSesi ? '' : ' (belum dinilai)';
+      return `<option value="${k.id}" ${k.id === kid ? 'selected' : ''}>${escapeHTML(k.nama)} - ${escapeHTML(k.nama_madrasah || '-')}${tanda}</option>`;
+    }).join('');
+  }
+
+  const periodeById = Object.fromEntries(periodeList.map(p => [p.id, p]));
+  const perSekarang = periodeById[selPid];
+  const jenisDefault = (perSekarang && perSekarang.type === 'tahun_4') ? '4tahunan' : 'tahunan';
+
+  root.innerHTML = `
+    <div class="page-header">
+      <div>
+        <h5><i class="bi bi-file-earmark-text"></i> Berita Acara &amp; Daftar Hadir</h5>
+        <span class="page-header-sub">Cetak berita acara pelaksanaan penilaian dan daftar hadir (Tahunan / 4 Tahunan)</span>
+      </div>
+    </div>
+
+    <div class="alert alert-info text-tiny">
+      Data madrasah, penilai, dan tanggal terisi <strong>otomatis</strong> dari aplikasi.
+      Kolom yang belum ada datanya tetap bergaris titik agar bisa diisi tangan.
+      Nomor dan tanggal surat tugas boleh dikosongkan bila belum ada.
+    </div>
+
+    <div class="card mb-3">
+      <div class="card-body">
+        <form id="frmBA" class="row g-2 align-items-end">
+          <div class="col-md-5">
+            <label class="form-label text-tiny mb-1">Periode</label>
+            <select class="form-select form-select-sm" name="periode_id" id="baPeriode">
+              ${periodeList.map(p => `<option value="${p.id}" ${p.id === selPid ? 'selected' : ''}>${escapeHTML(p.label)} (${escapeHTML(p.tahun)})</option>`).join('')}
+            </select>
+          </div>
+          <div class="col-md-7">
+            <label class="form-label text-tiny mb-1">Kepala Madrasah / Madrasah</label>
+            <select class="form-select form-select-sm" name="kamad_id" id="baKamad">
+              ${opsiKamad(selPid, selKid)}
+            </select>
+          </div>
+
+          <div class="col-md-3">
+            <label class="form-label text-tiny mb-1">Jenis</label>
+            <select class="form-select form-select-sm" name="jenis" id="baJenis">
+              <option value="tahunan" ${jenisDefault === 'tahunan' ? 'selected' : ''}>Tahunan</option>
+              <option value="4tahunan" ${jenisDefault === '4tahunan' ? 'selected' : ''}>4 Tahunan</option>
+            </select>
+          </div>
+          <div class="col-md-3">
+            <label class="form-label text-tiny mb-1">Tanggal Pelaksanaan</label>
+            <input type="date" class="form-control form-control-sm" name="tanggal" value="${escapeHTML((perSekarang && perSekarang.tanggal_penilaian) || '')}">
+          </div>
+          <div class="col-md-2">
+            <label class="form-label text-tiny mb-1">Pukul Mulai</label>
+            <input type="text" class="form-control form-control-sm" name="pukulMulai" placeholder="mis. 08.00" value="${escapeHTML(metaST.pukulMulai || '')}">
+          </div>
+          <div class="col-md-2">
+            <label class="form-label text-tiny mb-1">Pukul Selesai</label>
+            <input type="text" class="form-control form-control-sm" name="pukulSelesai" placeholder="mis. 12.00" value="${escapeHTML(metaST.pukulSelesai || '')}">
+          </div>
+          <div class="col-md-2">
+            <label class="form-label text-tiny mb-1">Tahun</label>
+            <input type="text" class="form-control form-control-sm" name="tahun" value="${escapeHTML((perSekarang && perSekarang.tahun) || new Date().getFullYear())}">
+          </div>
+
+          <div class="col-md-6">
+            <label class="form-label text-tiny mb-1">Nomor Surat Tugas <span class="text-muted">(opsional, disimpan)</span></label>
+            <input type="text" class="form-control form-control-sm" name="nomorSuratTugas" placeholder="Kosongkan bila belum ada" value="${escapeHTML(metaST.nomorSuratTugas || '')}">
+          </div>
+          <div class="col-md-3">
+            <label class="form-label text-tiny mb-1">Tanggal Surat Tugas</label>
+            <input type="date" class="form-control form-control-sm" name="tanggalSuratTugas" value="${escapeHTML(metaST.tanggalSuratTugas || '')}">
+          </div>
+          <div class="col-md-3">
+            <label class="form-label text-tiny mb-1">Kabupaten/Kota</label>
+            <input type="text" class="form-control form-control-sm" name="kabupaten_override" value="${escapeHTML(Meta.kab())}" title="Kosongkan untuk memakai pengaturan aplikasi">
+          </div>
+
+          <div class="col-12 mt-3">
+            <button type="button" class="btn btn-danger btn-sm" id="btnBaPdf"><i class="bi bi-file-earmark-pdf"></i> Unduh PDF</button>
+            <button type="button" class="btn btn-primary btn-sm" id="btnBaWord"><i class="bi bi-file-earmark-word"></i> Unduh Word</button>
+            <span id="baStatus" class="text-tiny ms-2"></span>
+          </div>
+        </form>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-header"><strong><i class="bi bi-eye"></i> Pratinjau Isi</strong></div>
+      <div class="card-body" id="baPratinjau"></div>
+    </div>
+
+    <div class="text-tiny text-muted mt-2">
+      Dokumen terdiri atas <strong>2 halaman</strong>: Berita Acara dan Daftar Hadir.
+      Versi Word dibuat dalam format <code>.doc</code> agar bisa langsung diedit dan ditandatangani.
+    </div>`;
+
+  function bacaForm() {
+    const f = $('#frmBA', root);
+    const fd = new FormData(f);
+    return {
+      periode_id: Number(fd.get('periode_id')),
+      kamad_id: Number(fd.get('kamad_id')),
+      jenis: fd.get('jenis'),
+      tanggal: fd.get('tanggal'),
+      pukulMulai: fd.get('pukulMulai'),
+      pukulSelesai: fd.get('pukulSelesai'),
+      tahun: fd.get('tahun'),
+      nomorSuratTugas: fd.get('nomorSuratTugas'),
+      tanggalSuratTugas: fd.get('tanggalSuratTugas'),
+      kabupaten_override: fd.get('kabupaten_override'),
+    };
+  }
+
+  function bangunData(opt) {
+    const f = bacaForm();
+    const pen = Penilaian.byKamadPeriodeRole(f.kamad_id, f.periode_id, 'pengawas_1')
+      || Penilaian.byKamadPeriode(f.kamad_id, f.periode_id);
+    if (!pen) {
+      throw new Error('Belum ada penilaian untuk madrasah dan periode ini. Buat dulu di menu Penilaian.');
+    }
+    const d = window.BeritaAcara.kumpulkan(pen.id, {
+      jenis: f.jenis,
+      tanggal: f.tanggal,
+      nomorSuratTugas: f.nomorSuratTugas,
+      tanggalSuratTugas: f.tanggalSuratTugas,
+      pukulMulai: f.pukulMulai,
+      pukulSelesai: f.pukulSelesai,
+    });
+    if (f.tahun) d.tahun = f.tahun;
+    if (f.kabupaten_override) d.kamad.kabupaten = f.kabupaten_override;
+    // Simpan preferensi yang sifatnya umum (bukan per madrasah).
+    if (!opt || !opt.janganSimpan) {
+      Meta.set('berita_acara', {
+        nomorSuratTugas: f.nomorSuratTugas || '',
+        tanggalSuratTugas: f.tanggalSuratTugas || '',
+        pukulMulai: f.pukulMulai || '',
+        pukulSelesai: f.pukulSelesai || '',
+      });
+      if (f.kabupaten_override && f.kabupaten_override.trim()) Meta.setKab(f.kabupaten_override.trim());
+    }
+    return d;
+  }
+
+  function gambarPratinjau() {
+    const host = $('#baPratinjau', root);
+    if (!host) return;
+    let d;
+    try {
+      d = bangunData({ janganSimpan: true });
+    } catch (e) {
+      host.innerHTML = `<div class="alert alert-warning mb-0">${escapeHTML(e.message || String(e))}</div>`;
+      return;
+    }
+    const is4 = d.jenis === '4tahunan';
+    const ttdNama = [
+      { j: 'Kepala Madrasah', n: d.kamad.nama, nip: d.kamad.nip },
+      ...(is4
+        ? [{ j: 'Wakil Tim Penilai / Penilai 1', n: d.penilai1.nama, nip: d.penilai1.nip }]
+        : [
+            { j: 'Penilai 1', n: d.penilai1.nama, nip: d.penilai1.nip },
+            { j: 'Penilai 2', n: d.penilai2.nama, nip: d.penilai2.nip },
+          ]),
+    ];
+    const minus = (v, n) => escapeHTML(v || '.'.repeat(n));
+    host.innerHTML = `
+      <div class="text-tiny">
+        <div class="mb-2"><span class="badge bg-${is4 ? 'primary' : 'success'}">${is4 ? 'PKKM 4 TAHUNAN' : 'PKKM TAHUNAN'}</span>
+          <span class="text-muted ms-2">${escapeHTML(d.periodeLabel || '')}</span></div>
+        <table class="table table-sm table-borderless mb-2" style="max-width:640px">
+          <tr><td width="180">Nama Madrasah</td><td>: ${minus(d.kamad.madrasah, 40)}</td></tr>
+          <tr><td>NSM / NPSN</td><td>: ${minus(d.kamad.nsm, 20)} / ${minus(d.kamad.npsn, 16)}</td></tr>
+          <tr><td>Alamat</td><td>: ${minus(d.kamad.alamat, 40)}</td></tr>
+          <tr><td>Kecamatan</td><td>: ${minus(d.kamad.kecamatan, 30)}</td></tr>
+          <tr><td>Kabupaten</td><td>: ${minus(d.kamad.kabupaten, 30)}</td></tr>
+          <tr><td>Nama Kepala Madrasah</td><td>: ${minus(d.kamad.nama, 30)}</td></tr>
+          <tr><td>Tanggal Pelaksanaan</td><td>: ${minus(d.tanggal, 24)}</td></tr>
+          <tr><td>Nomor Surat Tugas</td><td>: ${minus(d.nomorSuratTugas, 30)}</td></tr>
+        </table>
+        <div class="fw-semibold mb-1">Penandatangan</div>
+        <ul class="mb-0">
+          ${ttdNama.map(x => `<li>${escapeHTML(x.j)}: <strong>${minus(x.n, 26)}</strong>${x.nip ? ' (NIP ' + escapeHTML(x.nip) + ')' : ''}</li>`).join('')}
+        </ul>
+      </div>`;
+  }
+
+  $('#baPeriode', root)?.addEventListener('change', (ev) => {
+    const pid = Number(ev.target.value);
+    const kid = Number($('#baKamad', root).value);
+    $('#baKamad', root).innerHTML = opsiKamad(pid, kid);
+    const per = periodeById[pid];
+    $('#baJenis', root).value = (per && per.type === 'tahun_4') ? '4tahunan' : 'tahunan';
+    const inpTanggal = $('input[name="tanggal"]', root);
+    if (inpTanggal) inpTanggal.value = (per && per.tanggal_penilaian) || '';
+    const inpTahun = $('input[name="tahun"]', root);
+    if (inpTahun) inpTahun.value = (per && per.tahun) || new Date().getFullYear();
+    gambarPratinjau();
+  });
+  $('#baKamad', root)?.addEventListener('change', gambarPratinjau);
+  $('#baJenis', root)?.addEventListener('change', gambarPratinjau);
+  root.addEventListener('change', (ev) => {
+    if (ev.target.closest('#frmBA') && ev.target.type === 'date') gambarPratinjau();
+  });
+
+  function buat(ext, mode) {
+    const st = $('#baStatus', root);
+    if (!window.BeritaAcara) { toast('Modul Berita Acara belum termuat. Hard refresh (Ctrl+Shift+R) lalu coba lagi.', 'error'); return; }
+    let d;
+    try {
+      d = bangunData();
+    } catch (e) {
+      toast(e.message || String(e), 'error');
+      if (st) st.textContent = '';
+      return;
+    }
+    try {
+      if (mode === 'word') window.BeritaAcara.unduhWord(d);
+      else window.BeritaAcara.unduhPDF(d);
+      toast(`Berita Acara ${d.jenis === '4tahunan' ? '4 Tahunan' : 'Tahunan'} (${ext.toUpperCase()}) sedang diunduh...`);
+      if (st) st.textContent = 'Berkas ' + ext.toUpperCase() + ' dibuat: ' + window.BeritaAcara.namaBerkas(d, ext);
+      gambarPratinjau();
+    } catch (e) {
+      toast('Gagal membuat berkas: ' + (e.message || e), 'error');
+    }
+  }
+
+  $('#btnBaPdf', root)?.addEventListener('click', () => buat('pdf', 'pdf'));
+  $('#btnBaWord', root)?.addEventListener('click', () => buat('doc', 'word'));
+
+  gambarPratinjau();
+});
+
 // --- Analisis PKB (Pengembangan Keprofesian Berkelanjutan) ----
 const PKB_UNSUR = [
   { code: 'pengembangan_diri', label: 'Pengembangan Diri', jenis: ['Diklat', 'Good Practice', 'Pengembangan Madrasah', 'Kegiatan Kolektif', 'Kajian dan Penelitian Tindakan', 'Pembelajaran Mandiri', 'Pembimbingan/Mentoring'] },
