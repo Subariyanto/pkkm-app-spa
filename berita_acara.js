@@ -24,6 +24,30 @@
     return dd + ' ' + bulan[mm] + ' ' + yy;
   }
 
+  // Nama hari Indonesia dari sebuah tanggal ISO ('' bila tanggal kosong/rusak).
+  function hariIndonesia(iso) {
+    if (!iso) return '';
+    var hari = ['Minggu', 'Senin', 'Selasa', 'Rabu', 'Kamis', 'Jumat', 'Sabtu'];
+    var d = new Date(iso + 'T00:00:00');
+    if (isNaN(d.getTime())) return '';
+    return hari[d.getDay()];
+  }
+
+  // Pecahan tanggal: { hari, angka, bulan, tahun }
+  function pecahTanggal(iso) {
+    var bulan = ['Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni',
+      'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember'];
+    if (!iso) return { hari: '', angka: '', bulan: '', tahun: '' };
+    var d = new Date(iso + 'T00:00:00');
+    if (isNaN(d.getTime())) return { hari: '', angka: '', bulan: '', tahun: '' };
+    return {
+      hari:  hariIndonesia(iso),
+      angka: String(d.getDate()),
+      bulan: bulan[d.getMonth()],
+      tahun: String(d.getFullYear())
+    };
+  }
+
   function tahunHuruf(tahun) {
     var satuan = ['', 'satu', 'dua', 'tiga', 'empat', 'lima', 'enam', 'tujuh', 'delapan', 'sembilan', 'sepuluh', 'sebelas'];
     function t(n) {
@@ -217,7 +241,11 @@
     var thHuruf = tahunHuruf(d.tahun);
     var pukul = d.pukulMulai || titik(8);
     var pukul2 = d.pukulSelesai || titik(8);
-    var pembuka = 'Pada hari ini ' + titik(14) + ' tanggal ' + titik(12) + ' bulan ' + titik(14) +
+    // Hari, tanggal, dan bulan terisi otomatis bila tanggal pelaksanaan ada.
+    var pk = pecahTanggal(d.tanggal);
+    var pembuka = 'Pada hari ini ' + (pk.hari || titik(9)) +
+      ' tanggal ' + (pk.angka || titik(5)) +
+      ' bulan ' + (pk.bulan || titik(9)) +
       ' tahun ' + thHuruf + ' pukul ' + pukul + ' s.d ' + pukul2 + ' WIB, bertempat di:';
     var lines = doc.splitTextToSize(pembuka, CW);
     for (var i = 0; i < lines.length; i++) { doc.text(lines[i], ML, y); y += 5.2; }
@@ -455,6 +483,8 @@
 
     var noST = val(d.nomorSuratTugas, 50);
     var tglST = d.tanggalSuratTugas ? esc(tanggalIndonesia(d.tanggalSuratTugas)) : t(28);
+    // Hari, tanggal, dan bulan terisi otomatis dari tanggal pelaksanaan.
+    var pkWord = pecahTanggal(d.tanggal);
 
     var isiTengah = is4
       ? '<p style="text-align:justify;">Telah dilaksanakan visitasi ke madrasah dalam rangka Penilaian Kinerja Kepala Madrasah (PKKM) 4 Tahunan.</p>' +
@@ -517,7 +547,8 @@
       '<h2>' + subJudul + '</h2>' +
       '<h2>TAHUN ' + esc(d.tahun) + '</h2>' +
       '<hr>' +
-      '<p>Pada hari ini ' + t(14) + ' tanggal ' + t(12) + ' bulan ' + t(14) + ' tahun ' +
+      '<p>Pada hari ini ' + val(pkWord.hari, 9) + ' tanggal ' + val(pkWord.angka, 5) +
+      ' bulan ' + val(pkWord.bulan, 9) + ' tahun ' +
       esc(tahunHuruf(d.tahun)) + ' pukul ' + val(d.pukulMulai, 8) + ' s.d ' + val(d.pukulSelesai, 8) +
       ' WIB, bertempat di:</p>' +
       '<table style="width:100%;">' + identitas + '</table>' +
