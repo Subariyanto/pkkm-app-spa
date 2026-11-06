@@ -318,7 +318,12 @@
         var midY = ry + rowH / 2;
         var BASELINE = 3.0; // koreksi dari titik tengah ke baseline huruf
         doc.setFont('helvetica', 'normal'); doc.setFontSize(7.6); doc.setTextColor(110);
-        doc.text(safeText(label), cx, midY + BASELINE / 2 + 0.6);
+        var labelTxt = safeText(label);
+        doc.text(labelTxt, cx, midY + BASELINE / 2 + 0.6);
+        // Titik dua diposisikan tepat di ujung label agar lurus.
+        var labelW = doc.getTextWidth(labelTxt);
+        var colonX = Math.min(cx + labelW + 1.2, cx + 30);
+        doc.text(':', colonX, midY + BASELINE / 2 + 0.6);
         doc.setFont('helvetica', 'bold'); doc.setFontSize(8.6); doc.setTextColor(0);
         var v = safeText(val);
         var vx = cx + 34;
