@@ -438,7 +438,10 @@
     }
 
     // Isi nama kabupaten/kota dari setting
-    const _kabKota = (window.Meta && typeof window.Meta.kab === 'function') ? window.Meta.kab() : 'Jember';
+    const _kabKota = (window.Meta && typeof window.Meta.kab === 'function') ? window.Meta.kab() : '';
+    // Penanda apakah pengawas benar-benar menyentuh kolom Kabupaten.
+    // Kalau tidak disentuh, nilai bawaan dari Pengaturan diabaikan saat submit.
+    window.__pkkmRegKabEdited = false;
     const _setRegion = () => overlay.querySelectorAll('.auth-region').forEach(el => el.textContent = _kabKota);
     setTimeout(_setRegion, 0);
 
@@ -502,8 +505,8 @@
 
         <div class="form-group">
           <label>Kabupaten / Kota Wilayah Binaan</label>
-          <input id="reg-kabupaten" type="text" placeholder="Contoh: Jember, Bondowoso, Banyuwangi..." autocomplete="off" value="${_kabKota}">
-          <div style="font-size:.75rem; color:#888; margin-top:.25rem;">Nama ini tampil di navbar, footer, dan kop laporan.</div>
+          <input id="reg-kabupaten" type="text" placeholder="Contoh: Jember, Bondowoso, Banyuwangi..." autocomplete="off" value="${_kabKota}" oninput="window.__pkkmRegKabEdited = true">
+          <div style="font-size:.75rem; color:#888; margin-top:.25rem;">Cukup nama kabupaten/kotanya saja — awalan "Pokjawas" ditambahkan otomatis.</div>
         </div>
 
         <div class="form-group">
@@ -591,17 +594,24 @@
 
     document.getElementById('btn-reg-submit').addEventListener('click', async () => {
       const errEl = document.getElementById('auth-reg-err');
+      const regKabEdited = window.__pkkmRegKabEdited === true;
       const code = document.getElementById('reg-code').value.trim().toUpperCase();
       const isTrialCode = code === TRIAL_CODE;
       const role = isTrialCode ? 'trial' : 'pengawas';
       const username = document.getElementById('reg-username').value.trim().toLowerCase();
       const fullname = document.getElementById('reg-fullname').value.trim();
       const _kabInput = (document.getElementById('reg-kabupaten') || {}).value || '';
-      const _kabReg = _kabInput.toString().trim()
-        || ((window.Meta && typeof window.Meta.kab === 'function') ? window.Meta.kab() : 'Jember');
+      // Bersihkan nilai bawaan yang mungkin ikut terisi dari Pengaturan.
+      // Kalau pengawas tidak menyentuh kolom ini, jangan pakai nama kabupaten
+      // bawaan aplikasi — biarkan kosong supaya tidak salah wilayah.
+      let _kabRaw = _kabInput.toString().trim();
+      if (_kabRaw && !regKabEdited) _kabRaw = '';
+      // Buang awalan "Pokjawas" kalau pengawas mengetiknya sendiri,
+      // supaya tidak jadi "Pokjawas Pokjawas Bondowoso".
+      const _kabReg = _kabRaw.replace(/^pokjawas\s+/i, '').trim();
       // Simpan pilihan kabupaten agar navbar/footer/kop laporan ikut menyesuaikan
-      if (window.Meta && typeof window.Meta.setKab === 'function') window.Meta.setKab(_kabReg);
-      const madrasah = 'Pokjawas ' + _kabReg;
+      if (_kabReg && window.Meta && typeof window.Meta.setKab === 'function') window.Meta.setKab(_kabReg);
+      const madrasah = _kabReg ? ('Pokjawas ' + _kabReg) : '';
       const password = document.getElementById('reg-password').value;
       const confirm = document.getElementById('reg-confirm').value;
 
