@@ -79,6 +79,9 @@
   // Ambil kata terakhir sebagai dugaan kecamatan; kalau tidak ada, kosongkan.
   function dugaanKecamatan(kamad) {
     if (!kamad) return '';
+    // Isian eksplisit di Data Kamad selalu menang.
+    var eks = (kamad.kecamatan || '').trim();
+    if (eks) return eks;
     var kkma = (kamad.kkma || '').trim();
     if (!kkma) return '';
     var m = kkma.match(/KK[MA]?\s*\d*\s+(.+)$/i);

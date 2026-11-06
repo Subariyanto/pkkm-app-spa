@@ -686,7 +686,20 @@ route('#/kamad/:id', (root, params) => {
             <label class="form-label">NSM</label>
             <input class="form-control" name="nsm" value="${escapeHTML(k.nsm||'')}">
           </div>
-          <div class="col-md-6">
+          <div class="col-md-4">
+            <label class="form-label">NPSN</label>
+            <input class="form-control" name="npsn" value="${escapeHTML(k.npsn||'')}" placeholder="8 digit">
+          </div>
+          <div class="col-md-4">
+            <label class="form-label">Kecamatan</label>
+            <input class="form-control" name="kecamatan" value="${escapeHTML(k.kecamatan||'')}" placeholder="contoh: Sukowono" list="kecamatanList">
+            <datalist id="kecamatanList">
+              ${[...new Set(Kamad.list().map(x => x.kecamatan).filter(Boolean))]
+                 .map(n => `<option value="${escapeHTML(n)}"></option>`).join('')}
+            </datalist>
+            <div class="form-text">Dipakai di kop dan identitas berita acara.</div>
+          </div>
+          <div class="col-md-4">
             <label class="form-label">KKM / Wilayah Binaan</label>
             <input class="form-control" name="kkma" value="${escapeHTML(k.kkma||'')}" placeholder="contoh: KKM 04 Sukowono">
           </div>

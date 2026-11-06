@@ -146,6 +146,8 @@ const Kamad = {
       jenjang: data.jenjang || 'MA',
       kkma: data.kkma || '',
       nsm: data.nsm || '',
+      npsn: data.npsn || '',
+      kecamatan: data.kecamatan || '',
       nama_madrasah: data.nama_madrasah || '',
       alamat: data.alamat || '',
       masa_jabatan_mulai: data.masa_jabatan_mulai || '',
