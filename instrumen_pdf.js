@@ -293,7 +293,7 @@
       ['Nama Madrasah', identity.kamad_madrasah, 'NSM', identity.kamad_nsm],
       ['Jenjang', (JENJANG_LABEL[jenjang] || jenjang), 'Periode Penilaian', identity.periode],
       ['Nama Penilai', identity.penilai_nama, 'NIP / NIY / NIK Penilai', identity.penilai_nip],
-      ['Jabatan', identity.penilai_jabatan, 'Unit Kerja / Madrasah', identity.penilai_unit],
+      ['Jabatan Penilai', identity.penilai_jabatan, 'Unit Kerja', identity.penilai_unit],
       ['Tanggal Penilaian', identity.tanggal, '', ''],
     ];
 
@@ -317,16 +317,15 @@
         // Teks dipusatkan secara vertikal di tengah baris (baseline tengah).
         var midY = ry + rowH / 2;
         var BASELINE = 3.0; // koreksi dari titik tengah ke baseline huruf
+        // Titik dua pada posisi tetap per kolom agar semua baris lurus sejajar.
+        var COLON_X = 30;   // jarak titik dua dari tepi kiri kolom (mm)
+        var VAL_X = 34;     // awal isian setelah titik dua
         doc.setFont('helvetica', 'normal'); doc.setFontSize(7.6); doc.setTextColor(110);
-        var labelTxt = safeText(label);
-        doc.text(labelTxt, cx, midY + BASELINE / 2 + 0.6);
-        // Titik dua diposisikan tepat di ujung label agar lurus.
-        var labelW = doc.getTextWidth(labelTxt);
-        var colonX = Math.min(cx + labelW + 1.2, cx + 30);
-        doc.text(':', colonX, midY + BASELINE / 2 + 0.6);
+        doc.text(safeText(label), cx, midY + BASELINE / 2 + 0.6);
+        doc.text(':', cx + COLON_X, midY + BASELINE / 2 + 0.6);
         doc.setFont('helvetica', 'bold'); doc.setFontSize(8.6); doc.setTextColor(0);
         var v = safeText(val);
-        var vx = cx + 34;
+        var vx = cx + VAL_X;
         if (v) doc.text(v, vx, midY + 1.0);
         else {
           doc.setDrawColor(140);
