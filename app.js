@@ -3077,6 +3077,24 @@ route('#/berita-acara', (root) => {
             <input type="text" class="form-control form-control-sm" name="kabupaten_override" value="${escapeHTML(Meta.kab())}" title="Kosongkan untuk memakai pengaturan aplikasi">
           </div>
 
+          <div class="col-12"><hr class="my-2"></div>
+          <div class="col-md-6">
+            <label class="form-label text-tiny mb-1">Penilai 1 <span class="text-muted">(boleh dikosongkan, otomatis dari data penilaian bila ada)</span></label>
+            <input type="text" class="form-control form-control-sm" name="penilai1_nama" id="baPen1Nama" placeholder="Nama lengkap dan gelar" value="${escapeHTML(metaST.penilai1_nama || '')}">
+          </div>
+          <div class="col-md-6">
+            <label class="form-label text-tiny mb-1">NIP Penilai 1</label>
+            <input type="text" class="form-control form-control-sm" name="penilai1_nip" id="baPen1Nip" placeholder="NIP" value="${escapeHTML(metaST.penilai1_nip || '')}">
+          </div>
+          <div class="col-md-6 mt-2">
+            <label class="form-label text-tiny mb-1">Penilai 2 <span class="text-muted">(boleh dikosongkan)</span></label>
+            <input type="text" class="form-control form-control-sm" name="penilai2_nama" id="baPen2Nama" placeholder="Nama lengkap dan gelar" value="${escapeHTML(metaST.penilai2_nama || '')}">
+          </div>
+          <div class="col-md-6 mt-2">
+            <label class="form-label text-tiny mb-1">NIP Penilai 2</label>
+            <input type="text" class="form-control form-control-sm" name="penilai2_nip" id="baPen2Nip" placeholder="NIP" value="${escapeHTML(metaST.penilai2_nip || '')}">
+          </div>
+
           <div class="col-12 mt-3">
             <button type="button" class="btn btn-danger btn-sm" id="btnBaPdf"><i class="bi bi-file-earmark-pdf"></i> Unduh PDF</button>
             <button type="button" class="btn btn-primary btn-sm" id="btnBaWord"><i class="bi bi-file-earmark-word"></i> Unduh Word</button>
@@ -3110,6 +3128,10 @@ route('#/berita-acara', (root) => {
       nomorSuratTugas: fd.get('nomorSuratTugas'),
       tanggalSuratTugas: fd.get('tanggalSuratTugas'),
       kabupaten_override: fd.get('kabupaten_override'),
+      penilai1_nama: (fd.get('penilai1_nama') || '').trim(),
+      penilai1_nip: (fd.get('penilai1_nip') || '').trim(),
+      penilai2_nama: (fd.get('penilai2_nama') || '').trim(),
+      penilai2_nip: (fd.get('penilai2_nip') || '').trim(),
     };
   }
 
@@ -3125,12 +3147,21 @@ route('#/berita-acara', (root) => {
       pukulMulai: f.pukulMulai,
       pukulSelesai: f.pukulSelesai,
       tahun: f.tahun,
+      penilai1_nama: f.penilai1_nama,
+      penilai1_nip: f.penilai1_nip,
+      penilai2_nama: f.penilai2_nama,
+      penilai2_nip: f.penilai2_nip,
     };
     // Bila penilaian belum dibuat, dokumen tetap bisa dicetak dengan data
     // madrasah + identitas pengawas dari Pengaturan (sisanya bergaris titik).
     const d = pen
       ? window.BeritaAcara.kumpulkan(pen.id, opts)
       : window.BeritaAcara.kumpulkanKosong(f.kamad_id, f.periode_id, opts);
+    // Isian manual Penilai 1 / 2 menimpa hasil otomatis.
+    if (f.penilai1_nama) d.penilai1.nama = f.penilai1_nama;
+    if (f.penilai1_nip) d.penilai1.nip = f.penilai1_nip;
+    if (f.penilai2_nama) d.penilai2.nama = f.penilai2_nama;
+    if (f.penilai2_nip) d.penilai2.nip = f.penilai2_nip;
     if (f.tahun) d.tahun = f.tahun;
     if (f.kabupaten_override) d.kamad.kabupaten = f.kabupaten_override;
     // Simpan preferensi yang sifatnya umum (bukan per madrasah).
@@ -3140,6 +3171,10 @@ route('#/berita-acara', (root) => {
         tanggalSuratTugas: f.tanggalSuratTugas || '',
         pukulMulai: f.pukulMulai || '',
         pukulSelesai: f.pukulSelesai || '',
+        penilai1_nama: f.penilai1_nama || '',
+        penilai1_nip: f.penilai1_nip || '',
+        penilai2_nama: f.penilai2_nama || '',
+        penilai2_nip: f.penilai2_nip || '',
       });
       if (f.kabupaten_override && f.kabupaten_override.trim()) Meta.setKab(f.kabupaten_override.trim());
     }
@@ -3200,8 +3235,28 @@ route('#/berita-acara', (root) => {
     if (inpTahun) inpTahun.value = (per && per.tahun) || new Date().getFullYear();
     gambarPratinjau();
   });
-  $('#baKamad', root)?.addEventListener('change', gambarPratinjau);
+  $('#baKamad', root)?.addEventListener('change', (ev) => {
+    // Isi otomatis kolom Penilai dari sesi penilaian madrasah terpilih,
+    // tapi jangan timpa isian manual yang sudah diketik pengguna.
+    const pid = Number($('#baPeriode', root).value);
+    const kid = Number(ev.target.value);
+    const sesi = Penilaian.forKamadPeriode(kid, pid) || [];
+    const cari = (role) => sesi.find(s => s.role === role);
+    const set = (sel, nilai) => {
+      const el = $(sel, root);
+      if (el && nilai) el.placeholder = nilai;
+    };
+    const s1 = cari('pengawas_1'), s2 = cari('pengawas_2');
+    set('#baPen1Nama', s1 && s1.penilai_nama);
+    set('#baPen1Nip', s1 && s1.penilai_nip);
+    set('#baPen2Nama', s2 && s2.penilai_nama);
+    set('#baPen2Nip', s2 && s2.penilai_nip);
+    gambarPratinjau();
+  });
   $('#baJenis', root)?.addEventListener('change', gambarPratinjau);
+  root.addEventListener('input', (ev) => {
+    if (ev.target.closest('#frmBA') && /^penilai[12]_/.test(ev.target.name || '')) gambarPratinjau();
+  });
   root.addEventListener('change', (ev) => {
     if (ev.target.closest('#frmBA') && ev.target.type === 'date') gambarPratinjau();
   });
