@@ -3117,17 +3117,20 @@ route('#/berita-acara', (root) => {
     const f = bacaForm();
     const pen = Penilaian.byKamadPeriodeRole(f.kamad_id, f.periode_id, 'pengawas_1')
       || Penilaian.byKamadPeriode(f.kamad_id, f.periode_id);
-    if (!pen) {
-      throw new Error('Belum ada penilaian untuk madrasah dan periode ini. Buat dulu di menu Penilaian.');
-    }
-    const d = window.BeritaAcara.kumpulkan(pen.id, {
+    const opts = {
       jenis: f.jenis,
       tanggal: f.tanggal,
       nomorSuratTugas: f.nomorSuratTugas,
       tanggalSuratTugas: f.tanggalSuratTugas,
       pukulMulai: f.pukulMulai,
       pukulSelesai: f.pukulSelesai,
-    });
+      tahun: f.tahun,
+    };
+    // Bila penilaian belum dibuat, dokumen tetap bisa dicetak dengan data
+    // madrasah + identitas pengawas dari Pengaturan (sisanya bergaris titik).
+    const d = pen
+      ? window.BeritaAcara.kumpulkan(pen.id, opts)
+      : window.BeritaAcara.kumpulkanKosong(f.kamad_id, f.periode_id, opts);
     if (f.tahun) d.tahun = f.tahun;
     if (f.kabupaten_override) d.kamad.kabupaten = f.kabupaten_override;
     // Simpan preferensi yang sifatnya umum (bukan per madrasah).

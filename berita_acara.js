@@ -63,6 +63,57 @@
   }
 
   // ---------------------------------------------------------------- data
+  // Susun data berita acara. Bisa dipakai walau penilaian belum dibuat:
+  // cukup pilih kamad + periode, sisanya diambil dari data madrasah & pengaturan.
+  function kumpulkanKosong(kamadId, periodeId, opts) {
+    opts = opts || {};
+    var kamad = window.Kamad ? window.Kamad.get(kamadId) : null;
+    if (!kamad) throw new Error('Data kepala madrasah tidak ditemukan.');
+    var periode = window.Periode ? window.Periode.get(periodeId) : null;
+
+    // Ambil nama pengawas dari Pengaturan bila sesi penilaian belum ada.
+    var idPen = {};
+    try { idPen = (window.Meta && window.Meta.get('identitas_pengawas', {})) || {}; } catch (e) { idPen = {}; }
+    function pg(n) {
+      var g = idPen['pengawas_' + n];
+      if (g && typeof g === 'object') return { nama: (g.nama || '').trim(), nip: (g.nip || '').trim() };
+      if (n === 1) return { nama: (idPen.nama || '').trim(), nip: (idPen.nip || '').trim() };
+      return { nama: '', nip: '' };
+    }
+    var pa = pg(1), pb = pg(2);
+
+    var tahunPeriode = (periode && periode.tahun) || opts.tahun || new Date().getFullYear();
+    var is4Tahunan = (periode && periode.type === 'tahun_4') || opts.jenis === '4tahunan';
+
+    return {
+      jenis: is4Tahunan ? '4tahunan' : 'tahunan',
+      belumDinilai: true,
+      tahun: tahunPeriode,
+      tanggal: opts.tanggal || (periode && periode.tanggal_penilaian) || '',
+      kamad: {
+        nama: kamad.nama || '',
+        nip: kamad.nip || '',
+        jabatan: kamad.jabatan || (kamad.jenjang === 'RA' ? 'Kepala RA' : 'Kepala Madrasah'),
+        jenjang: kamad.jenjang || '',
+        nsm: kamad.nsm || '',
+        npsn: kamad.npsn || '',
+        madrasah: kamad.nama_madrasah || '',
+        alamat: kamad.alamat || '',
+        kecamatan: dugaanKecamatan(kamad),
+        kabupaten: namaKab(),
+        kkma: kamad.kkma || '',
+      },
+      penilai1: { nama: pa.nama, nip: pa.nip },
+      penilai2: { nama: pb.nama, nip: pb.nip },
+      nomorSuratTugas: (opts.nomorSuratTugas || '').trim(),
+      tanggalSuratTugas: (opts.tanggalSuratTugas || '').trim(),
+      pukulMulai: (opts.pukulMulai || '').trim(),
+      pukulSelesai: (opts.pukulSelesai || '').trim(),
+      tempat: tempatTtd(),
+      periodeLabel: periode ? periode.label : '',
+    };
+  }
+
   // Susun data berita acara dari penilaian yang dipilih.
   function kumpulkan(penilaianId, opts) {
     opts = opts || {};
@@ -527,6 +578,7 @@
 
   window.BeritaAcara = {
     kumpulkan: kumpulkan,
+    kumpulkanKosong: kumpulkanKosong,
     unduhPDF: unduhPDF,
     unduhWord: unduhWord,
     pdfData: pdfData,
