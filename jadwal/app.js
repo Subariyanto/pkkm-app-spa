@@ -223,6 +223,8 @@ if ($('cards')) {
   $('cancel').onclick = () => { $('modal').style.display = 'none'; };
   $('modal').onclick = (e) => { if (e.target === $('modal')) $('modal').style.display = 'none'; };
 
+  if ($('add')) $('add').onclick = addNew;
+
   $('add-row').onclick = () => { readRows(); draft.push({ 'Nama Madrasah': '', 'Nama Kepala Madrasah': '' }); paintRows(); };
 
   $('save').onclick = async () => {
