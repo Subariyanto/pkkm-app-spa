@@ -208,6 +208,53 @@ function addNew() {
   $('date').focus();
 }
 
+function collectDaftar() {
+  readRows();
+  return draft
+    .map((m) => ({ id: m.id || null, nama: String(m['Nama Madrasah'] || '').trim(), kepala: String(m['Nama Kepala Madrasah'] || '').trim() }))
+    .filter((m) => m.nama || m.kepala);
+}
+
+// Menyimpan sesi yang sedang dibuka. Dipakai tombol "Simpan perubahan" dan "+ Tambah sesi".
+async function persistSession(btn) {
+  const daftar = collectDaftar();
+  if (!daftar.length) { alert('Tambahkan minimal satu madrasah pada sesi ini.'); return false; }
+  if (daftar.find((m) => !m.nama || !m.kepala)) { alert('Nama madrasah dan nama kepala madrasah harus diisi lengkap.'); return false; }
+
+  const label = btn.textContent;
+  btn.disabled = true;
+  btn.textContent = 'Menyimpan…';
+  try {
+    const sid = await rpc('pkkm_admin_session_save', {
+      p_admin_key: adminKey, p_id: selected ? selected.id : null,
+      p_tanggal: $('date').value || null, p_jam: $('time').value,
+      p_tempat: $('place').value.trim() || daftar[0].nama,
+      p_lokasi: $('location').value, p_catatan: $('notes').value,
+    });
+    for (const id of removed) {
+      await rpc('pkkm_admin_madrasah_delete', { p_admin_key: adminKey, p_id: id });
+    }
+    for (const m of daftar) {
+      await rpc('pkkm_admin_madrasah_save', {
+        p_admin_key: adminKey, p_id: m.id, p_session_id: sid,
+        p_nama_madrasah: m.nama, p_nama_kepala: m.kepala,
+      });
+    }
+    removed = [];
+    rows = await rpc('pkkm_admin_list', { p_admin_key: adminKey });
+    return true;
+  } catch (e) {
+    alert('Gagal menyimpan: ' + e.message);
+    console.error(e);
+    return false;
+  } finally {
+    btn.disabled = false;
+    btn.textContent = label;
+  }
+}
+
+function closeModal() { $('modal').style.display = 'none'; }
+
 async function share(id) {
   const s = rows.find((r) => String(r.id) === String(id));
   if (!s) return;
@@ -228,44 +275,19 @@ if ($('cards')) {
   $('add-row').onclick = () => { readRows(); draft.push({ 'Nama Madrasah': '', 'Nama Kepala Madrasah': '' }); paintRows(); };
 
   $('save').onclick = async () => {
-    readRows();
-    const nama = $('place').value.trim();
-    const daftar = draft
-      .map((m) => ({ id: m.id || null, nama: String(m['Nama Madrasah'] || '').trim(), kepala: String(m['Nama Kepala Madrasah'] || '').trim() }))
-      .filter((m) => m.nama || m.kepala);
+    if (await persistSession($('save'))) { closeModal(); render(); }
+  };
 
-    if (!daftar.length) return alert('Tambahkan minimal satu madrasah pada sesi ini.');
-    const kosong = daftar.find((m) => !m.nama || !m.kepala);
-    if (kosong) return alert('Nama madrasah dan nama kepala madrasah harus diisi lengkap.');
-
-    const btn = $('save');
-    btn.disabled = true;
-    btn.textContent = 'Menyimpan…';
-    try {
-      const sid = await rpc('pkkm_admin_session_save', {
-        p_admin_key: adminKey, p_id: selected ? selected.id : null,
-        p_tanggal: $('date').value || null, p_jam: $('time').value,
-        p_tempat: nama || daftar[0].nama, p_lokasi: $('location').value, p_catatan: $('notes').value,
-      });
-      for (const id of removed) {
-        await rpc('pkkm_admin_madrasah_delete', { p_admin_key: adminKey, p_id: id });
-      }
-      for (const m of daftar) {
-        await rpc('pkkm_admin_madrasah_save', {
-          p_admin_key: adminKey, p_id: m.id, p_session_id: sid,
-          p_nama_madrasah: m.nama, p_nama_kepala: m.kepala,
-        });
-      }
-      rows = await rpc('pkkm_admin_list', { p_admin_key: adminKey });
-      $('modal').style.display = 'none';
-      render();
-    } catch (e) {
-      alert('Gagal menyimpan: ' + e.message);
-      console.error(e);
-    } finally {
-      btn.disabled = false;
-      btn.textContent = 'Simpan perubahan';
-    }
+  // Simpan sesi yang sedang diedit, lalu buka form sesi berikutnya di tanggal yang sama
+  $('add-session').onclick = async () => {
+    if (!await persistSession($('add-session'))) return;
+    render();
+    const tanggal = $('date').value, tempat = $('place').value, lokasi = $('location').value;
+    addNew();
+    $('date').value = tanggal;
+    $('place').value = tempat;
+    $('location').value = lokasi;
+    $('time').focus();
   };
 
   $('del').onclick = async () => {
