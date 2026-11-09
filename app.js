@@ -2169,6 +2169,166 @@ route('#/laporan-lengkap/:kkma/:periodeId', (root, params) => {
   `;
 });
 
+// === Cetak Rata-rata Penilaian Pengawas Madrasah I & II =======
+// Merangkum nilai Pengawas Madrasah I, II, dan rata-ratanya — nilai akhir
+// maupun nilai per komponen — dalam satu dokumen siap cetak (A4 portrait).
+function aggPengawasSessions(agg) {
+  const roles = window.PKKM_ROLES || [];
+  const groupOf = (code) => ((roles.find(r => r.code === code) || {}).group || 'pengawas');
+  return (agg.sessions || [])
+    .filter(s => groupOf(s.role || 'pengawas_1') === 'pengawas')
+    .sort((a, b) => String(a.role || '').localeCompare(String(b.role || '')));
+}
+
+function buildAggPrintHTML(kamad, periode, agg) {
+  const kab = (window.Meta && typeof Meta.kab === 'function') ? Meta.kab('') : '';
+  const kabTampil = kab || '____________';
+  const pengawas = (typeof Meta.pengawas === 'function') ? Meta.pengawas() : (Meta.get('identitas_pengawas', {}) || {});
+  const pokjawas = (typeof Meta.pokjawas === 'function') ? Meta.pokjawas() : (Meta.get('identitas_ketua_pokjawas', {}) || {});
+  const tempat = (typeof Meta.tempat === 'function') ? Meta.tempat('') : (Meta.get('lokasi_ttd', '') || kabTampil);
+  const hariIni = pkbTanggalIndonesia(nowLocal().slice(0, 10));
+  const roleLabel = (code) => ((window.PKKM_ROLES || []).find(r => r.code === code) || {}).label || code;
+
+  const sessions = aggPengawasSessions(agg);
+  const akhirList = sessions.map(s => hitungNilaiAkhir(s.id).nilaiAkhir);
+  const rataAkhir = akhirList.length ? akhirList.reduce((a, b) => a + b, 0) / akhirList.length : 0;
+  const sebutan = window.getPKKMSebutan(rataAkhir);
+  const kompList = window.PKKM_KOMPONEN_META || window.PKKM_KOMPONEN || [];
+
+  const headerKolom = sessions.length
+    ? sessions.map(s => `<th>${escapeHTML(roleLabel(s.role || 'pengawas_1'))}</th>`).join('')
+    : '<th>Pengawas Madrasah</th>';
+
+  const selNilaiAkhir = sessions.length
+    ? sessions.map(s => {
+        const a = hitungNilaiAkhir(s.id);
+        const sb = window.getPKKMSebutan(a.nilaiAkhir);
+        return `<td class="agg-c"><strong>${fmtNilai(a.nilaiAkhir)}</strong>${sb ? `<div class="agg-tiny">${escapeHTML(sb.label)}</div>` : ''}</td>`;
+      }).join('')
+    : '<td class="agg-c">-</td>';
+
+  const barisKomponen = kompList.map(km => {
+    const vals = sessions.map(s => hitungNilaiKomponen(s.id, km.code).nilai);
+    const rata = vals.length ? vals.reduce((a, b) => a + b, 0) / vals.length : 0;
+    const sel = vals.length
+      ? vals.map(v => `<td class="agg-c">${fmtNilai(v)}</td>`).join('')
+      : '<td class="agg-c">-</td>';
+    return `<tr>
+      <td class="agg-c">${km.no}</td>
+      <td>${escapeHTML(km.label)}</td>
+      ${sel}
+      <td class="agg-c"><strong>${fmtNilai(rata)}</strong></td>
+    </tr>`;
+  }).join('');
+
+  // Blok tanda tangan diisi para pengawas penilai (I & II) dari data sesi;
+  // bila nama penilai belum tersimpan, jatuh ke identitas Pengawas di Pengaturan.
+  const ttdList = (sessions.length ? sessions : [null]).map(s => ({
+    nama: ((s && s.penilai_nama) || '').trim() || (pengawas.nama || ''),
+    nip: ((s && s.penilai_nip) || '').trim() || (pengawas.nip || ''),
+  }));
+
+  return `<div class="agg-print-doc">
+    <div class="agg-kop">
+      <div class="k1">KEMENTERIAN AGAMA REPUBLIK INDONESIA</div>
+      <div class="k2">KANTOR KEMENTERIAN AGAMA KABUPATEN ${escapeHTML(String(kabTampil).toUpperCase())}</div>
+      <div class="k3">POKJAWAS MADRASAH</div>
+    </div>
+
+    <h4>Laporan Hasil Penilaian Kinerja Kepala Madrasah</h4>
+    <div class="agg-sub">Rata-rata Penilaian Pengawas Madrasah I dan II</div>
+
+    <table class="agg-id">
+      <tr>
+        <td width="21%">Nama Kepala Madrasah</td><td width="29%">: ${escapeHTML(kamad.nama || '-')}</td>
+        <td width="18%">Periode</td><td>: ${escapeHTML(periode.label || '-')}</td>
+      </tr>
+      <tr>
+        <td>NIP</td><td>: ${escapeHTML(kamad.nip || '-')}</td>
+        <td>Tanggal Penilaian</td><td>: ${escapeHTML(pkbTanggalIndonesia(periode.tanggal_penilaian || ''))}</td>
+      </tr>
+      <tr>
+        <td>Madrasah</td><td>: ${escapeHTML(kamad.nama_madrasah || '-')} (${escapeHTML(kamad.jenjang || '-')})</td>
+        <td>KKM / Wilayah</td><td>: ${escapeHTML(kamad.kkma || '-')}</td>
+      </tr>
+      <tr>
+        <td>NSM</td><td>: ${escapeHTML(kamad.nsm || '-')}</td>
+        <td>Jumlah Penilai</td><td>: ${sessions.length} pengawas</td>
+      </tr>
+    </table>
+
+    <table class="agg-t">
+      <thead>
+        <tr>
+          <th width="5%">No</th>
+          <th>Komponen Penilaian</th>
+          ${headerKolom}
+          <th width="15%">Rata-rata</th>
+        </tr>
+      </thead>
+      <tbody>
+        ${barisKomponen}
+        <tr class="agg-total">
+          <td colspan="2" class="agg-r"><strong>Nilai Akhir (tertimbang)</strong></td>
+          ${selNilaiAkhir}
+          <td class="agg-c"><strong>${fmtNilai(rataAkhir)}</strong></td>
+        </tr>
+      </tbody>
+    </table>
+
+    <div class="agg-sebutan">Sebutan: <strong>${sebutan ? escapeHTML(sebutan.label) : '-'}</strong> &mdash; nilai rata-rata ${fmtNilai(rataAkhir)}</div>
+
+    <table class="agg-ttd">
+      <tr>
+        <td colspan="${ttdList.length}" class="agg-ttd-tgl">${escapeHTML(tempat)}, ${escapeHTML(hariIni)}</td>
+      </tr>
+      <tr>
+        ${ttdList.map(t => `<td>
+          <div>Pengawas Madrasah,</div>
+          <div class="nm">${escapeHTML(t.nama || '..............................')}</div>
+          <div>NIP. ${escapeHTML(t.nip || '-')}</div>
+        </td>`).join('')}
+      </tr>
+    </table>
+
+    <div class="agg-note">Catatan: Nilai rata-rata merupakan gabungan penilaian Pengawas Madrasah I dan II pada periode yang sama, dihitung dari nilai akhir tertimbang dan nilai tiap komponen. Dokumen ini menjadi lampiran resmi Rekap Agregat Multi-Penilai.</div>
+  </div>`;
+}
+
+// Cetak dokumen rata-rata pengawas. Ukuran kertas dipasang lewat <style>
+// dinamis agar tidak memengaruhi cetakan modul lain (PKB, Rekap, Laporan).
+function cetakAggPrint(html) {
+  const lama = document.querySelector('.agg-print-doc');
+  if (lama) lama.remove();
+  const wrap = document.createElement('div');
+  wrap.innerHTML = html;
+  document.body.appendChild(wrap.firstElementChild);
+
+  const st = document.createElement('style');
+  st.id = 'aggPrintPageRule';
+  st.textContent = '@media print { @page { size: A4 portrait; margin: 1.6cm 1.4cm; } }';
+  document.head.appendChild(st);
+
+  document.body.classList.add('agg-printing');
+
+  const bersih = () => {
+    document.body.classList.remove('agg-printing');
+    const el = document.querySelector('.agg-print-doc');
+    if (el) el.remove();
+    const s = document.getElementById('aggPrintPageRule');
+    if (s) s.remove();
+    window.removeEventListener('afterprint', bersih);
+  };
+  window.addEventListener('afterprint', bersih);
+  setTimeout(() => {
+    window.print();
+    setTimeout(bersih, 1500);
+  }, 60);
+}
+
+window.buildAggPrintHTML = buildAggPrintHTML;
+window.cetakAggPrint = cetakAggPrint;
+
 // --- Rekap Agregat (multi-assessor) ----------------------------
 route('#/agregat/:kamadId/:periodeId', (root, params) => {
   const kamad = Kamad.get(Number(params.kamadId));
@@ -2205,6 +2365,7 @@ route('#/agregat/:kamadId/:periodeId', (root, params) => {
     <div class="mb-3">
       <a href="#/rekap-tahunan?k=${kamad.id}" class="btn btn-sm btn-outline-primary"><i class="bi bi-calendar3-range"></i> Rekap 4 Tahunan</a>
       <a href="#/pkb/${kamad.id}/${periode.id}" class="btn btn-sm btn-outline-warning"><i class="bi bi-mortarboard"></i> Analisis PKB</a>
+      <button class="btn btn-sm btn-gradient-print btn-agg-cetak"><i class="bi bi-printer"></i> Cetak Rata-rata Pengawas I &amp; II</button>
       <button class="btn btn-sm btn-success" id="btnAggExportXlsx"><i class="bi bi-file-earmark-excel"></i> Export Excel Resmi</button>
     </div>
 
@@ -2277,7 +2438,10 @@ route('#/agregat/:kamadId/:periodeId', (root, params) => {
 
       <div class="col-12">
         <div class="card">
-          <div class="card-header"><i class="bi bi-bar-chart"></i> Nilai Komponen per Penilai</div>
+          <div class="card-header d-flex justify-content-between align-items-center">
+            <span><i class="bi bi-bar-chart"></i> Nilai Komponen per Penilai</span>
+            <button type="button" class="btn btn-sm btn-gradient-print btn-agg-cetak"><i class="bi bi-printer"></i> Cetak Rata-rata</button>
+          </div>
           <div class="card-body p-0">
             <div class="table-responsive">
               <table class="table mb-0">
@@ -2311,6 +2475,15 @@ route('#/agregat/:kamadId/:periodeId', (root, params) => {
   document.getElementById('btnAggExportXlsx')?.addEventListener('click', async () => {
     if (typeof window.exportPKKMExcel !== 'function') { toast('Modul export belum siap.', 'error'); return; }
     await window.exportPKKMExcel(kamad.id);
+  });
+
+  // Cetak laporan rata-rata Pengawas Madrasah I & II
+  $$('.btn-agg-cetak').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const sesi = aggPengawasSessions(agg);
+      if (!sesi.length) { toast('Belum ada penilaian pengawas untuk dicetak.', 'error'); return; }
+      cetakAggPrint(buildAggPrintHTML(kamad, periode, agg));
+    });
   });
 });
 

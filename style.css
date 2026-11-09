@@ -750,6 +750,93 @@ a:hover { color: var(--pkkm-primary-dark); }
   .pkb-print-doc .pkb-print-page:last-child { page-break-after: auto !important; }
 }
 
+/* ===== Dokumen cetak Rata-rata Penilaian Pengawas (Rekap Agregat) ===== */
+.agg-print-doc { display: none; }
+
+@media print {
+  /* Hanya dokumen agregat yang tercetak saat tombol Cetak Rata-rata ditekan */
+  body.agg-printing > *:not(.agg-print-doc) { display: none !important; }
+  body.agg-printing .agg-print-doc {
+    display: block !important;
+    color: #000;
+    font-family: 'Times New Roman', Times, serif;
+    font-size: 11pt;
+  }
+  .agg-print-doc .agg-kop {
+    text-align: center;
+    border-bottom: 3px double #000;
+    padding-bottom: .35rem;
+    margin-bottom: .8rem;
+  }
+  .agg-print-doc .agg-kop .k1 { font-weight: bold; font-size: 12pt; }
+  .agg-print-doc .agg-kop .k2 { font-size: 11.5pt; }
+  .agg-print-doc .agg-kop .k3 { font-weight: bold; font-size: 12.5pt; }
+  .agg-print-doc h4 {
+    text-align: center;
+    font-size: 12.5pt;
+    font-weight: bold;
+    text-transform: uppercase;
+    margin: .8rem 0 .15rem;
+  }
+  .agg-print-doc .agg-sub { text-align: center; margin-bottom: .9rem; }
+  .agg-print-doc table.agg-id {
+    width: 100%;
+    border-collapse: collapse;
+    margin-bottom: .7rem;
+  }
+  .agg-print-doc table.agg-id td { padding: .12rem .3rem; vertical-align: top; }
+  .agg-print-doc table.agg-t {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 10pt;
+  }
+  .agg-print-doc table.agg-t th,
+  .agg-print-doc table.agg-t td {
+    border: 1px solid #000;
+    padding: .3rem .35rem;
+    vertical-align: middle;
+  }
+  .agg-print-doc table.agg-t th {
+    background: #e8f5e9;
+    text-align: center;
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+  .agg-print-doc table.agg-t tr.agg-total td {
+    background: #f1f8e9;
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+  .agg-print-doc .agg-c { text-align: center; }
+  .agg-print-doc .agg-r { text-align: right; }
+  .agg-print-doc .agg-tiny { font-size: 8.5pt; }
+  .agg-print-doc .agg-sebutan {
+    margin-top: .6rem;
+    font-size: 10.5pt;
+  }
+  .agg-print-doc table.agg-ttd {
+    width: 100%;
+    margin-top: 1.6rem;
+    page-break-inside: avoid;
+  }
+  .agg-print-doc table.agg-ttd td {
+    text-align: center;
+    vertical-align: top;
+    padding: .2rem;
+  }
+  .agg-print-doc .agg-ttd-tgl { text-align: right !important; padding-bottom: .8rem !important; }
+  .agg-print-doc .agg-ttd .nm {
+    font-weight: bold;
+    text-decoration: underline;
+    margin-top: 3.5rem;
+  }
+  .agg-print-doc .agg-note {
+    margin-top: .9rem;
+    font-size: 9.5pt;
+    font-style: italic;
+  }
+}
+
 /* Saat list-group-item aktif (warna biru), tombol icon di dalamnya tetap terlihat */
 .list-group-item.active [data-action="edit-periode"] {
   color: #fff !important;
