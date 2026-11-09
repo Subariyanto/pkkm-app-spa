@@ -484,7 +484,9 @@
     const viewOn = !!(window.pkkmViewActive && window.pkkmViewActive());
     const view = window.__PKKM_VIEW || null;
     const periodeList = window.Periode.list();
-    const kab = (window.Meta && typeof window.Meta.kab === 'function') ? window.Meta.kab() : 'Jember';
+    const kab = (window.Meta && typeof window.Meta.kab === 'function') ? window.Meta.kab('') : '';
+    // Placeholder bila nama kabupaten/kota belum diisi di Pengaturan.
+    const kabTampil = kab || '____________';
 
     const prefPid = Number((location.hash.match(/[?&]p=(\d+)/) || [])[1]) || (periodeList[0] ? periodeList[0].id : 0);
     const selected = periodeList.find((p) => p.id === prefPid) || periodeList[0] || null;
@@ -524,7 +526,7 @@
 
       <div class="print-only text-center mb-3" style="display:none;">
         <div style="font-weight:700; font-size:1.05rem;">REKAP PKKM TINGKAT KABUPATEN/KOTA</div>
-        <div style="font-weight:600;">POKJAWAS MADRASAH KAB. ${esc(kab.toUpperCase())}</div>
+        <div style="font-weight:600;">POKJAWAS MADRASAH KAB. ${esc(kabTampil.toUpperCase())}</div>
         <div class="text-tiny">${selected ? esc(selected.label) : '-'}</div>
       </div>
 

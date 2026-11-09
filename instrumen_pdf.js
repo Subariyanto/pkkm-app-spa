@@ -56,18 +56,21 @@
 
   function getMeta() {
     var out = {
-      kab: 'Jember',
+      kab: '',
       pok: { nama: '', nip: '' },
       pengawas: { nama: '', nip: '', jabatan: 'Pengawas Madrasah', unit: '' },
     };
     try {
       if (window.Meta) {
-        out.kab = (typeof window.Meta.kab === 'function') ? window.Meta.kab() : (window.Meta.get('kabupaten_kota', 'Jember') || 'Jember');
+        // Nama kabupaten/kota fleksibel mengikuti Pengaturan pengguna.
+        out.kab = (typeof window.Meta.kab === 'function')
+          ? window.Meta.kab('')
+          : (window.Meta.get('kabupaten_kota', '') || '');
         out.pok = window.Meta.get('identitas_ketua_pokjawas', {}) || out.pok;
         out.pengawas = window.Meta.get('identitas_pengawas', {}) || out.pengawas;
       }
     } catch (e) { /* noop */ }
-    if (!out.pengawas.unit) out.pengawas.unit = 'Kemenag Kabupaten ' + out.kab;
+    if (!out.pengawas.unit) out.pengawas.unit = out.kab ? ('Kemenag Kabupaten ' + out.kab) : '';
     if (!out.pengawas.jabatan) out.pengawas.jabatan = 'Pengawas Madrasah';
     return out;
   }
@@ -486,8 +489,12 @@
     // ---- Tanda tangan ----
     ctx.space(34);
     ctx.y += 2;
-    var tempat = 'Jember';
-    try { tempat = (window.Meta && window.Meta.get('lokasi_ttd', 'Jember')) || 'Jember'; } catch (e) { /* noop */ }
+    var tempat = '';
+    try {
+      tempat = (window.Meta && typeof window.Meta.tempat === 'function')
+        ? window.Meta.tempat('')
+        : ((window.Meta && window.Meta.get('lokasi_ttd', '')) || '');
+    } catch (e) { /* noop */ }
     var half = ctx.CW / 2;
     var sigTop = ctx.y;
     doc.setFont('helvetica', 'normal'); doc.setFontSize(9); doc.setTextColor(0);

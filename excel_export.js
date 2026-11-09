@@ -325,7 +325,7 @@
       ws.getCell(`B${r}`).font = { bold: true, italic: true };
       r += 3;
       // Tanda tangan
-      ws.getCell(`F${r}`).value = `${window.Meta.get('lokasi_ttd', 'Jember') || ''}, ${session.tanggal || ''}`;
+      ws.getCell(`F${r}`).value = `${(window.Meta.tempat ? window.Meta.tempat('') : window.Meta.get('lokasi_ttd', '')) || ''}, ${session.tanggal || ''}`;
       r++;
       ws.getCell(`F${r}`).value = 'Penilai,';
       r += 4;

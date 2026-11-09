@@ -128,14 +128,20 @@
     const subAggList = Object.values(subAggMap).map(x => ({ ...x, rata: x.vals.reduce((s, v) => s + v, 0) / x.vals.length })).sort((a, b) => a.rata - b.rata);
 
     const pengawas = window.Meta.get('identitas_pengawas', { nama: '', nip: '' });
-    const pokjawas = window.Meta.get('identitas_ketua_pokjawas', { nama: 'SUBARIYANTO, S.Pd, M.Pd.I', nip: '197002122005011004' });
-    const tempat = window.Meta.get('lokasi_ttd', 'Jember');
-    // Ikuti Data Isian: kabupaten/kota diambil dari Pengaturan (bukan hardcode Jember)
-    const kab = (window.Meta.kab ? window.Meta.kab() : (window.Meta.get('kabupaten_kota', '') || 'Jember')).trim();
+    const pokjawas = window.Meta.get('identitas_ketua_pokjawas', { nama: '', nip: '' });
+    // Lokasi TTD & kabupaten/kota mengikuti Pengaturan pengguna (bukan hardcode
+    // Jember), sehingga kop laporan menyesuaikan daerah masing-masing pengawas.
+    const tempat = (typeof window.Meta.tempat === 'function')
+      ? window.Meta.tempat('')
+      : (window.Meta.get('lokasi_ttd', '') || '');
+    const kab = (window.Meta.kab ? window.Meta.kab('') : (window.Meta.get('kabupaten_kota', '') || '')).trim();
+    // Bila pengguna belum mengisi nama kabupaten, tampilkan garis isian supaya
+    // dokumen tetap rapi dan jelas bahwa kolom itu perlu dilengkapi.
+    const kabTampil = kab || '____________';
 
     return {
       kkma, periode, kamadList, rows, dinilai, rataKKM, tertinggi, terendah,
-      komponenAgg, subAggList, pengawas, pokjawas, tempat, kab, isFourYear,
+      komponenAgg, subAggList, pengawas, pokjawas, tempat, kab, kabTampil, isFourYear,
     };
   }
 
@@ -146,7 +152,7 @@
       <section class="ll-page ll-cover">
         <div class="ll-cover-inner">
           <div class="ll-cover-top">
-            <div class="ll-cover-instansi">KEMENTERIAN AGAMA REPUBLIK INDONESIA<br>KANTOR KEMENTERIAN AGAMA KABUPATEN ${escapeHTML(String(ctx.kab).toUpperCase())}<br>POKJAWAS MADRASAH</div>
+            <div class="ll-cover-instansi">KEMENTERIAN AGAMA REPUBLIK INDONESIA<br>KANTOR KEMENTERIAN AGAMA KABUPATEN ${escapeHTML(String(ctx.kabTampil).toUpperCase())}<br>POKJAWAS MADRASAH</div>
           </div>
           <div class="ll-cover-mid">
             <h1 class="ll-cover-title">LAPORAN<br>PENILAIAN KINERJA<br>KEPALA MADRASAH<br>(PKKM)</h1>
@@ -162,7 +168,7 @@
             <div>Disusun oleh Pengawas Bina:</div>
             <div class="ll-cover-pengawas"><strong>${escapeHTML(ctx.pengawas.nama || '..............................')}</strong></div>
             <div>NIP. ${escapeHTML(ctx.pengawas.nip || '-')}</div>
-            <div class="mt-2"><strong>POKJAWAS MADRASAH KAB. ${escapeHTML(String(ctx.kab).toUpperCase())}</strong></div>
+            <div class="mt-2"><strong>POKJAWAS MADRASAH KAB. ${escapeHTML(String(ctx.kabTampil).toUpperCase())}</strong></div>
             <div>TAHUN ${new Date().getFullYear()}</div>
           </div>
         </div>

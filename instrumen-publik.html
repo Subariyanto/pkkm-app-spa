@@ -134,11 +134,11 @@
   // --- Stub minimal untuk Meta: halaman publik tidak membaca localStorage aplikasi.
   // Nilai default hanya untuk kop dokumen; pengguna mengisi identitas lewat form.
   window.Meta = {
-    _d: { kabupaten_kota: 'Jember', lokasi_ttd: 'Jember' },
+    _d: { kabupaten_kota: '', lokasi_ttd: '' },
     get: function (k, d) { return (this._d && this._d[k] !== undefined) ? this._d[k] : d; },
     getAll: function () { return Object.assign({}, this._d); },
     set: function () {},
-    kab: function () { return this._d.kabupaten_kota || 'Jember'; },
+    kab: function () { return this._d.kabupaten_kota || ''; },
     bobot: function () {
       var out = {}, meta = window.PKKM_KOMPONEN_META || window.PKKM_KOMPONEN || [];
       for (var i = 0; i < meta.length; i++) out[meta[i].code] = meta[i].bobot_default != null ? meta[i].bobot_default : 20;

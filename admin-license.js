@@ -7,10 +7,10 @@
   // Nama kabupaten/kota mengikuti Pengaturan (fleksibel, tidak hardcode)
   function getKab() {
     try {
-      if (window.Meta && typeof window.Meta.kab === 'function') return window.Meta.kab();
+      if (window.Meta && typeof window.Meta.kab === 'function') return window.Meta.kab('');
       var m = JSON.parse(localStorage.getItem('pkkm_v1_meta') || '{}');
-      return (m.kabupaten_kota || 'Jember');
-    } catch (e) { return 'Jember'; }
+      return (m.kabupaten_kota || '');
+    } catch (e) { return ''; }
   }
 
   var ADMIN_KEY_STORAGE = 'pkkm_admin_key'; // sessionStorage only

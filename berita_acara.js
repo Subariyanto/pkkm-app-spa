@@ -64,14 +64,14 @@
 
   function namaKab() {
     try {
-      var k = (window.Meta && window.Meta.kab) ? window.Meta.kab() : 'Jember';
+      var k = (window.Meta && window.Meta.kab) ? window.Meta.kab('') : '';
       return k || titik(24);
     } catch (e) { return titik(24); }
   }
 
   function tempatTtd() {
     try {
-      return (window.Meta && window.Meta.get('lokasi_ttd', '')) || namaKab();
+      return (window.Meta && window.Meta.tempat ? window.Meta.tempat('') : ((window.Meta && window.Meta.get('lokasi_ttd', '')) || '')) || namaKab();
     } catch (e) { return namaKab(); }
   }
 

@@ -438,7 +438,7 @@
     }
 
     // Isi nama kabupaten/kota dari setting
-    const _kabKota = (window.Meta && typeof window.Meta.kab === 'function') ? window.Meta.kab() : '';
+    const _kabKota = (window.Meta && typeof window.Meta.kab === 'function') ? window.Meta.kab('') : '';
     // Penanda apakah pengawas benar-benar menyentuh kolom Kabupaten.
     // Kalau tidak disentuh, nilai bawaan dari Pengaturan diabaikan saat submit.
     window.__pkkmRegKabEdited = false;
@@ -710,7 +710,7 @@
     }
 
     // Isi nama kabupaten/kota dari setting
-    const _kabKota = (window.Meta && typeof window.Meta.kab === 'function') ? window.Meta.kab() : 'Jember';
+    const _kabKota = (window.Meta && typeof window.Meta.kab === 'function') ? window.Meta.kab('') : '';
     const _setRegion = () => overlay.querySelectorAll('.auth-region').forEach(el => el.textContent = _kabKota);
     setTimeout(_setRegion, 0);
 
@@ -1578,7 +1578,7 @@
     }
 
     // Isi nama kabupaten/kota dari setting
-    const _kabKota = (window.Meta && typeof window.Meta.kab === 'function') ? window.Meta.kab() : 'Jember';
+    const _kabKota = (window.Meta && typeof window.Meta.kab === 'function') ? window.Meta.kab('') : '';
     const _setRegion = () => overlay.querySelectorAll('.auth-region').forEach(el => el.textContent = _kabKota);
     setTimeout(_setRegion, 0);
 

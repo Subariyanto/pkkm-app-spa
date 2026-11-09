@@ -32,7 +32,7 @@
       '20234567',
       'Sukowono',
       'MA Contoh Sukowono',
-      'Jl. Contoh No. 1, Sukowono, ' + ((window.Meta && typeof window.Meta.kab === 'function') ? window.Meta.kab() : 'Jember'),
+      'Jl. Contoh No. 1, Sukowono, ' + ((window.Meta && typeof window.Meta.kab === 'function') ? window.Meta.kab('') : ''),
       '2023-01-01',
       '081234567890',
       'kamad@example.sch.id',

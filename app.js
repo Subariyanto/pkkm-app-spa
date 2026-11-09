@@ -301,9 +301,10 @@ function syncAuthUI() {
 
   // Update navbar region label dari setting kabupaten/kota
   const navRegion = document.getElementById('navRegionLabel');
-  // Nama kabupaten/kota mengikuti Pengaturan (fleksibel, tidak hardcode Jember)
-  const _kabKota = (window.Meta && typeof Meta.kab === 'function') ? Meta.kab() : 'Jember';
-  if (navRegion) navRegion.textContent = 'Pokjawasmad Kab. ' + _kabKota;
+  // Nama kabupaten/kota mengikuti Pengaturan (fleksibel, tidak hardcode Jember).
+  // Bila belum diisi, tampilkan label netral tanpa nama daerah.
+  const _kabKota = (window.Meta && typeof Meta.kab === 'function') ? Meta.kab('') : '';
+  if (navRegion) navRegion.textContent = _kabKota ? ('Pokjawasmad Kab. ' + _kabKota) : 'Pokjawasmad';
   // Catatan: kredit pembuat di footer sengaja tetap "Kab. Jember" (identitas
   // pembuat aplikasi), tidak ikut berubah walau Pengaturan diubah ke kabupaten lain.
 }
@@ -1928,7 +1929,7 @@ route('#/cetak/:id', (root, params) => {
   const isRA = kamad?.jenjang === 'RA';
   const jabatanKamad = isRA ? 'Kepala RA' : (kamad?.jabatan || 'Kepala Madrasah');
   const judulCetak = isRA ? 'LAPORAN PENILAIAN KINERJA KEPALA RA' : 'LAPORAN PENILAIAN KINERJA KEPALA MADRASAH';
-  const tempat = Meta.get('lokasi_ttd', 'Jember');
+  const tempat = (typeof Meta.tempat === 'function') ? Meta.tempat('') : Meta.get('lokasi_ttd', '');
   const printKompList = window.PKKM_KOMPONEN;
 
   root.innerHTML = `
@@ -3406,10 +3407,10 @@ function pkbTanggalIndonesia(iso) {
 // Bangun dokumen cetak untuk daftar PKB terpilih.
 // groups: [{ kamad, periode, items: [] }]
 function buildPKBPrintHTML(groups) {
-  const kab = (window.Meta && typeof Meta.kab === 'function') ? Meta.kab() : 'Jember';
+  const kab = (window.Meta && typeof Meta.kab === 'function') ? Meta.kab('') : '';
   const pengawas = Meta.get('identitas_pengawas', {}) || {};
   const pokjawas = Meta.get('identitas_ketua_pokjawas', { nama: '', nip: '' }) || {};
-  const tempat = Meta.get('lokasi_ttd', kab) || kab;
+  const tempat = (typeof Meta.tempat === 'function') ? Meta.tempat('') : (Meta.get('lokasi_ttd', '') || kab);
   const hariIni = pkbTanggalIndonesia(nowLocal().slice(0, 10));
 
   const unsurLabel = (code) => (PKB_UNSUR.find(u => u.code === code)?.label || code || '-');
@@ -4271,9 +4272,9 @@ route('#/pengaturan', (root) => {
   const bobot = Meta.bobot();
   const bobotRole = window.getBobotRole ? window.getBobotRole() : { pengawas: 50, gtk: 30, komite: 20 };
   const pengawas = Meta.get('identitas_pengawas', { nama: '', nip: '' });
-  const pokjawas = Meta.get('identitas_ketua_pokjawas', { nama: 'SUBARIYANTO, S.Pd, M.Pd.I', nip: '197002122005011004' });
-  const tempat = Meta.get('lokasi_ttd', 'Jember');
-  const kabKota = Meta.kab();
+  const pokjawas = Meta.get('identitas_ketua_pokjawas', { nama: '', nip: '' });
+  const tempat = (typeof Meta.tempat === 'function') ? Meta.tempat('') : Meta.get('lokasi_ttd', '');
+  const kabKota = Meta.kab('');
 
   // Use META komponen list (5 komp) supaya tidak terpengaruh role aktif
   const KOMP_META = window.PKKM_KOMPONEN_META || window.PKKM_KOMPONEN.map(k => ({ no: k.no, code: k.code, label: k.label, bobot_default: 20 }));

@@ -362,13 +362,29 @@ const Meta = {
     return out;
   },
   setBobot(map) { this.set('bobot_overrides', map); },
-  // Nama kabupaten/kota wilayah binaan — fleksibel, bukan hardcode Jember.
-  // Fallback 'Jember' hanya dipakai bila pengguna belum pernah mengisi Pengaturan.
+  // Nama kabupaten/kota wilayah binaan — fleksibel, BUKAN hardcode Jember.
+  // Sumber diprioritaskan: Pengaturan → akun pengawas ("Pokjawas <Kab>") → kosong.
+  // Fallback 'Jember' hanya dipakai bila pemanggil memintanya secara eksplisit.
   kab(def) {
     const v = (this.get('kabupaten_kota', '') || '').toString().trim();
-    return v || (def || 'Jember');
+    if (v) return v;
+    // Coba dari nama akun/madrasah pengawas yang disimpan saat registrasi,
+    // formatnya "Pokjawas <Kabupaten>".
+    try {
+      const madrasah = (localStorage.getItem('pkkm_v1_user_madrasah') || '').trim();
+      const m = madrasah.match(/^pokjawas\s+(.+)$/i);
+      if (m && m[1].trim()) return m[1].trim();
+    } catch (e) {}
+    return def != null ? def : '';
   },
   setKab(nama) { this.set('kabupaten_kota', (nama || '').toString().trim()); },
+  // Lokasi tanda tangan. Bila belum diisi, ikuti nama kabupaten/kota.
+  tempat(def) {
+    const v = (this.get('lokasi_ttd', '') || '').toString().trim();
+    if (v) return v;
+    const k = this.kab('');
+    return k || (def != null ? def : '');
+  },
 };
 
 // === Helper RA: cek apakah penilaian ini untuk kepala madrasah jenjang RA ===
