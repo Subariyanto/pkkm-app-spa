@@ -731,6 +731,11 @@ a:hover { color: var(--pkkm-primary-dark); }
     margin-top: 1.5rem;
     page-break-inside: avoid;
   }
+  /* Lembar pengesahan selalu mulai di halaman baru, terpisah dari tabel PKB */
+  .pkb-print-doc .pkb-sign-page {
+    page-break-before: always;
+    break-before: page;
+  }
   .pkb-print-doc .pkb-ttd td { text-align: center; vertical-align: top; }
   .pkb-print-doc .pkb-ttd .nm {
     font-weight: bold;

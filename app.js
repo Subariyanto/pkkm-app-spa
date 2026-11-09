@@ -3478,6 +3478,27 @@ function buildPKBPrintHTML(groups) {
       </table>
 
       <div class="pkb-note">Catatan: Daftar di atas disusun dari 5 sub-aspek dengan nilai terendah hasil PKKM, sebagai dasar penetapan kegiatan pengembangan keprofesian berkelanjutan sesuai PMA Nomor 38 Tahun 2018.</div>
+    </div>
+
+    <div class="pkb-print-page pkb-sign-page">
+      <h4>Lembar Pengesahan</h4>
+      <div class="pkb-sub">Rencana Pengembangan Keprofesian Berkelanjutan (PKB) — Hasil Penilaian Kinerja Kepala Madrasah (PKKM)</div>
+      <table class="pkb-id">
+        <tr>
+          <td width="18%">Nama Kepala Madrasah</td><td width="32%">: ${escapeHTML(k.nama || '-')}</td>
+          <td width="16%">Periode</td><td>: ${escapeHTML(p.label || '-')}</td>
+        </tr>
+        <tr>
+          <td>NIP</td><td>: ${escapeHTML(k.nip || '-')}</td>
+          <td>Jumlah Prioritas PKB</td><td>: ${items.length} sub-aspek</td>
+        </tr>
+        <tr>
+          <td>Madrasah</td><td>: ${escapeHTML(k.nama_madrasah || '-')} (${escapeHTML(k.jenjang || '-')})</td>
+          <td>KKM / Wilayah</td><td>: ${escapeHTML(k.kkma || '-')}</td>
+        </tr>
+      </table>
+
+      <p style="margin-top:1rem;">Dokumen rencana Pengembangan Keprofesian Berkelanjutan sebagaimana tercantum pada halaman sebelumnya disahkan untuk dilaksanakan sebagai dasar pembinaan dan pengembangan kompetensi kepala madrasah.</p>
 
       <table class="pkb-ttd">
         <tr>
