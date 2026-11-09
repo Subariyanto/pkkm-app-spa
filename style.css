@@ -645,6 +645,13 @@ a:hover { color: var(--pkkm-primary-dark); }
   gap: 1rem;
   page-break-inside: avoid;
 }
+/* Bila Pengawas Bina merangkap Ketua Pokjawas, blok tanda tangan hanya satu
+   kolom dan diposisikan di kanan agar tetap lazim untuk dokumen resmi. */
+.ll-ttd-grid-single {
+  grid-template-columns: 1fr;
+  justify-items: end;
+}
+.ll-ttd-grid-single .ll-ttd-box { width: 50%; }
 .ll-ttd-box {
   text-align: center;
   display: flex;

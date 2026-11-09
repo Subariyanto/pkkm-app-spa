@@ -3598,6 +3598,9 @@ function buildPKBPrintHTML(groups) {
   const pengawas = (typeof Meta.pengawas === 'function') ? Meta.pengawas() : ((Meta.get('identitas_pengawas', {}) || {}));
   const pokjawas = (typeof Meta.pokjawas === 'function') ? Meta.pokjawas() : (Meta.get('identitas_ketua_pokjawas', { nama: '', nip: '' }) || {});
   const tempat = (typeof Meta.tempat === 'function') ? Meta.tempat('') : (Meta.get('lokasi_ttd', '') || kab);
+  // Bila Pengawas Bina merangkap Ketua Pokjawas (nama sama), blok tanda tangan
+  // cukup satu kolom agar tidak muncul tanda tangan ganda.
+  const penyusunSama = (typeof Meta.penyusunSama === 'function') ? Meta.penyusunSama() : false;
   const hariIni = pkbTanggalIndonesia(nowLocal().slice(0, 10));
 
   const unsurLabel = (code) => (PKB_UNSUR.find(u => u.code === code)?.label || code || '-');
@@ -3690,13 +3693,13 @@ function buildPKBPrintHTML(groups) {
 
       <table class="pkb-ttd">
         <tr>
-          <td width="50%">
+          ${penyusunSama ? '' : `<td width="50%">
             <div>Mengetahui,</div>
             <div>Ketua Pokjawas Madrasah Kab. ${escapeHTML(kab)}</div>
             <div class="nm">${escapeHTML(pokjawas.nama || '..............................')}</div>
             <div>NIP. ${escapeHTML(pokjawas.nip || '-')}</div>
-          </td>
-          <td width="50%">
+          </td>`}
+          <td width="${penyusunSama ? '100' : '50'}%">
             <div>${escapeHTML(tempat)}, ${escapeHTML(hariIni)}</div>
             <div>Pengawas Bina,</div>
             <div class="nm">${escapeHTML(pengawas.nama || '..............................')}</div>

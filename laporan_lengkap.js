@@ -141,6 +141,11 @@
       ? window.Meta.tempat('')
       : (window.Meta.get('lokasi_ttd', '') || '');
     const kab = (window.Meta.kab ? window.Meta.kab('') : (window.Meta.get('kabupaten_kota', '') || '')).trim();
+    // Bila Pengawas Bina merangkap Ketua Pokjawas (nama sama), blok tanda tangan
+    // cukup satu kolom saja supaya tidak muncul tanda tangan ganda.
+    const penyusunSama = (typeof window.Meta.penyusunSama === 'function')
+      ? window.Meta.penyusunSama()
+      : false;
     // Bila pengguna belum mengisi nama kabupaten, tampilkan garis isian supaya
     // dokumen tetap rapi dan jelas bahwa kolom itu perlu dilengkapi.
     const kabTampil = kab || '____________';
@@ -148,6 +153,7 @@
     return {
       kkma, periode, kamadList, rows, dinilai, rataKKM, tertinggi, terendah,
       komponenAgg, subAggList, pengawas, pokjawas, tempat, kab, kabTampil, isFourYear,
+      penyusunSama,
     };
   }
 
@@ -196,14 +202,14 @@
         </table>
         <p style="text-indent:2em;">Laporan ini dinyatakan sah sebagai dokumen resmi pelaksanaan PKKM untuk diteruskan kepada Kepala Kantor Kementerian Agama Kabupaten ${escapeHTML(ctx.kab)} melalui Pokjawas Madrasah, dan dapat digunakan sebagai bahan pembinaan, evaluasi, serta pengembangan keprofesian Kepala Madrasah secara berkelanjutan.</p>
 
-        <div class="ll-ttd-grid mt-5">
-          <div class="ll-ttd-box">
+        <div class="ll-ttd-grid mt-5${ctx.penyusunSama ? ' ll-ttd-grid-single' : ''}">
+          ${ctx.penyusunSama ? '' : `<div class="ll-ttd-box">
             <div>Mengetahui,</div>
             <div>Ketua Pokjawas Madrasah Kab. ${escapeHTML(ctx.kab)}</div>
             <div class="ll-ttd-spacer"></div>
             <div class="ll-ttd-name">${escapeHTML(ctx.pokjawas.nama || '..............................')}</div>
             <div>NIP. ${escapeHTML(ctx.pokjawas.nip || '-')}</div>
-          </div>
+          </div>`}
           <div class="ll-ttd-box">
             <div>${escapeHTML(ctx.tempat)}, ${escapeHTML(tglStr)}</div>
             <div>Pengawas Bina,</div>
@@ -548,14 +554,14 @@
     const tglStr = fmtTanggalLengkap(ctx.periode.tanggal_penilaian || new Date().toISOString());
     return `
       <section class="ll-page ll-ttd-page">
-        <div class="ll-ttd-grid mt-5">
-          <div class="ll-ttd-box">
+        <div class="ll-ttd-grid mt-5${ctx.penyusunSama ? ' ll-ttd-grid-single' : ''}">
+          ${ctx.penyusunSama ? '' : `<div class="ll-ttd-box">
             <div>Mengetahui,</div>
             <div>Ketua Pokjawas Madrasah Kab. ${escapeHTML(ctx.kab)}</div>
             <div class="ll-ttd-spacer"></div>
             <div class="ll-ttd-name">${escapeHTML(ctx.pokjawas.nama || '..............................')}</div>
             <div>NIP. ${escapeHTML(ctx.pokjawas.nip || '-')}</div>
-          </div>
+          </div>`}
           <div class="ll-ttd-box">
             <div>${escapeHTML(ctx.tempat)}, ${escapeHTML(tglStr)}</div>
             <div>Pengawas Bina,</div>

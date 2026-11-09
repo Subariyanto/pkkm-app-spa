@@ -59,6 +59,7 @@
       kab: '',
       pok: { nama: '', nip: '' },
       pengawas: { nama: '', nip: '', jabatan: 'Pengawas Madrasah', unit: '' },
+      penyusunSama: false,
     };
     try {
       if (window.Meta) {
@@ -72,6 +73,11 @@
         out.pengawas = (typeof window.Meta.pengawas === 'function')
           ? window.Meta.pengawas()
           : (window.Meta.get('identitas_pengawas', {}) || out.pengawas);
+        // Bila Pengawas Bina merangkap Ketua Pokjawas (nama sama), identitas
+        // ketua pokjawas tidak diulang di dokumen.
+        out.penyusunSama = (typeof window.Meta.penyusunSama === 'function')
+          ? !!window.Meta.penyusunSama()
+          : false;
       }
     } catch (e) { /* noop */ }
     if (!out.pengawas.unit) out.pengawas.unit = out.kab ? ('Kemenag Kabupaten ' + out.kab) : '';
@@ -267,7 +273,7 @@
       'disesuaikan konteks PKKM Kemenag dan jenjang RA.', { size: 7.8, color: [120, 120, 120], gap: 0.4 });
     ctx.line('Skor: 1 = Kurang, 2 = Cukup, 3 = Baik, 4 = Amat Baik. Bobot komponen diatur pada menu Pengaturan aplikasi.',
       { size: 7.8, color: [120, 120, 120], gap: 0.4 });
-    if (meta.pok && meta.pok.nama) {
+    if (meta.pok && meta.pok.nama && !meta.penyusunSama) {
       ctx.line('Ketua Pokjawas Madrasah: ' + meta.pok.nama + (meta.pok.nip ? ' (NIP ' + meta.pok.nip + ')' : ''),
         { size: 7.8, color: [120, 120, 120], gap: 0.4 });
     }

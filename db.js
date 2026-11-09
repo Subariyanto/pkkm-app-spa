@@ -442,6 +442,16 @@ const Meta = {
     const k = this.kab('');
     return k || (def != null ? def : '');
   },
+  // True bila nama Pengawas Bina sama dengan nama Ketua Pokjawas (umumnya
+  // pengawas merangkap ketua pokjawas). Dalam kondisi ini blok tanda tangan
+  // cukup ditampilkan satu kali agar tidak terjadi tanda tangan ganda.
+  penyusunSama() {
+    const norm = (v) => (v || '').toString().trim().toLowerCase()
+      .replace(/[.,]/g, '').replace(/\s+/g, ' ');
+    const a = norm(this.pengawas().nama);
+    const b = norm(this.pokjawas().nama);
+    return !!a && a === b;
+  },
 };
 
 // === Helper RA: cek apakah penilaian ini untuk kepala madrasah jenjang RA ===
