@@ -2223,7 +2223,10 @@ function buildAggPrintHTML(kamad, periode, agg) {
 
   // Blok tanda tangan diisi para pengawas penilai (I & II) dari data sesi;
   // bila nama penilai belum tersimpan, jatuh ke identitas Pengawas di Pengaturan.
-  const ttdList = (sessions.length ? sessions : [null]).map(s => ({
+  // Label kolom memakai "Penilai I", "Penilai II", ... sesuai urutan penilai.
+  const romawi = ['I', 'II', 'III', 'IV', 'V'];
+  const ttdList = (sessions.length ? sessions : [null]).map((s, idx) => ({
+    label: 'Penilai ' + (romawi[idx] || String(idx + 1)),
     nama: ((s && s.penilai_nama) || '').trim() || (pengawas.nama || ''),
     nip: ((s && s.penilai_nip) || '').trim() || (pengawas.nip || ''),
   }));
@@ -2284,7 +2287,7 @@ function buildAggPrintHTML(kamad, periode, agg) {
       </tr>
       <tr>
         ${ttdList.map(t => `<td>
-          <div>Pengawas Madrasah,</div>
+          <div>${escapeHTML(t.label)},</div>
           <div class="nm">${escapeHTML(t.nama || '..............................')}</div>
           <div>NIP. ${escapeHTML(t.nip || '-')}</div>
         </td>`).join('')}
