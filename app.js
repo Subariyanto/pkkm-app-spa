@@ -3393,11 +3393,174 @@ function openPilihKamadPKB() {
   });
 }
 
+// --- Cetak dokumen Analisis PKB (Pengembangan Keprofesian Berkelanjutan) ---
+const PKB_BULAN = ['Januari','Februari','Maret','April','Mei','Juni','Juli','Agustus','September','Oktober','November','Desember'];
+
+function pkbTanggalIndonesia(iso) {
+  const s = String(iso || '').slice(0, 10);
+  const m = s.match(/^(\d{4})-(\d{2})-(\d{2})$/);
+  if (!m) return s || '-';
+  return `${Number(m[3])} ${PKB_BULAN[Number(m[2]) - 1]} ${m[1]}`;
+}
+
+// Bangun dokumen cetak untuk daftar PKB terpilih.
+// groups: [{ kamad, periode, items: [] }]
+function buildPKBPrintHTML(groups) {
+  const kab = (window.Meta && typeof Meta.kab === 'function') ? Meta.kab() : 'Jember';
+  const pengawas = Meta.get('identitas_pengawas', {}) || {};
+  const pokjawas = Meta.get('identitas_ketua_pokjawas', { nama: '', nip: '' }) || {};
+  const tempat = Meta.get('lokasi_ttd', kab) || kab;
+  const hariIni = pkbTanggalIndonesia(nowLocal().slice(0, 10));
+
+  const unsurLabel = (code) => (PKB_UNSUR.find(u => u.code === code)?.label || code || '-');
+
+  const halaman = groups.map(g => {
+    const k = g.kamad || {};
+    const p = g.periode || {};
+    const tgl = pkbTanggalIndonesia(p.tanggal_penilaian || '');
+    const items = (g.items || []).slice().sort((a,b) => (a.prioritas||99) - (b.prioritas||99));
+
+    const rows = items.map(it => {
+      const sebutan = window.getPKKMSebutan(it.nilai);
+      return `<tr>
+        <td class="text-center">${it.prioritas || '-'}</td>
+        <td>${escapeHTML(it.sub_aspek_kode || '-')}<div style="font-size:8.5pt">${escapeHTML(it.sub_aspek_unsur || '-')}</div></td>
+        <td>${escapeHTML(it.komponen_label || '-')}</td>
+        <td class="text-center">${fmtNilai(it.nilai)}${sebutan ? `<div style="font-size:8.5pt">${escapeHTML(sebutan.label)}</div>` : ''}</td>
+        <td>${escapeHTML(unsurLabel(it.unsur_pkb))}</td>
+        <td>${escapeHTML(it.jenis_pkb || '-')}</td>
+        <td>${escapeHTML(it.kegiatan_pkb || '-')}</td>
+        <td>${escapeHTML(it.catatan || '-')}</td>
+      </tr>`;
+    }).join('') || `<tr><td colspan="8" class="text-center"><em>Belum ada prioritas PKB.</em></td></tr>`;
+
+    return `<div class="pkb-print-page" style="page-break-after: always;">
+      <div class="pkb-kop">
+        <div class="k1">KEMENTERIAN AGAMA REPUBLIK INDONESIA</div>
+        <div class="k2">KANTOR KEMENTERIAN AGAMA KABUPATEN ${escapeHTML(String(kab).toUpperCase())}</div>
+        <div class="k3">POKJAWAS MADRASAH</div>
+      </div>
+      <h4>Rencana Pengembangan Keprofesian Berkelanjutan (PKB)</h4>
+      <div class="pkb-sub">Berdasarkan Hasil Penilaian Kinerja Kepala Madrasah (PKKM)</div>
+      <table class="pkb-id">
+        <tr>
+          <td width="18%">Nama Kepala Madrasah</td><td width="32%">: ${escapeHTML(k.nama || '-')}</td>
+          <td width="16%">Periode</td><td>: ${escapeHTML(p.label || '-')}</td>
+        </tr>
+        <tr>
+          <td>NIP</td><td>: ${escapeHTML(k.nip || '-')}</td>
+          <td>Tanggal Penilaian</td><td>: ${escapeHTML(tgl)}</td>
+        </tr>
+        <tr>
+          <td>Madrasah</td><td>: ${escapeHTML(k.nama_madrasah || '-')} (${escapeHTML(k.jenjang || '-')})</td>
+          <td>KKM / Wilayah</td><td>: ${escapeHTML(k.kkma || '-')}</td>
+        </tr>
+        <tr>
+          <td>NSM</td><td>: ${escapeHTML(k.nsm || '-')}</td>
+          <td>Kecamatan</td><td>: ${escapeHTML(k.kecamatan || '-')}</td>
+        </tr>
+      </table>
+
+      <table class="pkb-t">
+        <thead>
+          <tr>
+            <th width="3%">No</th>
+            <th width="14%">Sub-Aspek Prioritas</th>
+            <th width="11%">Komponen</th>
+            <th width="6%">Nilai</th>
+            <th width="11%">Unsur PKB</th>
+            <th width="12%">Jenis PKB</th>
+            <th width="23%">Kegiatan PKB</th>
+            <th width="20%">Catatan / Target</th>
+          </tr>
+        </thead>
+        <tbody>${rows}</tbody>
+      </table>
+
+      <div class="pkb-note">Catatan: Daftar di atas disusun dari 5 sub-aspek dengan nilai terendah hasil PKKM, sebagai dasar penetapan kegiatan pengembangan keprofesian berkelanjutan sesuai PMA Nomor 38 Tahun 2018.</div>
+
+      <table class="pkb-ttd">
+        <tr>
+          <td width="50%">
+            <div>Mengetahui,</div>
+            <div>Ketua Pokjawas Madrasah Kab. ${escapeHTML(kab)}</div>
+            <div class="nm">${escapeHTML(pokjawas.nama || '..............................')}</div>
+            <div>NIP. ${escapeHTML(pokjawas.nip || '-')}</div>
+          </td>
+          <td width="50%">
+            <div>${escapeHTML(tempat)}, ${escapeHTML(hariIni)}</div>
+            <div>Pengawas Bina,</div>
+            <div class="nm">${escapeHTML(pengawas.nama || '..............................')}</div>
+            <div>NIP. ${escapeHTML(pengawas.nip || '-')}</div>
+          </td>
+        </tr>
+      </table>
+    </div>`;
+  }).join('');
+
+  return `<div class="pkb-print-doc">${halaman}</div>`;
+}
+
+// Cetak dokumen PKB. groups opsional; bila kosong dipakai seluruh PKB tersimpan.
+function cetakPKB(groups) {
+  let list = groups;
+  if (!list) {
+    const all = window.PKB.list();
+    const map = {};
+    for (const p of all) {
+      const key = `${p.kamad_id}_${p.periode_id}`;
+      if (!map[key]) map[key] = { kamad_id: p.kamad_id, periode_id: p.periode_id, items: [] };
+      map[key].items.push(p);
+    }
+    list = Object.values(map).map(g => ({
+      kamad: Kamad.get(g.kamad_id),
+      periode: Periode.get(g.periode_id),
+      items: g.items,
+    }));
+  }
+  if (!list.length) { toast('Belum ada data PKB untuk dicetak.', 'error'); return; }
+
+  const lama = document.querySelector('.pkb-print-doc');
+  if (lama) lama.remove();
+  const wrap = document.createElement('div');
+  wrap.innerHTML = buildPKBPrintHTML(list);
+  document.body.appendChild(wrap.firstElementChild);
+
+  // Ukuran kertas ditetapkan lewat <style> dinamis agar konsisten di semua browser
+  // (aturan @page di stylesheet utama tidak boleh mengubah cetakan modul lain).
+  const st = document.createElement('style');
+  st.id = 'pkbPrintPageRule';
+  st.textContent = '@media print { @page { size: A4 landscape; margin: 1cm; } }';
+  document.head.appendChild(st);
+
+  document.body.classList.add('pkb-printing');
+
+  const bersih = () => {
+    document.body.classList.remove('pkb-printing');
+    const el = document.querySelector('.pkb-print-doc');
+    if (el) el.remove();
+    const s = document.getElementById('pkbPrintPageRule');
+    if (s) s.remove();
+    window.removeEventListener('afterprint', bersih);
+  };
+  window.addEventListener('afterprint', bersih);
+  setTimeout(() => {
+    window.print();
+    setTimeout(bersih, 1500);
+  }, 60);
+}
+
+window.cetakPKB = cetakPKB;
+window.buildPKBPrintHTML = buildPKBPrintHTML;
+
 route('#/pkb', (root) => {
   root.innerHTML = `
     <div class="page-header">
       <h5><i class="bi bi-mortarboard"></i> Analisis PKB</h5>
-      <button class="btn btn-sm btn-outline-light" id="btnPilihPkb"><i class="bi bi-search"></i> Pilih Kamad / Periode</button>
+      <div class="d-flex gap-2">
+        <button class="btn btn-sm btn-gradient-print" id="btnCetakPkbSemua"><i class="bi bi-printer"></i> Cetak Semua PKB</button>
+        <button class="btn btn-sm btn-outline-light" id="btnPilihPkb"><i class="bi bi-search"></i> Pilih Kamad / Periode</button>
+      </div>
     </div>
     <div class="alert alert-info py-2 text-tiny">
       <i class="bi bi-info-circle"></i> Halaman ini menetapkan Pengembangan Keprofesian Berkelanjutan berdasarkan 5 sub-aspek dengan nilai terendah dari hasil penilaian kinerja. Pilih kepala madrasah + periode yang sudah punya penilaian.
@@ -3406,6 +3569,7 @@ route('#/pkb', (root) => {
     <div id="pkbList"></div>
   `;
   document.getElementById('btnPilihPkb').addEventListener('click', openPilihKamadPKB);
+  document.getElementById('btnCetakPkbSemua').addEventListener('click', () => cetakPKB());
   // List existing PKB groups
   const list = window.PKB.list();
   const groups = {};
@@ -3424,11 +3588,22 @@ route('#/pkb', (root) => {
             <div class="fw-semibold">${escapeHTML(k?.nama||'-')} · ${escapeHTML(p?.label||'-')}</div>
             <div class="text-tiny text-muted">${g.items.length} prioritas PKB · ${escapeHTML(k?.nama_madrasah||'-')}</div>
           </div>
-          <a href="#/pkb/${g.kamad_id}/${g.periode_id}" class="btn btn-sm btn-outline-primary"><i class="bi bi-pencil-square"></i> Buka</a>
+          <div class="btn-group">
+            <button class="btn btn-sm btn-gradient-print" data-cetak-pkb="${g.kamad_id}_${g.periode_id}" title="Cetak rencana PKB"><i class="bi bi-printer"></i> Cetak</button>
+            <a href="#/pkb/${g.kamad_id}/${g.periode_id}" class="btn btn-sm btn-outline-primary"><i class="bi bi-pencil-square"></i> Buka</a>
+          </div>
         </div>
       </div>`;
   }).join('') || '<div class="text-muted text-tiny">Belum ada PKB tersimpan.</div>';
   document.getElementById('pkbList').innerHTML = grpHtml;
+  root.querySelectorAll('[data-cetak-pkb]').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const [kid, pid] = btn.dataset.cetakPkb.split('_').map(Number);
+      const items = window.PKB.forKamadPeriode(kid, pid);
+      if (!items.length) { toast('Belum ada PKB untuk dicetak.', 'error'); return; }
+      cetakPKB([{ kamad: Kamad.get(kid), periode: Periode.get(pid), items }]);
+    });
+  });
 });
 
 route('#/pkb/:kamadId/:periodeId', (root, params) => {
@@ -3480,6 +3655,7 @@ route('#/pkb/:kamadId/:periodeId', (root, params) => {
           <a href="#/pkb" class="btn btn-sm btn-outline-secondary"><i class="bi bi-arrow-left"></i></a>
           <button class="btn btn-sm btn-warning" id="btnRefreshPkb" title="Hitung ulang prioritas dari nilai terkini"><i class="bi bi-arrow-clockwise"></i> Refresh Prioritas</button>
           <button class="btn btn-sm btn-success" id="btnAutoPkb" title="Isi unsur/jenis/kegiatan PKB otomatis"><i class="bi bi-magic"></i> Isi Otomatis</button>
+          <button class="btn btn-sm btn-gradient-print" id="btnCetakPkb" title="Cetak rencana PKB"><i class="bi bi-printer"></i> Cetak</button>
           <a href="#/agregat/${kamad.id}/${periode.id}" class="btn btn-sm btn-outline-primary"><i class="bi bi-graph-up"></i> Lihat Nilai</a>
         </div>
       </div>
@@ -3570,6 +3746,12 @@ route('#/pkb/:kamadId/:periodeId', (root, params) => {
         const u = PKB_UNSUR.find(x => x.code === sUnsur.value);
         sJenis.innerHTML = '<option value="">-- Pilih jenis --</option>' + (u ? u.jenis.map(j => `<option value="${escapeHTML(j)}">${escapeHTML(j)}</option>`).join('') : '');
       });
+    });
+
+    document.getElementById('btnCetakPkb').addEventListener('click', () => {
+      const items = window.PKB.forKamadPeriode(kamad.id, periode.id);
+      if (!items.length) { toast('Belum ada PKB untuk dicetak.', 'error'); return; }
+      cetakPKB([{ kamad, periode, items }]);
     });
 
     document.getElementById('btnRefreshPkb').addEventListener('click', () => {
