@@ -127,8 +127,14 @@
     }
     const subAggList = Object.values(subAggMap).map(x => ({ ...x, rata: x.vals.reduce((s, v) => s + v, 0) / x.vals.length })).sort((a, b) => a.rata - b.rata);
 
-    const pengawas = window.Meta.get('identitas_pengawas', { nama: '', nip: '' });
-    const pokjawas = window.Meta.get('identitas_ketua_pokjawas', { nama: '', nip: '' });
+    // Identitas pengawas bina: Pengaturan → akun login → sesi penilaian,
+    // supaya sampul & lembar pengesahan tidak tampil nama/NIP kosong.
+    const pengawas = (typeof window.Meta.pengawas === 'function')
+      ? window.Meta.pengawas()
+      : (window.Meta.get('identitas_pengawas', { nama: '', nip: '' }) || {});
+    const pokjawas = (typeof window.Meta.pokjawas === 'function')
+      ? window.Meta.pokjawas()
+      : window.Meta.get('identitas_ketua_pokjawas', { nama: '', nip: '' });
     // Lokasi TTD & kabupaten/kota mengikuti Pengaturan pengguna (bukan hardcode
     // Jember), sehingga kop laporan menyesuaikan daerah masing-masing pengawas.
     const tempat = (typeof window.Meta.tempat === 'function')

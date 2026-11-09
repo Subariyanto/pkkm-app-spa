@@ -1917,7 +1917,7 @@ route('#/cetak/:id', (root, params) => {
   const skorRows = Skor.forPenilaian(pen.id);
   const skorMap = {}; for (const s of skorRows) if (s.indikator_id) skorMap[s.indikator_id] = s;
 
-  const pengawas = Meta.get('identitas_pengawas', { nama: '', nip: '' });
+  const pengawas = (typeof Meta.pengawas === 'function') ? Meta.pengawas() : Meta.get('identitas_pengawas', { nama: '', nip: '' });
   const roleInfoCetak = (window.PKKM_ROLES || []).find(r => r.code === (pen.role || 'pengawas_1'));
   const penilaiNama = pen.penilai_nama || ((pen.role || '').startsWith('pengawas') ? pengawas.nama : '');
   const penilaiNip = pen.penilai_nip || ((pen.role || '').startsWith('pengawas') ? pengawas.nip : '');
@@ -2154,6 +2154,17 @@ route('#/laporan-lengkap/:kkma/:periodeId', (root, params) => {
       <a href="#/laporan-lengkap" class="btn btn-sm btn-outline-secondary"><i class="bi bi-arrow-left"></i> Pilih KKM Lain</a>
       <button class="btn btn-sm btn-primary" onclick="window.print()"><i class="bi bi-printer"></i> Cetak / Save PDF</button>
     </div>
+    ${(() => {
+      // Peringatan bila identitas belum lengkap, supaya tidak tercetak kop
+      // dengan nama/NIP kosong tanpa penjelasan.
+      const pw = (window.Meta && typeof Meta.pengawas === 'function') ? Meta.pengawas() : {};
+      const kb = (window.Meta && typeof Meta.kab === 'function') ? Meta.kab('') : '';
+      const kurang = [];
+      if (!kb) kurang.push('nama kabupaten/kota');
+      if (!(pw.nama || '').trim()) kurang.push('nama pengawas bina');
+      if (!kurang.length) return '';
+      return `<div class="alert alert-warning py-2 no-print text-tiny"><i class="bi bi-exclamation-triangle"></i> ${kurang.join(' dan ')} belum terisi, sehingga kop dokumen menampilkan bagian kosong. Lengkapi di <a href="#/pengaturan" class="alert-link">Pengaturan &rarr; Identitas Tanda Tangan</a>.</div>`;
+    })()}
     ${window.renderLaporanLengkapKKM(kkma, pid)}
   `;
 });
@@ -3408,8 +3419,8 @@ function pkbTanggalIndonesia(iso) {
 // groups: [{ kamad, periode, items: [] }]
 function buildPKBPrintHTML(groups) {
   const kab = (window.Meta && typeof Meta.kab === 'function') ? Meta.kab('') : '';
-  const pengawas = Meta.get('identitas_pengawas', {}) || {};
-  const pokjawas = Meta.get('identitas_ketua_pokjawas', { nama: '', nip: '' }) || {};
+  const pengawas = (typeof Meta.pengawas === 'function') ? Meta.pengawas() : ((Meta.get('identitas_pengawas', {}) || {}));
+  const pokjawas = (typeof Meta.pokjawas === 'function') ? Meta.pokjawas() : (Meta.get('identitas_ketua_pokjawas', { nama: '', nip: '' }) || {});
   const tempat = (typeof Meta.tempat === 'function') ? Meta.tempat('') : (Meta.get('lokasi_ttd', '') || kab);
   const hariIni = pkbTanggalIndonesia(nowLocal().slice(0, 10));
 
@@ -4271,8 +4282,8 @@ route('#/backup', (root) => {
 route('#/pengaturan', (root) => {
   const bobot = Meta.bobot();
   const bobotRole = window.getBobotRole ? window.getBobotRole() : { pengawas: 50, gtk: 30, komite: 20 };
-  const pengawas = Meta.get('identitas_pengawas', { nama: '', nip: '' });
-  const pokjawas = Meta.get('identitas_ketua_pokjawas', { nama: '', nip: '' });
+  const pengawas = (typeof Meta.pengawas === 'function') ? Meta.pengawas() : Meta.get('identitas_pengawas', { nama: '', nip: '' });
+  const pokjawas = (typeof Meta.pokjawas === 'function') ? Meta.pokjawas() : Meta.get('identitas_ketua_pokjawas', { nama: '', nip: '' });
   const tempat = (typeof Meta.tempat === 'function') ? Meta.tempat('') : Meta.get('lokasi_ttd', '');
   const kabKota = Meta.kab('');
 

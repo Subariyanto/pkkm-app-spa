@@ -66,8 +66,12 @@
         out.kab = (typeof window.Meta.kab === 'function')
           ? window.Meta.kab('')
           : (window.Meta.get('kabupaten_kota', '') || '');
-        out.pok = window.Meta.get('identitas_ketua_pokjawas', {}) || out.pok;
-        out.pengawas = window.Meta.get('identitas_pengawas', {}) || out.pengawas;
+        out.pok = (typeof window.Meta.pokjawas === 'function')
+          ? window.Meta.pokjawas()
+          : (window.Meta.get('identitas_ketua_pokjawas', {}) || out.pok);
+        out.pengawas = (typeof window.Meta.pengawas === 'function')
+          ? window.Meta.pengawas()
+          : (window.Meta.get('identitas_pengawas', {}) || out.pengawas);
       }
     } catch (e) { /* noop */ }
     if (!out.pengawas.unit) out.pengawas.unit = out.kab ? ('Kemenag Kabupaten ' + out.kab) : '';

@@ -363,21 +363,78 @@ const Meta = {
   },
   setBobot(map) { this.set('bobot_overrides', map); },
   // Nama kabupaten/kota wilayah binaan — fleksibel, BUKAN hardcode Jember.
-  // Sumber diprioritaskan: Pengaturan → akun pengawas ("Pokjawas <Kab>") → kosong.
+  // Sumber berurutan: Pengaturan → nama akun ("Pokjawas <Kab>") → data kamad
+  // (field kabupaten / nama KKMA) → unit penilai → parameter def.
   // Fallback 'Jember' hanya dipakai bila pemanggil memintanya secara eksplisit.
   kab(def) {
     const v = (this.get('kabupaten_kota', '') || '').toString().trim();
     if (v) return v;
-    // Coba dari nama akun/madrasah pengawas yang disimpan saat registrasi,
-    // formatnya "Pokjawas <Kabupaten>".
+    // 1. Dari nama akun/madrasah pengawas yang disimpan saat registrasi,
+    //    formatnya "Pokjawas <Kabupaten>".
     try {
       const madrasah = (localStorage.getItem('pkkm_v1_user_madrasah') || '').trim();
       const m = madrasah.match(/^pokjawas\s+(.+)$/i);
       if (m && m[1].trim()) return m[1].trim();
     } catch (e) {}
+    // 2. Dari data kepala madrasah: field kabupaten, atau nama KKM/KKMA yang
+    //    lazim ditulis "KKMA 04 Bondowoso".
+    try {
+      const kamads = (window.Kamad && typeof window.Kamad.list === 'function') ? window.Kamad.list() : [];
+      for (const k of kamads) {
+        const kb = (k.kabupaten || '').toString().trim();
+        if (kb) return kb;
+      }
+      for (const k of kamads) {
+        const kk = (k.kkma || '').toString().trim();
+        const m2 = kk.match(/^kkm*[a]?\s*\d+\s+(.+)$/i);
+        if (m2 && m2[1].trim()) return m2[1].trim();
+      }
+    } catch (e) {}
+    // 3. Dari unit penilai yang tersimpan di sesi penilaian ("Kemenag Kabupaten X").
+    try {
+      const pens = (window.Penilaian && typeof window.Penilaian.list === 'function') ? window.Penilaian.list() : [];
+      for (const p of pens) {
+        const m3 = String(p.penilai_unit || '').match(/kabupaten\s+(.+)$/i);
+        if (m3 && m3[1].trim()) return m3[1].trim();
+      }
+    } catch (e) {}
     return def != null ? def : '';
   },
   setKab(nama) { this.set('kabupaten_kota', (nama || '').toString().trim()); },
+  // Identitas pengawas bina. Prioritas: Pengaturan → akun login → sesi penilaian.
+  // Dipakai kop sampul/laporan/pengesahan agar tidak lagi tampil nama kosong.
+  pengawas() {
+    const id = this.get('identitas_pengawas', {}) || {};
+    let nama = (id.nama || '').toString().trim();
+    let nip = (id.nip || '').toString().trim();
+    if (!nama) {
+      try { nama = (localStorage.getItem('pkkm_v1_user_fullname') || '').trim(); } catch (e) {}
+    }
+    if (!nama) {
+      try {
+        const pens = (window.Penilaian && typeof window.Penilaian.list === 'function') ? window.Penilaian.list() : [];
+        for (const p of pens) {
+          if (p.penilai_nama) {
+            nama = String(p.penilai_nama).trim();
+            if (!nip && p.penilai_nip) nip = String(p.penilai_nip).trim();
+            break;
+          }
+        }
+      } catch (e) {}
+    }
+    return { nama, nip };
+  },
+  // Identitas Ketua Pokjawas. Bila belum diisi di Pengaturan, jatuh ke identitas
+  // pengawas (umumnya pengawas sekaligus ketua pokjawas di wilayah kecil),
+  // supaya blok tanda tangan tidak tampil titik-titik kosong.
+  pokjawas() {
+    const pk = this.get('identitas_ketua_pokjawas', {}) || {};
+    const nama = (pk.nama || '').toString().trim();
+    const nip = (pk.nip || '').toString().trim();
+    if (nama) return { nama, nip };
+    const pg = this.pengawas();
+    return { nama: pg.nama || '', nip: nip || pg.nip || '' };
+  },
   // Lokasi tanda tangan. Bila belum diisi, ikuti nama kabupaten/kota.
   tempat(def) {
     const v = (this.get('lokasi_ttd', '') || '').toString().trim();
