@@ -4293,6 +4293,44 @@ route('#/pengaturan', (root) => {
   root.innerHTML = `
     <div class="page-header"><h5><i class="bi bi-gear"></i> Pengaturan</h5></div>
     <div class="row g-3">
+      <div class="col-12">
+        <div class="card">
+          <div class="card-header"><i class="bi bi-person-vcard"></i> Identitas Tanda Tangan</div>
+          <div class="card-body">
+            <p class="text-tiny text-muted mb-2">Isian ini dipakai untuk kop, sampul, lembar pengesahan, dan blok tanda tangan pada semua dokumen cetak. Bila dikosongkan, aplikasi mencoba mengisi otomatis dari akun login dan data madrasah.</p>
+            <form id="ttdForm">
+              <div class="row g-2">
+                <div class="col-md-4">
+                  <label class="form-label text-tiny mb-1">Nama Kabupaten / Kota</label>
+                  <input class="form-control form-control-sm" name="kabupaten_kota" value="${escapeHTML(kabKota)}" placeholder="Contoh: Jember, Bondowoso, Banyuwangi...">
+                  <div class="text-tiny text-muted mt-1">Tanpa awalan "Kabupaten". Dipakai di navbar dan seluruh kop laporan.</div>
+                </div>
+                <div class="col-md-4">
+                  <label class="form-label text-tiny mb-1">Nama Pengawas</label>
+                  <input class="form-control form-control-sm" name="pengawas_nama" value="${escapeHTML(pengawas.nama||'')}" placeholder="Nama lengkap beserta gelar">
+                </div>
+                <div class="col-md-4">
+                  <label class="form-label text-tiny mb-1">NIP Pengawas</label>
+                  <input class="form-control form-control-sm" name="pengawas_nip" value="${escapeHTML(pengawas.nip||'')}" placeholder="18 digit">
+                </div>
+                <div class="col-md-4">
+                  <label class="form-label text-tiny mb-1">Nama Ketua Pokjawas</label>
+                  <input class="form-control form-control-sm" name="pokjawas_nama" value="${escapeHTML(pokjawas.nama||'')}" placeholder="Nama lengkap beserta gelar">
+                </div>
+                <div class="col-md-4">
+                  <label class="form-label text-tiny mb-1">NIP Ketua Pokjawas</label>
+                  <input class="form-control form-control-sm" name="pokjawas_nip" value="${escapeHTML(pokjawas.nip||'')}" placeholder="18 digit">
+                </div>
+                <div class="col-md-4">
+                  <label class="form-label text-tiny mb-1">Lokasi TTD</label>
+                  <input class="form-control form-control-sm" name="lokasi_ttd" value="${escapeHTML(tempat)}" placeholder="Kosongkan = ikut nama kabupaten">
+                </div>
+              </div>
+              <button class="btn btn-sm btn-primary mt-3"><i class="bi bi-save"></i> Simpan Identitas</button>
+            </form>
+          </div>
+        </div>
+      </div>
       <div class="col-md-6">
         <div class="card h-100">
           <div class="card-header">Bobot Komponen (%)</div>
@@ -4333,44 +4371,6 @@ route('#/pengaturan', (root) => {
               <div class="text-tiny text-muted mb-2" id="totalBobotRole"></div>
               <button class="btn btn-sm btn-primary"><i class="bi bi-save"></i> Simpan</button>
               <button type="button" class="btn btn-sm btn-outline-secondary" id="btnResetBobotRole">Reset Default</button>
-            </form>
-          </div>
-        </div>
-      </div>
-      <div class="col-md-6">
-        <div class="card h-100">
-          <div class="card-header">Identitas Tanda Tangan</div>
-          <div class="card-body">
-            <form id="ttdForm">
-              <div class="mb-2">
-                <label class="form-label text-tiny mb-1">Kabupaten / Kota</label>
-                <input class="form-control form-control-sm" name="kabupaten_kota" value="${escapeHTML(kabKota)}" placeholder="Contoh: Jember, Gorontalo, Banyuwangi...">
-                <div class="text-tiny text-muted mt-1">Nama kabupaten/kota wilayah binaan. Digunakan untuk judul navbar dan kop laporan.</div>
-              </div>
-              <hr>
-              <div class="mb-2">
-                <label class="form-label text-tiny mb-1">Lokasi TTD</label>
-                <input class="form-control form-control-sm" name="lokasi_ttd" value="${escapeHTML(tempat)}">
-              </div>
-              <hr>
-              <div class="mb-2">
-                <label class="form-label text-tiny mb-1">Nama Pengawas</label>
-                <input class="form-control form-control-sm" name="pengawas_nama" value="${escapeHTML(pengawas.nama||'')}">
-              </div>
-              <div class="mb-2">
-                <label class="form-label text-tiny mb-1">NIP Pengawas</label>
-                <input class="form-control form-control-sm" name="pengawas_nip" value="${escapeHTML(pengawas.nip||'')}">
-              </div>
-              <hr>
-              <div class="mb-2">
-                <label class="form-label text-tiny mb-1">Nama Ketua Pokjawas</label>
-                <input class="form-control form-control-sm" name="pokjawas_nama" value="${escapeHTML(pokjawas.nama||'')}">
-              </div>
-              <div class="mb-2">
-                <label class="form-label text-tiny mb-1">NIP Ketua Pokjawas</label>
-                <input class="form-control form-control-sm" name="pokjawas_nip" value="${escapeHTML(pokjawas.nip||'')}">
-              </div>
-              <button class="btn btn-sm btn-primary"><i class="bi bi-save"></i> Simpan</button>
             </form>
           </div>
         </div>
