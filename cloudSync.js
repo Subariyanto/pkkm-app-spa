@@ -432,6 +432,15 @@
         if (sisa !== null && sisa < 48) {
           s.vpsRefreshToken().then(function (ok) {
             if (ok && _status.state === 'need-relogin') _status.state = 'ok';
+            // Token yang sudah telanjur kedaluwarsa tidak bisa di-refresh.
+            // Coba terbitkan token baru dengan hash sandi yang tersimpan,
+            // tanpa meminta pengguna logout/login manual.
+            if (!ok && !token()) {
+              ensureToken().then(function (restored) {
+                if (restored) { _status.state = 'ok'; _status.lastError = null; }
+                gambarBadge();
+              });
+            }
             gambarBadge();
           });
         }

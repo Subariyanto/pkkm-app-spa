@@ -32,6 +32,28 @@
     try { localStorage.removeItem(VPS_TOKEN_KEY); } catch (e) {}
   }
 
+  // Perpanjang token VPS sebelum kedaluwarsa (endpoint server memberi TTL 7 hari).
+  function vpsTokenSisaJam() {
+    var t = vpsGetToken();
+    if (!t) return null;
+    try {
+      var p = t.split('.')[1].replace(/-/g, '+').replace(/_/g, '/');
+      while (p.length % 4) p += '=';
+      var c = JSON.parse(atob(p));
+      return c.exp ? (c.exp * 1000 - Date.now()) / 3600000 : null;
+    } catch (e) { return null; }
+  }
+  function vpsRefreshToken() {
+    var tok = vpsGetToken();
+    if (!tok) return Promise.resolve(false);
+    return vpsPost('/functions/v1/edusmart-auth/refresh', {}, tok).then(function (o) {
+      var d = o.data || {};
+      if (!o.err && d.ok && d.token) { vpsSaveToken(d.token); return true; }
+      if (o.err === 'auth') vpsClearToken();
+      return false;
+    });
+  }
+
   // === LATCH ANTI-FALLBACK ===
   // Begitu akun PERNAH sukses login via VPS, akun itu dikunci ke VPS.
   // Kalau VPS mati, user harus lihat error jujur — bukan diam-diam
@@ -735,6 +757,8 @@
     vpsGetToken: vpsGetToken,
     vpsLoginHash: vpsLoginHash,
     vpsClearToken: vpsClearToken,
+    vpsTokenSisaJam: vpsTokenSisaJam,
+    vpsRefreshToken: vpsRefreshToken,
     loginAccountSmart: loginAccountSmart,
     registerAccountSmart: registerAccountSmart,
     isVpsLatched: isVpsLatched,
