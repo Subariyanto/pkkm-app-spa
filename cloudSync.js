@@ -258,7 +258,14 @@
         _lastUser = '';
         return true;
       }
-      if (o && o.err === 'auth') _status.state = 'need-relogin';
+      // Hash lokal bisa sudah usang (misalnya setelah sandi diubah/reset).
+      // Jangan terus menampilkan Perlu login bila autentikasi VPS menolak,
+      // karena autentikasi aplikasi mungkin tetap aktif via sesi lokal.
+      if (o && o.err === 'auth') {
+        _status.state = 'local-only';
+        _status.lastError = 'sync-auth';
+        _status.localAuthRejected = true;
+      }
       gambarBadge();
       return false;
     });
@@ -326,6 +333,10 @@
     if (_status.state === 'need-relogin') {
       return { cls: 'bg-danger', icon: 'exclamation-triangle', text: 'Perlu login',
         title: 'Sesi server berakhir. Keluar lalu masuk lagi agar data tersimpan ke server.' };
+    }
+    if (_status.state === 'local-only') {
+      return { cls: 'bg-secondary', icon: 'cloud-slash', text: 'Lokal saja',
+        title: 'Login aplikasi aktif, tetapi sinkronisasi server memerlukan verifikasi ulang. Data tersimpan di perangkat ini.' };
     }
     if (!canSync()) {
       return { cls: 'bg-secondary', icon: 'cloud-slash', text: 'Lokal saja',
