@@ -4183,7 +4183,7 @@ route('#/rekap-tahunan', (root) => {
     const kab = (typeof Meta.kab === 'function') ? Meta.kab('') : '';
     const pengawas = (typeof Meta.pengawas === 'function') ? Meta.pengawas() : (Meta.get('identitas_pengawas', {}) || {});
     const tempat = (typeof Meta.tempat === 'function') ? Meta.tempat('') : (Meta.get('lokasi_ttd', '') || kab);
-    const tglCetak = pkbTanggalIndonesia(nowLocal().slice(0, 10));
+    const tglCetak = pkbTanggalIndonesia(tanggalRekapCetak || nowLocal().slice(0, 10));
     const komponen = window.PKKM_KOMPONEN_META || window.PKKM_KOMPONEN || [];
     const detailRows = komponen.map(km => {
       const vals = tahunData.map(t => {
@@ -4327,7 +4327,27 @@ route('#/rekap-tahunan', (root) => {
   $('#kamadSelect').addEventListener('change', e => {
     location.hash = `#/rekap-tahunan?k=${e.target.value}${unitMode ? '&mode=unit' : ''}`;
   });
-  $('#btnPrintRekap').addEventListener('click', () => cetakRekap4Tahunan(buildRekap4PrintHTML()));
+  $('#btnPrintRekap').addEventListener('click', () => {
+    const modalId = 'rekap4PrintDateModal';
+    document.getElementById(modalId)?.remove();
+    const host = document.createElement('div');
+    host.innerHTML = `<div class="modal fade" id="${modalId}" tabindex="-1"><div class="modal-dialog modal-dialog-centered"><div class="modal-content">
+      <form id="rekap4PrintDateForm"><div class="modal-header"><h5 class="modal-title">Tanggal Cetak Rekap 4 Tahun</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div>
+      <div class="modal-body"><label class="form-label" for="rekap4PrintDate">Pilih tanggal yang akan dicetak</label><input class="form-control" type="date" id="rekap4PrintDate" name="tanggal" value="${escapeHTML(nowLocal().slice(0,10))}" required></div>
+      <div class="modal-footer"><button type="button" class="btn btn-light" data-bs-dismiss="modal">Batal</button><button type="submit" class="btn btn-primary"><i class="bi bi-printer"></i> Cetak</button></div></form></div></div></div>`;
+    document.body.appendChild(host.firstElementChild);
+    const modalEl = document.getElementById(modalId);
+    const modal = new bootstrap.Modal(modalEl);
+    modal.show();
+    modalEl.querySelector('#rekap4PrintDateForm').addEventListener('submit', ev => {
+      ev.preventDefault();
+      const tanggalRekapCetak = modalEl.querySelector('#rekap4PrintDate').value;
+      if (!tanggalRekapCetak) return;
+      modal.hide();
+      cetakRekap4Tahunan(buildRekap4PrintHTML(tanggalRekapCetak));
+      modalEl.addEventListener('hidden.bs.modal', () => modalEl.remove(), { once: true });
+    });
+  });
   $('#btnExportXlsx').addEventListener('click', async () => {
     if (typeof window.exportPKKMExcel !== 'function') { toast('Modul export belum siap.', 'error'); return; }
     await window.exportPKKMExcel(selKid);
