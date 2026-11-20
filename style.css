@@ -831,7 +831,7 @@ a:hover { color: var(--pkkm-primary-dark); }
     vertical-align: top;
     padding: .2rem;
   }
-  .agg-print-doc .agg-ttd-tgl { text-align: right !important; padding-bottom: .8rem !important; }
+  .agg-print-doc .agg-ttd-tgl { text-align: center !important; padding-bottom: .8rem !important; }
   .agg-print-doc .agg-ttd .nm {
     font-weight: bold;
     text-decoration: underline;
