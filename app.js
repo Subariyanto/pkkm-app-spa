@@ -2188,13 +2188,13 @@ function aggPengawasSessions(agg) {
     .sort((a, b) => String(a.role || '').localeCompare(String(b.role || '')));
 }
 
-function buildAggPrintHTML(kamad, periode, agg) {
+function buildAggPrintHTML(kamad, periode, agg, tanggalCetak) {
   const kab = (window.Meta && typeof Meta.kab === 'function') ? Meta.kab('') : '';
   const kabTampil = kab || '____________';
   const pengawas = (typeof Meta.pengawas === 'function') ? Meta.pengawas() : (Meta.get('identitas_pengawas', {}) || {});
   const pokjawas = (typeof Meta.pokjawas === 'function') ? Meta.pokjawas() : (Meta.get('identitas_ketua_pokjawas', {}) || {});
   const tempat = (typeof Meta.tempat === 'function') ? Meta.tempat('') : (Meta.get('lokasi_ttd', '') || kabTampil);
-  const hariIni = pkbTanggalIndonesia(nowLocal().slice(0, 10));
+  const hariIni = pkbTanggalIndonesia(tanggalCetak || periode.tanggal_penilaian || nowLocal().slice(0, 10));
   const roleLabel = (code) => ((window.PKKM_ROLES || []).find(r => r.code === code) || {}).label || code;
 
   const sessions = aggPengawasSessions(agg);
@@ -2379,6 +2379,7 @@ route('#/agregat/:kamadId/:periodeId', (root, params) => {
       <a href="#/rekap-tahunan?k=${kamad.id}" class="btn btn-sm btn-outline-primary"><i class="bi bi-calendar3-range"></i> Rekap 4 Tahunan</a>
       <a href="#/pkb/${kamad.id}/${periode.id}" class="btn btn-sm btn-outline-warning"><i class="bi bi-mortarboard"></i> Analisis PKB</a>
       <button class="btn btn-sm btn-gradient-print btn-agg-cetak"><i class="bi bi-printer"></i> Cetak Rata-rata Pengawas I &amp; II</button>
+      <button class="btn btn-sm btn-outline-primary btn-agg-cetak-atur"><i class="bi bi-calendar2-check"></i> Ubah Tanggal &amp; Cetak</button>
       <button class="btn btn-sm btn-success" id="btnAggExportXlsx"><i class="bi bi-file-earmark-excel"></i> Export Excel Resmi</button>
     </div>
 
@@ -2453,7 +2454,8 @@ route('#/agregat/:kamadId/:periodeId', (root, params) => {
         <div class="card">
           <div class="card-header d-flex justify-content-between align-items-center">
             <span><i class="bi bi-bar-chart"></i> Nilai Komponen per Penilai</span>
-            <button type="button" class="btn btn-sm btn-gradient-print btn-agg-cetak"><i class="bi bi-printer"></i> Cetak Rata-rata</button>
+            <div class="d-flex gap-2"><button type="button" class="btn btn-sm btn-gradient-print btn-agg-cetak"><i class="bi bi-printer"></i> Cetak Rata-rata</button>
+            <button type="button" class="btn btn-sm btn-outline-primary btn-agg-cetak-atur"><i class="bi bi-calendar2-check"></i> Ubah Tanggal &amp; Cetak</button></div>
           </div>
           <div class="card-body p-0">
             <div class="table-responsive">
@@ -2491,6 +2493,31 @@ route('#/agregat/:kamadId/:periodeId', (root, params) => {
   });
 
   // Cetak laporan rata-rata Pengawas Madrasah I & II
+  $$('.btn-agg-cetak-atur').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const sesi = aggPengawasSessions(agg);
+      if (!sesi.length) { toast('Belum ada penilaian pengawas untuk dicetak.', 'error'); return; }
+      const modalId = 'aggPrintDateModal';
+      document.getElementById(modalId)?.remove();
+      const host = document.createElement('div');
+      host.innerHTML = `<div class="modal fade" id="${modalId}" tabindex="-1"><div class="modal-dialog modal-dialog-centered"><div class="modal-content">
+        <form id="aggPrintDateForm"><div class="modal-header"><h5 class="modal-title">Tanggal Cetak</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div>
+        <div class="modal-body"><label class="form-label" for="aggPrintDate">Pilih tanggal yang akan dicetak</label><input class="form-control" type="date" id="aggPrintDate" name="tanggal" value="${escapeHTML((periode.tanggal_penilaian || nowLocal().slice(0,10)).slice(0,10))}" required></div>
+        <div class="modal-footer"><button type="button" class="btn btn-light" data-bs-dismiss="modal">Batal</button><button type="submit" class="btn btn-primary"><i class="bi bi-printer"></i> Cetak</button></div></form></div></div></div>`;
+      document.body.appendChild(host.firstElementChild);
+      const modalEl = document.getElementById(modalId);
+      const modal = new bootstrap.Modal(modalEl);
+      modal.show();
+      modalEl.querySelector('#aggPrintDateForm').addEventListener('submit', ev => {
+        ev.preventDefault();
+        const tanggal = modalEl.querySelector('#aggPrintDate').value;
+        if (!tanggal) return;
+        modal.hide();
+        cetakAggPrint(buildAggPrintHTML(kamad, periode, agg, tanggal));
+        modalEl.addEventListener('hidden.bs.modal', () => modalEl.remove(), { once: true });
+      });
+    });
+  });
   $$('.btn-agg-cetak').forEach(btn => {
     btn.addEventListener('click', () => {
       const sesi = aggPengawasSessions(agg);
