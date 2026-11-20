@@ -2342,6 +2342,26 @@ function cetakAggPrint(html) {
 window.buildAggPrintHTML = buildAggPrintHTML;
 window.cetakAggPrint = cetakAggPrint;
 
+function cetakRekap4Tahunan(html) {
+  document.querySelector('.rekap4-print-doc')?.remove();
+  const host = document.createElement('div');
+  host.innerHTML = html;
+  document.body.appendChild(host.firstElementChild);
+  const style = document.createElement('style');
+  style.id = 'rekap4PrintPageRule';
+  style.textContent = '@media print { @page { size: A4 portrait; margin: 1.5cm 1.4cm; } }';
+  document.head.appendChild(style);
+  document.body.classList.add('rekap4-printing');
+  const cleanup = () => {
+    document.body.classList.remove('rekap4-printing');
+    document.querySelector('.rekap4-print-doc')?.remove();
+    document.getElementById('rekap4PrintPageRule')?.remove();
+    window.removeEventListener('afterprint', cleanup);
+  };
+  window.addEventListener('afterprint', cleanup);
+  setTimeout(() => { window.print(); setTimeout(cleanup, 1500); }, 60);
+}
+
 // --- Rekap Agregat (multi-assessor) ----------------------------
 route('#/agregat/:kamadId/:periodeId', (root, params) => {
   const kamad = Kamad.get(Number(params.kamadId));
@@ -4159,6 +4179,42 @@ route('#/rekap-tahunan', (root) => {
   const rataAgregat = validNilai.length ? validNilai.reduce((a,b) => a+b, 0) / validNilai.length : null;
   const sebutanFinal = rataAgregat != null ? window.getPKKMSebutan(rataAgregat) : null;
 
+  function buildRekap4PrintHTML() {
+    const kab = (typeof Meta.kab === 'function') ? Meta.kab('') : '';
+    const pengawas = (typeof Meta.pengawas === 'function') ? Meta.pengawas() : (Meta.get('identitas_pengawas', {}) || {});
+    const tempat = (typeof Meta.tempat === 'function') ? Meta.tempat('') : (Meta.get('lokasi_ttd', '') || kab);
+    const tglCetak = pkbTanggalIndonesia(nowLocal().slice(0, 10));
+    const komponen = window.PKKM_KOMPONEN_META || window.PKKM_KOMPONEN || [];
+    const detailRows = komponen.map(km => {
+      const vals = tahunData.map(t => {
+        if (!t.periode) return null;
+        const ss = scopeIds.flatMap(kid => Penilaian.forKamadPeriode(kid, t.periode.id));
+        const v = ss.map(s => hitungNilaiKomponen(s.id, km.code).nilai).filter(x => x != null);
+        return v.length ? v.reduce((a, b) => a + b, 0) / v.length : null;
+      });
+      const isi = vals.filter(v => v != null);
+      const rata = isi.length ? isi.reduce((a, b) => a + b, 0) / isi.length : null;
+      return `<tr><td class="r4-left">${km.no}. ${escapeHTML(km.label)}</td>${vals.map(v => `<td>${v == null ? '-' : fmtNilai(v)}</td>`).join('')}<td><strong>${rata == null ? '-' : fmtNilai(rata)}</strong></td></tr>`;
+    }).join('');
+    const signer = (tahunData.flatMap(t => t.periode ? Penilaian.forKamadPeriode(selKid, t.periode.id) : [])
+      .find(s => s.role === 'pengawas_1' && (s.penilai_nama || s.penilai_nip))) || {};
+    const namaPenilai = (signer.penilai_nama || pengawas.nama || '').trim();
+    const nipPenilai = (signer.penilai_nip || pengawas.nip || '').trim();
+    return `<div class="rekap4-print-doc">
+      <div class="r4-kop"><div>KEMENTERIAN AGAMA REPUBLIK INDONESIA</div><div>KANTOR KEMENTERIAN AGAMA KABUPATEN ${escapeHTML(String(kab || '____________').toUpperCase())}</div><strong>POKJAWAS MADRASAH</strong></div>
+      <h3>REKAPITULASI PENILAIAN KINERJA KEPALA MADRASAH<br>4 TAHUN</h3>
+      <table class="r4-ident"><tbody>
+        <tr><td>Nama Kepala Madrasah</td><td>: ${escapeHTML(unitMode && hasUnit ? (kamad.nama_madrasah || '-') : (kamad.nama || '-'))}</td><td>NIP</td><td>: ${escapeHTML(unitMode && hasUnit ? '-' : (kamad.nip || '-'))}</td></tr>
+        <tr><td>Madrasah</td><td>: ${escapeHTML(kamad.nama_madrasah || '-')} (${escapeHTML(kamad.jenjang || '-')})</td><td>NSM</td><td>: ${escapeHTML(kamad.nsm || '-')}</td></tr>
+        <tr><td>KKM / Wilayah</td><td>: ${escapeHTML(kamad.kkma || kab || '-')}</td><td>Tahun Terisi</td><td>: ${validNilai.length} dari 4 tahun</td></tr>
+      </tbody></table>
+      <table class="r4-table"><thead><tr><th>Komponen Penilaian</th>${tahunData.map(t => `<th>${escapeHTML(t.label)}</th>`).join('')}<th>Rata-rata</th></tr></thead>
+        <tbody>${detailRows}<tr class="r4-total"><td class="r4-left"><strong>Nilai Akhir</strong></td>${tahunData.map(t => `<td><strong>${t.nilai == null ? '-' : fmtNilai(t.nilai)}</strong>${t.nilai != null ? `<div>${escapeHTML(window.getPKKMSebutan(t.nilai)?.label || '')}</div>` : ''}</td>`).join('')}<td><strong>${rataAgregat == null ? '-' : fmtNilai(rataAgregat)}</strong>${sebutanFinal ? `<div>${escapeHTML(sebutanFinal.label)}</div>` : ''}</td></tr></tbody>
+      </table>
+      <div class="r4-sign"><div>${escapeHTML(tempat || kab || 'Jember')}, ${escapeHTML(tglCetak)}</div><div class="r4-spacer"></div><strong>Penilai I,</strong><div class="r4-name">${escapeHTML(namaPenilai || '........................................')}</div><div>NIP. ${escapeHTML(nipPenilai || '-')}</div></div>
+    </div>`;
+  }
+
   root.innerHTML = `
     <div class="page-header flex-wrap gap-2">
       <h5><i class="bi bi-calendar3-range"></i> Rekap 4 Tahunan</h5>
@@ -4271,7 +4327,7 @@ route('#/rekap-tahunan', (root) => {
   $('#kamadSelect').addEventListener('change', e => {
     location.hash = `#/rekap-tahunan?k=${e.target.value}${unitMode ? '&mode=unit' : ''}`;
   });
-  $('#btnPrintRekap').addEventListener('click', () => window.print());
+  $('#btnPrintRekap').addEventListener('click', () => cetakRekap4Tahunan(buildRekap4PrintHTML()));
   $('#btnExportXlsx').addEventListener('click', async () => {
     if (typeof window.exportPKKMExcel !== 'function') { toast('Modul export belum siap.', 'error'); return; }
     await window.exportPKKMExcel(selKid);

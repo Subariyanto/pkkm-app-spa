@@ -759,6 +759,7 @@ a:hover { color: var(--pkkm-primary-dark); }
 
 /* ===== Dokumen cetak Rata-rata Penilaian Pengawas (Rekap Agregat) ===== */
 .agg-print-doc { display: none; }
+.rekap4-print-doc { display: none; }
 
 @media print {
   /* Hanya dokumen agregat yang tercetak saat tombol Cetak Rata-rata ditekan */
@@ -842,6 +843,44 @@ a:hover { color: var(--pkkm-primary-dark); }
     font-size: 9.5pt;
     font-style: italic;
   }
+}
+
+@media print {
+  body.rekap4-printing > *:not(.rekap4-print-doc) { display: none !important; }
+  body.rekap4-printing .rekap4-print-doc {
+    display: block !important;
+    color: #000;
+    font-family: 'Times New Roman', Times, serif;
+    font-size: 10pt;
+  }
+  .rekap4-print-doc .r4-kop {
+    text-align: center;
+    border-bottom: 3px double #000;
+    padding-bottom: .35rem;
+    margin-bottom: .65rem;
+    line-height: 1.35;
+  }
+  .rekap4-print-doc .r4-kop div:first-child { font-weight: bold; font-size: 11pt; }
+  .rekap4-print-doc .r4-kop div:nth-child(2) { font-size: 10.5pt; }
+  .rekap4-print-doc .r4-kop strong { font-size: 11pt; }
+  .rekap4-print-doc h3 {
+    text-align: center;
+    font-size: 12pt;
+    line-height: 1.35;
+    margin: .7rem 0;
+  }
+  .rekap4-print-doc .r4-ident { width: 100%; border-collapse: collapse; margin-bottom: .6rem; }
+  .rekap4-print-doc .r4-ident td { padding: .12rem .2rem; vertical-align: top; }
+  .rekap4-print-doc .r4-ident td:nth-child(odd) { width: 19%; }
+  .rekap4-print-doc .r4-ident td:nth-child(even) { width: 31%; }
+  .rekap4-print-doc .r4-table { width: 100%; border-collapse: collapse; font-size: 9pt; }
+  .rekap4-print-doc .r4-table th, .rekap4-print-doc .r4-table td { border: 1px solid #000; padding: .28rem .3rem; text-align: center; vertical-align: middle; }
+  .rekap4-print-doc .r4-table th { background: #e8f5e9; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+  .rekap4-print-doc .r4-table .r4-left { text-align: left; }
+  .rekap4-print-doc .r4-total td { background: #f1f8e9; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+  .rekap4-print-doc .r4-sign { width: 50%; margin: 1rem 0 0 auto; text-align: center; page-break-inside: avoid; }
+  .rekap4-print-doc .r4-spacer { height: 2.5rem; }
+  .rekap4-print-doc .r4-name { font-weight: bold; text-decoration: underline; margin-top: .15rem; }
 }
 
 /* Saat list-group-item aktif (warna biru), tombol icon di dalamnya tetap terlihat */
