@@ -879,8 +879,8 @@ a:hover { color: var(--pkkm-primary-dark); }
   .rekap4-print-doc .r4-table .r4-left { text-align: left; }
   .rekap4-print-doc .r4-total td { background: #f1f8e9; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
   .rekap4-print-doc .r4-sign { width: 50%; margin: 1rem 0 0 auto; text-align: center; page-break-inside: avoid; }
-  .rekap4-print-doc .r4-spacer { height: 2.5rem; }
-  .rekap4-print-doc .r4-name { font-weight: bold; text-decoration: underline; margin-top: .15rem; }
+  .rekap4-print-doc .r4-spacer { height: .35rem; }
+  .rekap4-print-doc .r4-name { font-weight: bold; text-decoration: underline; margin-top: 1.4rem; }
 }
 
 /* Saat list-group-item aktif (warna biru), tombol icon di dalamnya tetap terlihat */
