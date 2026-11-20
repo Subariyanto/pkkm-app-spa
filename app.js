@@ -1284,7 +1284,15 @@ function openPeriodeModal(id, preset) {
       toast('Periode dibuat.');
     }
     m.hide();
-    render();
+    // Periode Tahun Keempat ditampilkan di halaman 4 Tahunan, bukan daftar
+    // Tahunan. Arahkan pengguna ke daftar yang sesuai setelah menyimpan agar
+    // periode yang baru dibuat tidak tampak seperti hilang.
+    const targetJenis = data.type === 'tahun_4' ? '4tahunan' : 'tahunan';
+    if (targetJenis !== (isFourYear ? '4tahunan' : 'tahunan')) {
+      navigate(`#/penilaian?jenis=${targetJenis}`);
+    } else {
+      render();
+    }
   });
 }
 
@@ -4134,6 +4142,7 @@ route('#/rekap-tahunan', (root) => {
           <a href="#/rekap-tahunan?k=${selKid}&mode=individu" class="btn btn-outline-primary ${!unitMode?'active':''}"><i class="bi bi-person"></i> Per Kepala Madrasah</a>
           <a href="#/rekap-tahunan?k=${selKid}&mode=unit" class="btn btn-outline-primary ${unitMode?'active':''}"><i class="bi bi-buildings"></i> Per Unit Madrasah</a>
         </div>` : ''}
+        <button class="btn btn-sm btn-outline-light" id="btnPrintRekap"><i class="bi bi-printer"></i> Cetak</button>
         <button class="btn btn-sm btn-success" id="btnExportXlsx"><i class="bi bi-file-earmark-excel"></i> Export Excel Resmi</button>
       </div>
     </div>
@@ -4233,6 +4242,7 @@ route('#/rekap-tahunan', (root) => {
   $('#kamadSelect').addEventListener('change', e => {
     location.hash = `#/rekap-tahunan?k=${e.target.value}${unitMode ? '&mode=unit' : ''}`;
   });
+  $('#btnPrintRekap').addEventListener('click', () => window.print());
   $('#btnExportXlsx').addEventListener('click', async () => {
     if (typeof window.exportPKKMExcel !== 'function') { toast('Modul export belum siap.', 'error'); return; }
     await window.exportPKKMExcel(selKid);
