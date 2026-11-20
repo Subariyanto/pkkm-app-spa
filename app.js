@@ -2291,10 +2291,12 @@ function buildAggPrintHTML(kamad, periode, agg) {
 
     <table class="agg-ttd">
       <tr>
-        <td colspan="${ttdList.length}" class="agg-ttd-tgl">${escapeHTML(tempat)}, ${escapeHTML(hariIni)}</td>
+        ${ttdList.slice().reverse().map((t, i) => i === ttdList.length - 1
+          ? `<td class="agg-ttd-tgl">${escapeHTML(tempat)}, ${escapeHTML(hariIni)}</td>`
+          : `<td></td>`).join('')}
       </tr>
       <tr>
-        ${ttdList.map(t => `<td>
+        ${ttdList.slice().reverse().map(t => `<td>
           <div>${escapeHTML(t.label)},</div>
           <div class="nm">${escapeHTML(t.nama || '..............................')}</div>
           <div>NIP. ${escapeHTML(t.nip || '-')}</div>
