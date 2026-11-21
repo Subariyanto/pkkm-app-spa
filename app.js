@@ -4179,7 +4179,7 @@ route('#/rekap-tahunan', (root) => {
   const rataAgregat = validNilai.length ? validNilai.reduce((a,b) => a+b, 0) / validNilai.length : null;
   const sebutanFinal = rataAgregat != null ? window.getPKKMSebutan(rataAgregat) : null;
 
-  function buildRekap4PrintHTML() {
+  function buildRekap4PrintHTML(tanggalRekapCetak) {
     const kab = (typeof Meta.kab === 'function') ? Meta.kab('') : '';
     const pengawas = (typeof Meta.pengawas === 'function') ? Meta.pengawas() : (Meta.get('identitas_pengawas', {}) || {});
     const tempat = (typeof Meta.tempat === 'function') ? Meta.tempat('') : (Meta.get('lokasi_ttd', '') || kab);
@@ -4345,9 +4345,11 @@ route('#/rekap-tahunan', (root) => {
       ev.preventDefault();
       const tanggalRekapCetak = modalEl.querySelector('#rekap4PrintDate').value;
       if (!tanggalRekapCetak) return;
+      modalEl.addEventListener('hidden.bs.modal', () => {
+        cetakRekap4Tahunan(buildRekap4PrintHTML(tanggalRekapCetak));
+        modalEl.remove();
+      }, { once: true });
       modal.hide();
-      cetakRekap4Tahunan(buildRekap4PrintHTML(tanggalRekapCetak));
-      modalEl.addEventListener('hidden.bs.modal', () => modalEl.remove(), { once: true });
     });
   });
   $('#btnExportXlsx').addEventListener('click', async () => {
