@@ -4228,6 +4228,7 @@ route('#/rekap-tahunan', (root) => {
           <a href="#/rekap-tahunan?k=${selKid}&mode=unit" class="btn btn-outline-primary ${unitMode?'active':''}"><i class="bi bi-buildings"></i> Per Unit Madrasah</a>
         </div>` : ''}
         <button class="btn btn-sm btn-outline-light" id="btnPrintRekap"><i class="bi bi-printer"></i> Cetak</button>
+        <button class="btn btn-sm btn-outline-light" id="btnPrintRekapWithDate"><i class="bi bi-calendar2-check"></i> Ubah Tanggal &amp; Cetak</button>
         <button class="btn btn-sm btn-success" id="btnExportXlsx"><i class="bi bi-file-earmark-excel"></i> Export Excel Resmi</button>
       </div>
     </div>
@@ -4327,7 +4328,8 @@ route('#/rekap-tahunan', (root) => {
   $('#kamadSelect').addEventListener('change', e => {
     location.hash = `#/rekap-tahunan?k=${e.target.value}${unitMode ? '&mode=unit' : ''}`;
   });
-  $('#btnPrintRekap').addEventListener('click', () => {
+  $('#btnPrintRekap').addEventListener('click', () => cetakRekap4Tahunan(buildRekap4PrintHTML()));
+  $('#btnPrintRekapWithDate').addEventListener('click', () => {
     const modalId = 'rekap4PrintDateModal';
     document.getElementById(modalId)?.remove();
     const host = document.createElement('div');
