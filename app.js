@@ -2115,7 +2115,7 @@ route('#/cetak/:id', (root, params) => {
           <tr><td>Madrasah</td><td>: ${escapeHTML(kamad?.nama_madrasah||'-')} (${escapeHTML(kamad?.jenjang||'-')})</td></tr>
           <tr><td>NSM</td><td>: ${escapeHTML(kamad?.nsm||'-')}</td></tr>
           <tr><td>Alamat</td><td>: ${escapeHTML(kamad?.alamat||'-')}</td></tr>
-          <tr><td>Tanggal Penilaian</td><td>: ${escapeHTML(pen.tanggal||'-')}</td></tr>
+          <tr><td>Tanggal Penilaian</td><td>: ${escapeHTML(pkbTanggalIndonesia(pen.tanggal))}</td></tr>
         </table>
 
         <h6>Hasil Penilaian</h6>
@@ -2198,7 +2198,7 @@ route('#/cetak/:id', (root, params) => {
           </div>
           <div class="ttd-box">
             <div class="ttd-tempat">&nbsp;</div>
-            <div class="ttd-tempat">${escapeHTML(tempat)}, ${escapeHTML(pen.tanggal||nowLocal().slice(0,10))}</div>
+            <div class="ttd-tempat">${escapeHTML(tempat)}, ${escapeHTML(pkbTanggalIndonesia(pen.tanggal || nowLocal().slice(0,10)))}</div>
             <div class="ttd-jabatan">${escapeHTML(penilaiLabel)},</div>
             <div class="ttd-spacer"></div>
             <div class="ttd-name">${escapeHTML(penilaiNama||'..............................')}</div>
@@ -2650,7 +2650,7 @@ route('#/agregat/:kamadId/:periodeId', (root, params) => {
                       <tr>
                         <td>
                           <div class="fw-semibold">${escapeHTML(roleLabel(s.role||'pengawas_1'))}</div>
-                          <div class="text-tiny text-muted">${escapeHTML(s.tanggal||'-')}</div>
+                          <div class="text-tiny text-muted">${escapeHTML(pkbTanggalIndonesia(s.tanggal) || '-')}</div>
                         </td>
                         <td class="text-end"><strong>${fmtNilai(akhir.nilaiAkhir)}</strong></td>
                         <td class="text-center">
