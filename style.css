@@ -1519,12 +1519,19 @@ body {
 
 /* --- Dropdown & tooltip kecil --- */
 .dropdown-menu {
+  background: #fff !important;
+  background-image: none !important;
   border-radius: 12px;
   border: 1px solid #e2ece6;
   box-shadow: var(--emb-out);
 }
-.dropdown-item { border-radius: 8px; }
-.dropdown-item:hover, .dropdown-item:focus { background: #eef8f1; }
+.dropdown-menu > li,
+.dropdown-menu .dropdown-item {
+  background: #fff !important;
+  background-image: none !important;
+}
+.dropdown-item { border-radius: 8px; color: #212529 !important; }
+.dropdown-item:hover, .dropdown-item:focus { background: #eef8f1 !important; color: #047a3a !important; }
 
 /* --- Scrollbar selaras tema --- */
 * { scrollbar-color: #bfd8c8 transparent; }
