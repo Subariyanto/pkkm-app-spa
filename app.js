@@ -994,7 +994,8 @@ route('#/penilaian', (root) => {
                         <div class="text-tiny text-muted text-truncate">${escapeHTML(p.tanggal_penilaian||'-')} · ${escapeHTML(p.type)}</div>
                       </div>
                       <div class="d-flex flex-shrink-0 ms-1">
-                        ${p.kamad_id == null ? '<span class="badge bg-light text-secondary me-2" title="Periode lama bersama; data lama dipertahankan">Bersama</span>' : `
+                        ${p.kamad_id == null ? `<span class="badge bg-light text-secondary me-2" title="Periode lama bersama; data lama dipertahankan">Bersama</span>
+                        <button class="btn btn-sm btn-link text-primary p-0" data-action="split-periode" data-id="${p.id}" title="Pecah jadi periode tiap madrasah"><i class="bi bi-diagram-3"></i></button>` : `
                         <button class="btn btn-sm btn-link text-primary p-0 me-2" data-action="edit-periode" data-id="${p.id}" title="Edit periode"><i class="bi bi-pencil"></i></button>
                         <button class="btn btn-sm btn-link text-danger p-0" data-action="del-periode" data-id="${p.id}" title="Hapus periode"><i class="bi bi-x-circle"></i></button>`}
                       </div>
@@ -1048,6 +1049,7 @@ route('#/penilaian', (root) => {
   $$('#periodeList li').forEach(li => {
     li.addEventListener('click', (e) => {
       if (e.target.closest('[data-action="del-periode"]')) return;
+      if (e.target.closest('[data-action="split-periode"]')) return;
       if (e.target.closest('[data-action="edit-periode"]')) return;
       $$('#periodeList li').forEach(x => x.classList.remove('active'));
       li.classList.add('active');
@@ -1094,11 +1096,24 @@ route('#/penilaian', (root) => {
   $$('[data-action="del-periode"]').forEach(b => b.addEventListener('click', (e) => {
     e.stopPropagation();
     const id = Number(b.dataset.id);
-    if (confirmAction('Hapus periode ini? Semua penilaian dalam periode ini akan ikut terhapus.')) {
+    if (confirmAction('Hapus periode ini? Periode hanya terhapus bila belum ada penilaian di dalamnya, jadi riwayat tetap aman.')) {
       const removed = Periode.remove(id);
-      if (!removed) { toast('Periode lama yang dipakai bersama tidak bisa dihapus dari sini. Riwayat penilaian tetap aman.', 'error'); return; }
+      if (!removed) { toast('Periode masih dipakai penilaian, jadi tidak dihapus. Riwayat penilaian tetap aman.', 'error'); return; }
       render();
     }
+  }));
+
+  // Periode bersama -> dipecah menjadi periode milik tiap madrasah.
+  // Penilaian dan PKB dipindahkan, bukan dihapus, sehingga riwayat tetap utuh.
+  $$('[data-action="split-periode"]').forEach(b => b.addEventListener('click', (e) => {
+    e.stopPropagation();
+    const id = Number(b.dataset.id);
+    if (!confirmAction('Pecah periode bersama ini menjadi periode milik masing-masing madrasah? Semua penilaian dan PKB yang sudah ada dipindahkan ke periode baru, jadi tidak ada data yang hilang.')) return;
+    const res = Periode.splitShared(id);
+    if (!res.ok) { toast('Periode ini bukan periode bersama.', 'error'); return; }
+    if (!res.created) { toast('Periode bersama kosong dan sudah dihapus.'); render(); return; }
+    toast(`Periode dipecah ke ${res.created} madrasah. ${res.moved} penilaian dan ${res.pkbMoved} PKB dipindahkan.`);
+    render();
   }));
 
   $$('[data-action="edit-periode"]').forEach(b => b.addEventListener('click', (e) => {

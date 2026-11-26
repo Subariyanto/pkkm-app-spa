@@ -1408,6 +1408,22 @@ body {
   box-shadow: var(--emb-in);
   transition: box-shadow .16s ease, background .16s ease;
 }
+/* Select butuh panah agar jelas isinya bisa dipilih.
+   Shorthand `background` di atas menghapus background-image bawaan Bootstrap,
+   jadi panah digambar manual di sini. */
+select.form-select {
+  padding-right: 2rem;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Cpath fill='none' stroke='%23047a3a' stroke-width='1.8' stroke-linecap='round' stroke-linejoin='round' d='M3.5 6l4.5 4.5L12.5 6'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right .65rem center;
+  background-size: 13px 13px;
+  appearance: none;
+  -webkit-appearance: none;
+}
+.page-header select.form-select, .rk-header select.form-select {
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Cpath fill='none' stroke='%23ffffff' stroke-width='1.8' stroke-linecap='round' stroke-linejoin='round' d='M3.5 6l4.5 4.5L12.5 6'/%3E%3C/svg%3E");
+  background-color: #ffffff;
+}
 .form-control:focus, .form-select:focus {
   background: #ffffff;
   border-color: var(--pkkm-primary);

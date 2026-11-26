@@ -269,6 +269,51 @@ const Periode = {
     pSave(PKKM_KEYS.periode, all.filter(x => x.id !== id));
     return true;
   },
+  // Pecah periode bersama (kamad_id == null) menjadi periode milik tiap madrasah.
+  // Penilaian & PKB dipindahkan ke periode baru sesuai kamad-nya, jadi riwayat
+  // tidak hilang; periode bersama hanya dihapus bila sudah tidak dipakai lagi.
+  splitShared(sharedId) {
+    const id = Number(sharedId);
+    const all = pLoad(PKKM_KEYS.periode, []);
+    const src = all.find(x => x.id === id);
+    if (!src || src.kamad_id != null) return { ok: false, reason: 'not-shared' };
+
+    const penilaians = pLoad(PKKM_KEYS.penilaian, []);
+    const used = penilaians.filter(p => p.periode_id === id);
+    const pkbAll = pLoad(PKKM_KEYS.pkb, []);
+    const pkbUsed = pkbAll.filter(x => x.periode_id === id);
+    const kamadIds = [...new Set([...used, ...pkbUsed].map(x => Number(x.kamad_id)).filter(v => !isNaN(v)))];
+
+    if (!kamadIds.length) {
+      pSave(PKKM_KEYS.periode, all.filter(x => x.id !== id));
+      return { ok: true, created: 0, moved: 0, pkbMoved: 0, deleted: true };
+    }
+
+    const map = new Map();
+    for (const kid of kamadIds) {
+      const obj = { ...src, id: pNextId('periode'), kamad_id: kid };
+      all.push(obj);
+      map.set(kid, obj.id);
+    }
+    pSave(PKKM_KEYS.periode, all);
+
+    let moved = 0;
+    penilaians.forEach(p => {
+      if (p.periode_id === id && map.has(Number(p.kamad_id))) { p.periode_id = map.get(Number(p.kamad_id)); moved++; }
+    });
+    if (moved) pSave(PKKM_KEYS.penilaian, penilaians);
+
+    let pkbMoved = 0;
+    pkbAll.forEach(x => {
+      if (x.periode_id === id && map.has(Number(x.kamad_id))) { x.periode_id = map.get(Number(x.kamad_id)); pkbMoved++; }
+    });
+    if (pkbMoved) pSave(PKKM_KEYS.pkb, pkbAll);
+
+    const stillUsed = pLoad(PKKM_KEYS.penilaian, []).some(p => p.periode_id === id)
+      || pLoad(PKKM_KEYS.pkb, []).some(x => x.periode_id === id);
+    if (!stillUsed) pSave(PKKM_KEYS.periode, pLoad(PKKM_KEYS.periode, []).filter(x => x.id !== id));
+    return { ok: true, created: map.size, moved, pkbMoved, deleted: !stillUsed };
+  },
 };
 
 // === Penilaian (header) ========================================
