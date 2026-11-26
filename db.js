@@ -231,11 +231,16 @@ const Periode = {
       return (b.semester||'').localeCompare(a.semester||'');
     });
   },
+  listForKamad(kamadId) {
+    const id = Number(kamadId);
+    return this.list().filter(p => p.kamad_id == null || Number(p.kamad_id) === id);
+  },
   get(id) { return pLoad(PKKM_KEYS.periode, []).find(x => x.id === id) || null; },
   create(data) {
     const all = pLoad(PKKM_KEYS.periode, []);
     const obj = {
       id: pNextId('periode'),
+      kamad_id: data.kamad_id != null && data.kamad_id !== '' ? Number(data.kamad_id) : null,
       tahun: data.tahun || new Date().getFullYear(),
       semester: data.semester || '1',
       type: data.type || 'sumatif',
@@ -255,15 +260,13 @@ const Periode = {
     return all[i];
   },
   remove(id) {
-    const all = pLoad(PKKM_KEYS.periode, []).filter(x => x.id !== id);
-    pSave(PKKM_KEYS.periode, all);
+    const all = pLoad(PKKM_KEYS.periode, []);
+    const periode = all.find(x => x.id === id);
+    if (!periode) return false;
     const penilaians = pLoad(PKKM_KEYS.penilaian, []);
-    const targetIds = penilaians.filter(p => p.periode_id === id).map(p => p.id);
-    pSave(PKKM_KEYS.penilaian, penilaians.filter(p => p.periode_id !== id));
-    if (targetIds.length) {
-      const skor = pLoad(PKKM_KEYS.skor, []).filter(s => !targetIds.includes(s.penilaian_id));
-      pSave(PKKM_KEYS.skor, skor);
-    }
+    // Prevent orphaning any assessment that still points to this period.
+    if (penilaians.some(p => p.periode_id === id)) return false;
+    pSave(PKKM_KEYS.periode, all.filter(x => x.id !== id));
     return true;
   },
 };

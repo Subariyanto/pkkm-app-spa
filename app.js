@@ -951,11 +951,12 @@ route('#/penilaian', (root) => {
   const isFourYear = jenis === '4tahunan';
 
   const kamadList = Kamad.list();
-  const allPeriode = Periode.list();
+  const requestedKamadId = Number(params.get('k'));
+  const selectedKamadId = kamadList.some(k => k.id === requestedKamadId) ? requestedKamadId : (kamadList[0]?.id || null);
+  const selectedKamad = Kamad.get(selectedKamadId);
+  const allPeriode = selectedKamadId ? Periode.listForKamad(selectedKamadId) : [];
 
-  // Filter periode berdasarkan jenis
-  // tahunan: tahun_1, tahun_2, tahun_3, formatif, sumatif
-  // 4tahunan: tahun_4
+  // Periode lama tanpa kamad_id tetap tampil sebagai periode bersama.
   const periodeList = isFourYear
     ? allPeriode.filter(p => p.type === 'tahun_4')
     : allPeriode.filter(p => p.type !== 'tahun_4');
@@ -967,20 +968,24 @@ route('#/penilaian', (root) => {
   const judulIcon = isFourYear ? 'bi-calendar4-week' : 'bi-calendar3';
 
   root.innerHTML = `
-    <div class="page-header">
+    <div class="page-header flex-wrap gap-2">
       <h5><i class="bi ${judulIcon}"></i> ${escapeHTML(judulHalaman)}</h5>
-      <div class="btn-group">
-        <button class="btn btn-sm btn-outline-light" id="btnAddPeriode"><i class="bi bi-calendar-plus"></i> ${isFourYear ? '+ Buat Penilaian 4 Tahunan' : 'Periode Baru'}</button>
+      <div class="d-flex gap-2 align-items-center">
+        <label class="text-tiny text-white mb-0" for="pilihKamadPeriode">Madrasah:</label>
+        <select class="form-select form-select-sm" id="pilihKamadPeriode" style="min-width:240px" ${kamadList.length ? '' : 'disabled'}>
+          ${kamadList.map(k => `<option value="${k.id}" ${k.id === selectedKamadId ? 'selected' : ''}>${escapeHTML(k.nama_madrasah || k.nama || '-')}</option>`).join('')}
+        </select>
+        <button class="btn btn-sm btn-outline-light" id="btnAddPeriode" ${selectedKamadId ? '' : 'disabled'}><i class="bi bi-calendar-plus"></i> ${isFourYear ? '+ Buat Penilaian 4 Tahunan' : 'Periode Baru'}</button>
       </div>
     </div>
 
     <div class="row g-3">
       <div class="col-md-3">
         <div class="card h-100">
-          <div class="card-header py-2"><i class="bi ${judulIcon}"></i> Periode ${isFourYear ? '(4 Tahunan)' : '(Tahunan)'}</div>
+          <div class="card-header py-2"><i class="bi ${judulIcon}"></i> Periode ${isFourYear ? '(4 Tahunan)' : '(Tahunan)'}${selectedKamad ? ` — ${escapeHTML(selectedKamad.nama_madrasah || selectedKamad.nama)}` : ''}</div>
           <div class="card-body p-0">
             ${periodeList.length === 0
-              ? `<div class="text-center text-muted py-4 px-2"><span class="text-tiny">${isFourYear ? 'Belum ada periode 4 Tahunan.' : 'Belum ada periode.'}</span><br><button class="btn btn-sm btn-primary mt-2" id="btnAddPeriode2"><i class="bi bi-plus"></i> ${isFourYear ? 'Buat Penilaian 4 Tahunan' : 'Buat Periode'}</button></div>`
+              ? `<div class="text-center text-muted py-4 px-2"><span class="text-tiny">${selectedKamad ? (isFourYear ? 'Belum ada periode 4 Tahunan untuk madrasah ini.' : 'Belum ada periode untuk madrasah ini.') : 'Tambahkan data kepala madrasah terlebih dahulu.'}</span><br>${selectedKamad ? `<button class="btn btn-sm btn-primary mt-2" id="btnAddPeriode2"><i class="bi bi-plus"></i> ${isFourYear ? 'Buat Penilaian 4 Tahunan' : 'Buat Periode'}</button>` : ''}</div>`
               : `<ul class="list-group list-group-flush" id="periodeList">
                   ${periodeList.map(p => `
                     <li class="list-group-item d-flex justify-content-between align-items-start cursor-pointer py-2" data-periode="${p.id}">
@@ -989,8 +994,9 @@ route('#/penilaian', (root) => {
                         <div class="text-tiny text-muted text-truncate">${escapeHTML(p.tanggal_penilaian||'-')} · ${escapeHTML(p.type)}</div>
                       </div>
                       <div class="d-flex flex-shrink-0 ms-1">
+                        ${p.kamad_id == null ? '<span class="badge bg-light text-secondary me-2" title="Periode lama bersama; data lama dipertahankan">Bersama</span>' : `
                         <button class="btn btn-sm btn-link text-primary p-0 me-2" data-action="edit-periode" data-id="${p.id}" title="Edit periode"><i class="bi bi-pencil"></i></button>
-                        <button class="btn btn-sm btn-link text-danger p-0" data-action="del-periode" data-id="${p.id}" title="Hapus periode"><i class="bi bi-x-circle"></i></button>
+                        <button class="btn btn-sm btn-link text-danger p-0" data-action="del-periode" data-id="${p.id}" title="Hapus periode"><i class="bi bi-x-circle"></i></button>`}
                       </div>
                     </li>`).join('')}
                 </ul>`}
@@ -1009,7 +1015,7 @@ route('#/penilaian', (root) => {
                     <tr><th>Nama / Madrasah</th><th width="120">Status</th><th width="100">Aksi</th></tr>
                   </thead>
                   <tbody>
-                    ${kamadList.map(k => `
+                    ${kamadList.filter(k => k.id === selectedKamadId).map(k => `
                       <tr>
                         <td>
                           <div class="fw-semibold">${escapeHTML(k.nama)}</div>
@@ -1030,6 +1036,10 @@ route('#/penilaian', (root) => {
     const item = $('#periodeList .active');
     return item ? Number(item.dataset.periode) : (periodeList[0]?.id || null);
   }
+
+  $('#pilihKamadPeriode')?.addEventListener('change', ev => {
+    location.hash = `#/penilaian?jenis=${jenis}&k=${ev.target.value}`;
+  });
 
   // pilih periode pertama by default
   const first = $('#periodeList li');
@@ -1085,7 +1095,8 @@ route('#/penilaian', (root) => {
     e.stopPropagation();
     const id = Number(b.dataset.id);
     if (confirmAction('Hapus periode ini? Semua penilaian dalam periode ini akan ikut terhapus.')) {
-      Periode.remove(id);
+      const removed = Periode.remove(id);
+      if (!removed) { toast('Periode lama yang dipakai bersama tidak bisa dihapus dari sini. Riwayat penilaian tetap aman.', 'error'); return; }
       render();
     }
   }));
@@ -1093,7 +1104,7 @@ route('#/penilaian', (root) => {
   $$('[data-action="edit-periode"]').forEach(b => b.addEventListener('click', (e) => {
     e.stopPropagation();
     const id = Number(b.dataset.id);
-    openPeriodeModal(id);
+    openPeriodeModal(id, null, selectedKamadId);
   }));
 
   function bindAdd(btn) {
@@ -1101,9 +1112,9 @@ route('#/penilaian', (root) => {
     btn.addEventListener('click', () => {
       // Untuk 4 tahunan, pre-set type=tahun_4
       if (isFourYear) {
-        openPeriodeModal(null, { type: 'tahun_4' });
+        openPeriodeModal(null, { type: 'tahun_4' }, selectedKamadId);
       } else {
-        openPeriodeModal();
+        openPeriodeModal(null, null, selectedKamadId);
       }
     });
   }
@@ -1265,7 +1276,7 @@ function openPilihRoleModal(kamad_id, periode_id) {
   });
 }
 
-function openPeriodeModal(id, preset) {
+function openPeriodeModal(id, preset, kamadId) {
   const editMode = id != null;
   const existing = editMode ? Periode.get(id) : null;
   if (editMode && !existing) { toast('Periode tidak ditemukan.', 'error'); return; }
@@ -1327,6 +1338,7 @@ function openPeriodeModal(id, preset) {
     ev.preventDefault();
     const fd = new FormData(ev.target);
     const data = Object.fromEntries(fd.entries());
+    data.kamad_id = editMode ? existing.kamad_id : (kamadId || null);
     data.tahun = Number(data.tahun);
     data.tanggal_penilaian = (data.tanggal_penilaian || '').trim() || nowLocal().slice(0, 10);
     if (!data.label) {
@@ -1335,6 +1347,10 @@ function openPeriodeModal(id, preset) {
       data.label = `${tlabel} ${data.tahun} Sem ${data.semester}`;
     }
     if (editMode) {
+      if (existing.kamad_id == null) {
+        toast('Periode lama bersama tidak dapat diedit agar riwayat madrasah lain tetap aman.', 'error');
+        return;
+      }
       Periode.update(id, data);
       // Sinkronkan tanggal setiap penilaian pada periode ini agar
       // laporan menampilkan tanggal pelaksanaan yang benar per madrasah.
@@ -1354,17 +1370,18 @@ function openPeriodeModal(id, preset) {
     // periode yang baru dibuat tidak tampak seperti hilang.
     const targetJenis = data.type === 'tahun_4' ? '4tahunan' : 'tahunan';
     if (targetJenis !== (isFourYear ? '4tahunan' : 'tahunan')) {
-      navigate(`#/penilaian?jenis=${targetJenis}`);
+      navigate(`#/penilaian?jenis=${targetJenis}${kamadId ? `&k=${kamadId}` : ''}`);
     } else {
-      render();
+      if (kamadId) location.hash = `#/penilaian?jenis=${targetJenis}&k=${kamadId}`;
+      else render();
     }
   });
 }
 
 // --- Penilaian: form ------------------------------------------
 route('#/penilaian/:kamadId/:periodeId', (root, params) => {
-  // No role provided: redirect to role chooser modal via penilaian list
-  navigate(`#/penilaian`);
+  // No role provided: redirect to the selected school's assessment list, then open its role chooser.
+  navigate(`#/penilaian?k=${Number(params.kamadId)}`);
   setTimeout(() => openPilihRoleModal(Number(params.kamadId), Number(params.periodeId)), 100);
 });
 route('#/penilaian/:kamadId/:periodeId/:role', (root, params) => {
@@ -1817,21 +1834,24 @@ route('#/penilaian/:kamadId/:periodeId/:role', (root, params) => {
 
 // --- Rekap -----------------------------------------------------
 route('#/rekap', (root) => {
+  const kamadList = Kamad.list();
   const periodeList = Periode.list();
   if (periodeList.length === 0) {
-    root.innerHTML = `<div class="alert alert-info">Belum ada periode. <a href="#/penilaian">Buat periode dulu</a>.</div>`;
+    root.innerHTML = `<div class="alert alert-info">Belum ada periode. <a href="#/penilaian">Pilih madrasah lalu buat periode</a>.</div>`;
     return;
   }
   const selectedPeriod = location.hash.match(/[?&]p=([^&]+)/)?.[1] || String(periodeList[0].id);
   const allPeriods = selectedPeriod === 'all';
   const selPid = allPeriods ? null : Number(selectedPeriod);
   const periode = allPeriods ? null : Periode.get(selPid);
-  const kamadList = Kamad.list();
+  const activePeriodeList = periodeList.filter(p => p.kamad_id == null || kamadList.some(k =>
+    Number(p.kamad_id) === k.id && Periode.listForKamad(k.id).some(x => x.id === p.id)));
 
   const rows = kamadList.map(k => {
+    const kamadPeriods = Periode.listForKamad(k.id);
     const sessions = allPeriods
-      ? Periode.list().flatMap(p => Penilaian.forKamadPeriode(k.id, p.id))
-      : Penilaian.forKamadPeriode(k.id, selPid);
+      ? kamadPeriods.flatMap(p => Penilaian.forKamadPeriode(k.id, p.id))
+      : (kamadPeriods.some(p => p.id === selPid) ? Penilaian.forKamadPeriode(k.id, selPid) : []);
     if (!sessions.length) return { k, pen: null, sessions: [], prog: null, akhir: null, sebutan: null, agg: null };
     // Semua periode: hitung satu hasil per periode, lalu rata-ratakan nilai akhir dan komponen.
     if (allPeriods) {
@@ -1880,7 +1900,7 @@ route('#/rekap', (root) => {
       <div class="d-flex gap-2 align-items-center">
         <label class="text-tiny text-white mb-0">Periode:</label>
         <select class="form-select form-select-sm" id="periodeSelect" style="min-width: 200px;">
-          ${periodeList.map(p => `<option value="${p.id}" ${p.id===selPid?'selected':''}>${escapeHTML(p.label)}</option>`).join('')}
+          ${activePeriodeList.map(p => `<option value="${p.id}" ${p.id===selPid?'selected':''}>${escapeHTML(p.label)}${p.kamad_id != null ? ` — ${escapeHTML(Kamad.get(Number(p.kamad_id))?.nama_madrasah || '')}` : ' — Bersama'}</option>`).join('')}
           <option value="all" ${allPeriods?'selected':''}>Semua Periode (rata-rata)</option>
         </select>
         <button class="btn btn-sm btn-gradient-excel" id="btnExportRekap"><i class="bi bi-file-earmark-excel"></i> Export Excel</button>
@@ -1924,9 +1944,9 @@ route('#/rekap', (root) => {
                 <td class="text-center">${r.sebutan ? `<span class="${r.sebutan.cssClass}">${r.sebutan.label}</span>` : '-'}</td>
                 <td class="text-center no-print">
                   ${r.pen
-                    ? `<a href="#/agregat/${r.k.id}/${selPid}" class="btn btn-sm btn-outline-primary" title="Detail Agregat"><i class="bi bi-graph-up"></i></a>
+                    ? `<a href="#/agregat/${r.k.id}/${allPeriods ? r.sessions[0].periode_id : selPid}" class="btn btn-sm btn-outline-primary" title="Detail Agregat"><i class="bi bi-graph-up"></i></a>
                        <a href="#/cetak/${r.pen.id}" class="btn btn-sm btn-outline-secondary" title="Cetak"><i class="bi bi-printer"></i></a>`
-                    : `<button class="btn btn-sm btn-primary" data-action="open-rekap-penilaian" data-kamad="${r.k.id}"><i class="bi bi-play-fill"></i> Mulai</button>`}
+                    : `<a class="btn btn-sm btn-primary" href="#/penilaian?k=${r.k.id}"><i class="bi bi-play-fill"></i> Pilih Periode</a>`}
                 </td>
               </tr>`;
             }).join('')}
@@ -1947,9 +1967,6 @@ route('#/rekap', (root) => {
   $('#periodeSelect').addEventListener('change', e => {
     location.hash = `#/rekap?p=${encodeURIComponent(e.target.value)}`;
   });
-  $$('[data-action="open-rekap-penilaian"]').forEach(b => b.addEventListener('click', () => {
-    openPilihRoleModal(Number(b.dataset.kamad), selPid);
-  }));
 
   $('#btnExportRekap').addEventListener('click', () => exportRekapExcel(periode || { label: 'Semua_Periode_Rata-rata' }, rows));
   $('#btnPrintRekap').addEventListener('click', () => window.print());
@@ -2213,14 +2230,21 @@ route('#/cetak/:id', (root, params) => {
 
 // --- Laporan Lengkap KKM (Cover, Pengesahan, Kata Pengantar, BAB I-V, Lampiran) ---
 route('#/laporan-lengkap', (root) => {
-  const periodeList = Periode.list();
   const kamadList = Kamad.list();
+  const periodeList = Periode.list();
   const kkmaSet = new Set();
   for (const k of kamadList) {
     const v = (k.kkma || '').trim();
     if (v) kkmaSet.add(v);
   }
   const kkmaArr = [...kkmaSet].sort();
+  const kamadByKkma = new Map();
+  for (const k of kamadList) {
+    const key = (k.kkma || '').trim();
+    if (!key) continue;
+    if (!kamadByKkma.has(key)) kamadByKkma.set(key, []);
+    kamadByKkma.get(key).push(k);
+  }
 
   if (kkmaArr.length === 0) {
     root.innerHTML = `<div class="alert alert-warning">Belum ada Kepala Madrasah dengan field <strong>KKM</strong> terisi. Silakan lengkapi field KKM pada data Kepala Madrasah terlebih dahulu di menu <a href="#/kamad">Kepala Madrasah</a>.</div>`;
@@ -2249,10 +2273,8 @@ route('#/laporan-lengkap', (root) => {
           </div>
           <div class="col-md-6">
             <label class="form-label">Periode</label>
-            <select class="form-select" name="periode_id" required>
-              <option value="">-- pilih --</option>
-              ${periodeList.map(p => `<option value="${p.id}">${escapeHTML(p.label)}</option>`).join('')}
-              <option value="all">Semua Periode (rata-rata)</option>
+            <select class="form-select" name="periode_id" id="lapLengkapPeriode" required>
+              <option value="">Pilih KKM terlebih dahulu</option>
             </select>
           </div>
           <div class="col-12">
@@ -2262,6 +2284,17 @@ route('#/laporan-lengkap', (root) => {
       </div>
     </div>
   `;
+  const periodeSelect = $('#lapLengkapPeriode');
+  $('select[name="kkma"]')?.addEventListener('change', e => {
+    const matches = kamadByKkma.get(e.target.value) || [];
+    const ids = new Set(matches.flatMap(k => Periode.listForKamad(k.id).map(p => p.id)));
+    const relevant = periodeList.filter(p => ids.has(p.id) &&
+      (p.kamad_id == null || matches.some(k => Periode.listForKamad(k.id).some(x => x.id === p.id))));
+    periodeSelect.innerHTML = `<option value="">-- pilih --</option>${relevant.map(p => {
+      const owner = p.kamad_id == null ? 'Bersama' : (Kamad.get(Number(p.kamad_id))?.nama_madrasah || 'Madrasah');
+      return `<option value="${p.id}">${escapeHTML(p.label)} — ${escapeHTML(owner)}</option>`;
+    }).join('')}<option value="all">Semua Periode (rata-rata)</option>`;
+  });
   $('#frmLapLengkap').addEventListener('submit', (e) => {
     e.preventDefault();
     const fd = new FormData(e.target);
@@ -2317,7 +2350,7 @@ function buildAggPrintHTML(kamad, periode, agg, tanggalCetak) {
   const pengawas = (typeof Meta.pengawas === 'function') ? Meta.pengawas() : (Meta.get('identitas_pengawas', {}) || {});
   const pokjawas = (typeof Meta.pokjawas === 'function') ? Meta.pokjawas() : (Meta.get('identitas_ketua_pokjawas', {}) || {});
   const tempat = (typeof Meta.tempat === 'function') ? Meta.tempat('') : (Meta.get('lokasi_ttd', '') || kabTampil);
-  const hariIni = pkbTanggalIndonesia(tanggalCetak || periode.tanggal_penilaian || nowLocal().slice(0, 10));
+  const hariIni = pkbTanggalIndonesia(tanggalCetak || nowLocal().slice(0, 10));
   const roleLabel = (code) => ((window.PKKM_ROLES || []).find(r => r.code === code) || {}).label || code;
 
   const sessions = aggPengawasSessions(agg);
@@ -2487,7 +2520,8 @@ function cetakRekap4Tahunan(html) {
 
 // --- Rekap Agregat (multi-assessor) ----------------------------
 route('#/rekap-agregat', (root) => {
-  const periodeList = Periode.list();
+  const kamadAll = Kamad.list();
+  const periodeList = Periode.list().filter(p => p.kamad_id == null || kamadAll.some(k => Number(p.kamad_id) === k.id));
   if (!periodeList.length) {
     root.innerHTML = '<div class="alert alert-info">Belum ada periode penilaian. <a href="#/penilaian">Buat periode dulu</a>.</div>';
     return;
@@ -2505,7 +2539,7 @@ route('#/rekap-agregat', (root) => {
       <div class="d-flex gap-2 align-items-center">
         <label class="text-tiny text-white mb-0" for="rekapAgregatPeriode">Periode:</label>
         <select class="form-select form-select-sm" id="rekapAgregatPeriode">
-          ${periodeList.map(p => `<option value="${p.id}" ${p.id === periode.id ? 'selected' : ''}>${escapeHTML(p.label)}</option>`).join('')}
+          ${periodeList.map(p => `<option value="${p.id}" ${p.id === periode.id ? 'selected' : ''}>${escapeHTML(p.label)}${p.kamad_id != null ? ` — ${escapeHTML(Kamad.get(Number(p.kamad_id))?.nama_madrasah || '')}` : ' — Bersama'}</option>`).join('')}
         </select>
       </div>
     </div>
@@ -2688,18 +2722,32 @@ route('#/agregat/:kamadId/:periodeId', (root, params) => {
       const host = document.createElement('div');
       host.innerHTML = `<div class="modal fade" id="${modalId}" tabindex="-1"><div class="modal-dialog modal-dialog-centered"><div class="modal-content">
         <form id="aggPrintDateForm"><div class="modal-header"><h5 class="modal-title">Tanggal Cetak</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div>
-        <div class="modal-body"><label class="form-label" for="aggPrintDate">Pilih tanggal yang akan dicetak</label><input class="form-control" type="date" id="aggPrintDate" name="tanggal" value="${escapeHTML((periode.tanggal_penilaian || nowLocal().slice(0,10)).slice(0,10))}" required></div>
+        <div class="modal-body">
+          <div class="mb-3"><label class="form-label" for="aggPrintDate">Tanggal Cetak</label><input class="form-control" type="date" id="aggPrintDate" name="tanggal_cetak" value="${escapeHTML(nowLocal().slice(0,10))}" required><div class="form-text">Tanggal ini hanya untuk tanda tangan dokumen.</div></div>
+          <div><label class="form-label" for="aggAssessmentDate">Tanggal Penilaian</label><input class="form-control" type="date" id="aggAssessmentDate" name="tanggal_penilaian" value="${escapeHTML((periode.tanggal_penilaian || nowLocal().slice(0,10)).slice(0,10))}" required><div class="form-text">Disimpan pada periode ini dan ditampilkan sebagai tanggal pelaksanaan di laporan.</div></div>
+        </div>
         <div class="modal-footer"><button type="button" class="btn btn-light" data-bs-dismiss="modal">Batal</button><button type="submit" class="btn btn-primary"><i class="bi bi-printer"></i> Cetak</button></div></form></div></div></div>`;
       document.body.appendChild(host.firstElementChild);
       const modalEl = document.getElementById(modalId);
       const modal = new bootstrap.Modal(modalEl);
       modal.show();
+      // Tanggal cetak & tanggal penilaian ditautkan: ubah salah satu, ikut yang lain.
+      // Pengguna tetap bisa memisahkan bila perlu (mis. cetak ulang dokumen lama).
+      const cetakInput = modalEl.querySelector('#aggPrintDate');
+      const nilaiInput = modalEl.querySelector('#aggAssessmentDate');
+      cetakInput.addEventListener('change', () => { if (cetakInput.value) nilaiInput.value = cetakInput.value; });
+      nilaiInput.addEventListener('change', () => { if (nilaiInput.value) cetakInput.value = nilaiInput.value; });
       modalEl.querySelector('#aggPrintDateForm').addEventListener('submit', ev => {
         ev.preventDefault();
-        const tanggal = modalEl.querySelector('#aggPrintDate').value;
-        if (!tanggal) return;
+        const tanggalCetak = modalEl.querySelector('#aggPrintDate').value;
+        const tanggalPenilaian = modalEl.querySelector('#aggAssessmentDate').value;
+        if (!tanggalCetak || !tanggalPenilaian) return;
+        const assessmentSessions = Penilaian.forKamadPeriode(kamad.id, periode.id);
+        const updatedPeriod = Periode.update(periode.id, { tanggal_penilaian: tanggalPenilaian });
+        assessmentSessions.forEach(s => Penilaian.update(s.id, { tanggal: tanggalPenilaian }));
+        if (updatedPeriod) periode.tanggal_penilaian = tanggalPenilaian;
         modal.hide();
-        cetakAggPrint(buildAggPrintHTML(kamad, periode, agg, tanggal));
+        cetakAggPrint(buildAggPrintHTML(kamad, periode, agg, tanggalCetak));
         modalEl.addEventListener('hidden.bs.modal', () => modalEl.remove(), { once: true });
       });
     });
@@ -2822,7 +2870,8 @@ route('#/riwayat/:kamadId', (root, params) => {
 
 // --- Rekap KKM -------------------------------------------------
 route('#/rekap-kkma', (root) => {
-  const periodeList = Periode.list();
+  const kamadList = Kamad.list();
+  const periodeList = Periode.list().filter(p => p.kamad_id == null || kamadList.some(k => Number(p.kamad_id) === k.id));
   if (periodeList.length === 0) {
     root.innerHTML = `<div class="alert alert-info">Belum ada periode. <a href="#/penilaian">Buat periode dulu</a>.</div>`;
     return;
@@ -2831,16 +2880,16 @@ route('#/rekap-kkma', (root) => {
   const allPeriods = selectedPeriod === 'all';
   const selPid = allPeriods ? null : Number(selectedPeriod);
   const periode = allPeriods ? { id: 'all', label: 'Semua Periode (rata-rata)' } : Periode.get(selPid);
-  const kamadList = Kamad.list();
 
   // group by kkma
   const groups = {};
   for (const k of kamadList) {
     const key = (k.kkma || '(Tanpa KKM)').trim();
     if (!groups[key]) groups[key] = { kkma: key, kamad: [] };
+    const periodsForKamad = Periode.listForKamad(k.id);
     const sessions = allPeriods
-      ? Periode.list().flatMap(p => Penilaian.forKamadPeriode(k.id, p.id))
-      : Penilaian.forKamadPeriode(k.id, selPid);
+      ? periodsForKamad.flatMap(p => Penilaian.forKamadPeriode(k.id, p.id))
+      : (periodsForKamad.some(p => p.id === selPid) ? Penilaian.forKamadPeriode(k.id, selPid) : []);
     let akhir = null, sebutan = null, detail = [];
     if (sessions.length) {
       if (allPeriods) {
@@ -2885,7 +2934,7 @@ route('#/rekap-kkma', (root) => {
       <div class="d-flex gap-2 align-items-center">
         <label class="text-tiny text-white mb-0">Periode:</label>
         <select class="form-select form-select-sm" id="periodeSelectKkma" style="min-width: 220px;">
-          ${periodeList.map(p => `<option value="${p.id}" ${p.id===selPid?'selected':''}>${escapeHTML(p.label)}</option>`).join('')}
+          ${periodeList.map(p => `<option value="${p.id}" ${p.id===selPid?'selected':''}>${escapeHTML(p.label)}${p.kamad_id != null ? ` — ${escapeHTML(Kamad.get(Number(p.kamad_id))?.nama_madrasah || '')}` : ' — Bersama'}</option>`).join('')}
           <option value="all" ${allPeriods?'selected':''}>Semua Periode (rata-rata)</option>
         </select>
         <button class="btn btn-sm btn-gradient-excel" id="btnExportKkma"><i class="bi bi-file-earmark-excel"></i> Export Excel</button>
@@ -2961,7 +3010,7 @@ route('#/rekap-kkma', (root) => {
                   <td class="text-end fw-bold">${row.akhir!=null?fmtNilai(row.akhir):'-'}</td>
                   <td class="text-center">${row.sebutan?`<span class="${row.sebutan.cssClass}">${row.sebutan.label}</span>`:'-'}</td>
                   <td class="text-center no-print">
-                    <a href="#/penilaian/${row.k.id}/${selPid}" class="btn btn-sm btn-outline-primary"><i class="bi bi-pencil"></i></a>
+                    ${row.sessions.length ? `<a href="#/penilaian/${row.k.id}/${row.sessions[0].periode_id}" class="btn btn-sm btn-outline-primary" title="Buka penilaian"><i class="bi bi-pencil"></i></a>` : `<a href="#/penilaian?k=${row.k.id}" class="btn btn-sm btn-outline-primary" title="Pilih periode"><i class="bi bi-calendar-plus"></i></a>`}
                     <a href="#/riwayat/${row.k.id}" class="btn btn-sm btn-outline-secondary"><i class="bi bi-clock-history"></i></a>
                   </td>
                 </tr>`).join('')}
