@@ -2773,7 +2773,7 @@ route('#/rekap-kkma', (root) => {
           ${g.rata!=null?`<span class="badge bg-warning text-dark ms-1">Rata: ${fmtNilai(g.rata)}</span>`:''}
         </div>
         <div class="card-body p-0">
-          <div class="table-responsive"><table class="table table-sm table-hover mb-0 align-middle">
+          <div class="table-responsive"><table class="table table-sm table-hover mb-0 align-middle rekap-compact">
             <thead class="table-light">
               <tr>
                 <th width="40">#</th>
