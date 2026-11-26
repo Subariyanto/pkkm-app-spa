@@ -3879,6 +3879,10 @@ window.cetakPKB = cetakPKB;
 window.buildPKBPrintHTML = buildPKBPrintHTML;
 
 route('#/pkb', (root) => {
+  navigate('#/rekap-pkb-kkm');
+});
+
+route('#/rekap-pkb-kkm', (root) => {
   root.innerHTML = `
     <div class="page-header">
       <h5><i class="bi bi-mortarboard"></i> Analisis PKB</h5>
@@ -3941,6 +3945,40 @@ route('#/pkb', (root) => {
       window.render();
     });
   });
+});
+
+route('#/rekap-pkb-kabupaten', (root) => {
+  const all = window.PKB.list();
+  const grouped = new Map();
+  for (const item of all) {
+    const key = `${item.kamad_id}_${item.periode_id}`;
+    if (!grouped.has(key)) grouped.set(key, { kamad_id: item.kamad_id, periode_id: item.periode_id, items: [] });
+    grouped.get(key).items.push(item);
+  }
+  const rows = [...grouped.values()].map(g => ({
+    ...g, kamad: Kamad.get(g.kamad_id), periode: Periode.get(g.periode_id),
+  })).filter(g => g.kamad && g.periode).sort((a,b) =>
+    (a.kamad.kkma || '').localeCompare(b.kamad.kkma || '') ||
+    (a.kamad.nama_madrasah || '').localeCompare(b.kamad.nama_madrasah || '') ||
+    (a.periode.label || '').localeCompare(b.periode.label || '')
+  );
+  root.innerHTML = `
+    <div class="page-header"><h5><i class="bi bi-diagram-3"></i> Rekap PKB Kabupaten</h5></div>
+    <div class="alert alert-info py-2 text-tiny">Rekap seluruh rencana PKB yang tersimpan pada perangkat ini, dikelompokkan menurut KKM, madrasah, dan periode.</div>
+    <div class="card"><div class="card-body p-0">
+      ${rows.length ? `<div class="table-responsive"><table class="table table-sm table-hover mb-0 align-middle">
+        <thead class="table-light"><tr><th>No</th><th>KKM / Wilayah</th><th>Kepala Madrasah</th><th>Madrasah</th><th>Periode</th><th class="text-center">Prioritas PKB</th><th class="text-center no-print">Aksi</th></tr></thead>
+        <tbody>${rows.map((r,i) => `<tr>
+          <td>${i+1}</td><td>${escapeHTML(r.kamad.kkma || '-')}</td>
+          <td>${escapeHTML(r.kamad.nama || '-')}</td><td>${escapeHTML(r.kamad.nama_madrasah || '-')}</td>
+          <td>${escapeHTML(r.periode.label || '-')}</td><td class="text-center">${r.items.length}</td>
+          <td class="text-center no-print"><button class="btn btn-sm btn-gradient-print" data-cetak-rekap-pkb="${r.kamad_id}_${r.periode_id}"><i class="bi bi-printer"></i> Cetak</button></td>
+        </tr>`).join('')}</tbody></table></div>` : '<div class="p-4 text-center text-muted">Belum ada data PKB tersimpan.</div>'}
+    </div></div>`;
+  root.querySelectorAll('[data-cetak-rekap-pkb]').forEach(btn => btn.addEventListener('click', () => {
+    const [kid,pid] = btn.dataset.cetakRekapPkb.split('_').map(Number);
+    cetakPKB([{ kamad: Kamad.get(kid), periode: Periode.get(pid), items: window.PKB.forKamadPeriode(kid,pid) }]);
+  }));
 });
 
 route('#/pkb/:kamadId/:periodeId', (root, params) => {
