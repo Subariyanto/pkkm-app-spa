@@ -519,7 +519,12 @@ route('#/kamad', (root) => {
   $('#btnAddKamad').addEventListener('click', () => navigate('#/kamad/new'));
   $$('[data-action="del-kamad"]').forEach(b => b.addEventListener('click', () => {
     const id = Number(b.dataset.id);
-    if (confirmAction('Hapus data kepala madrasah ini? Semua penilaian terkait juga akan dihapus.')) {
+    const kamad = Kamad.get(id);
+    const memilikiRiwayat = Penilaian.forKamad(id).length > 0;
+    const prompt = memilikiRiwayat
+      ? `Hapus data ${kamad?.nama || 'kepala madrasah'}? Semua penilaian dan skor milik orang ini akan ikut dihapus permanen. Jika hanya terjadi pergantian jabatan, jangan hapus data; biarkan sebagai riwayat.`
+      : 'Hapus data kepala madrasah ini?';
+    if (confirmAction(prompt)) {
       Kamad.remove(id);
       toast('Data dihapus.');
       render();
@@ -637,6 +642,7 @@ route('#/kamad/:id', (root, params) => {
   const isNew = params.id === 'new';
   const k = isNew ? { jenjang: 'MA', jabatan: 'Kepala Madrasah' } : Kamad.get(Number(params.id));
   if (!k) { root.innerHTML = `<div class="alert alert-warning">Kepala madrasah tidak ditemukan.</div>`; return; }
+  const rekanUnit = isNew ? null : Kamad.unitMembersOf(k).filter(x => x.id !== k.id);
 
   root.innerHTML = `
     <div class="page-header">
@@ -645,6 +651,8 @@ route('#/kamad/:id', (root, params) => {
     </div>
     <form id="kamadForm" class="card">
       <div class="card-body">
+        ${isNew ? `<div class="alert alert-info py-2"><strong>Jika terjadi pergantian kepala madrasah:</strong> tambahkan sebagai data baru, jangan mengedit atau menghapus data kepala sebelumnya. Pilih nama madrasah yang sama agar riwayat penilaian tetap terhubung ke unit madrasah.</div>` : ''}
+        ${rekanUnit?.length ? `<div class="alert alert-info py-2"><strong>Riwayat unit madrasah:</strong> tercatat ${rekanUnit.length + 1} kepala madrasah pada unit ini. Penghapusan data kepala yang lama juga akan menghapus penilaian terkait.</div>` : ''}
         <div class="row g-3">
           <div class="col-md-6">
             <label class="form-label">Nama Lengkap (dengan gelar)*</label>
