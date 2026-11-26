@@ -1408,24 +1408,26 @@ body {
   box-shadow: var(--emb-in);
   transition: box-shadow .16s ease, background .16s ease;
 }
-/* Select butuh panah agar jelas isinya bisa dipilih.
-   Shorthand `background` di atas menghapus background-image bawaan Bootstrap,
-   jadi panah digambar manual di sini. */
-select.form-select {
-  padding-right: 2rem;
-  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Cpath fill='none' stroke='%23047a3a' stroke-width='1.8' stroke-linecap='round' stroke-linejoin='round' d='M3.5 6l4.5 4.5L12.5 6'/%3E%3C/svg%3E");
-  background-repeat: no-repeat;
-  background-position: right .65rem center;
-  background-size: 13px 13px;
+/* Panah dropdown: tema memakai shorthand `background` yang menghapus caret
+   bawaan Bootstrap, dan Bootstrap juga set appearance:none. Jadi panah digambar
+   ulang manual. Ditulis dengan !important agar tidak ditimpa aturan lain. */
+.form-select, select.form-select {
   appearance: none;
   -webkit-appearance: none;
+  padding-right: 2rem !important;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Cpath fill='none' stroke='%23047a3a' stroke-width='1.7' stroke-linecap='round' stroke-linejoin='round' d='M3.2 5.8l4.8 4.8 4.8-4.8'/%3E%3C/svg%3E") !important;
+  background-repeat: no-repeat !important;
+  background-position: right .7rem center !important;
+  background-size: 12px 12px !important;
 }
-.page-header select.form-select, .rk-header select.form-select {
-  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Cpath fill='none' stroke='%23ffffff' stroke-width='1.8' stroke-linecap='round' stroke-linejoin='round' d='M3.5 6l4.5 4.5L12.5 6'/%3E%3C/svg%3E");
+.page-header .form-select, .rk-header .form-select {
   background-color: #ffffff;
 }
+/* Catatan: field di header berlatar putih, jadi panah memakai warna hijau
+   (bukan putih) supaya kelihatan. */
+/* Fokus: ubah hanya warna latar agar panah tidak hilang. */
 .form-control:focus, .form-select:focus {
-  background: #ffffff;
+  background-color: #ffffff;
   border-color: var(--pkkm-primary);
   box-shadow: var(--emb-in), 0 0 0 .2rem rgba(4, 122, 58, .15);
 }
