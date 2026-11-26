@@ -1515,6 +1515,7 @@ route('#/penilaian/:kamadId/:periodeId/:role', (root, params) => {
               <div class="text-tiny text-muted mt-2"><i class="bi bi-info-circle"></i> Identitas ini tersimpan khusus untuk sesi <strong>${escapeHTML(roleInfo.label||role)}</strong> dan akan dicantumkan pada laporan serta Export Excel.</div>
             </div>
           </div>
+          ${!isFinal ? `<div class="d-flex justify-content-end mb-2"><button type="button" class="btn btn-sm btn-outline-primary" id="btnIsiSkor3"><i class="bi bi-magic"></i> Isi Skor 3 Otomatis</button></div>` : ''}
           <div class="accordion" id="komponenAcc">
             ${renderKomponenAccordion()}
           </div>
@@ -1541,6 +1542,24 @@ route('#/penilaian/:kamadId/:periodeId/:role', (root, params) => {
         </div>
       </div>
     `;
+
+    $('#btnIsiSkor3')?.addEventListener('click', () => {
+      const rows = $$('.aspek-row');
+      const belumDinilai = rows.filter(row => !row.querySelector('input[type=radio]:checked')).length;
+      const pesan = belumDinilai
+        ? `Isi skor 3 untuk ${rows.length} indikator? Skor yang sudah diisi tidak akan diubah.`
+        : 'Semua indikator sudah memiliki skor. Isi skor 3 untuk seluruh indikator dan timpa skor yang ada?';
+      if (!confirmAction(pesan)) return;
+      rows.forEach(row => {
+        const indikator_id = row.dataset.indikatorId;
+        const radio = row.querySelector('input[type=radio][value="3"]');
+        if (!indikator_id || !radio || (belumDinilai && row.querySelector('input[type=radio]:checked'))) return;
+        const cur = Skor.get(pen.id, indikator_id) || {};
+        Skor.set(pen.id, indikator_id, { skor: 3, catatan: cur.catatan || '', bukti: cur.bukti || [] });
+      });
+      toast('Skor 3 otomatis diterapkan. Silakan sesuaikan indikator yang perlu diubah.');
+      fullRender();
+    });
 
     // Skor pill change
     $$('.aspek-row').forEach(row => {
