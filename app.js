@@ -541,11 +541,15 @@ route('#/kamad', (root) => {
 function cetakIdentitasKamad(k) {
   const w = window.open('', '_blank');
   if (!w) { toast('Pop-up diblokir. Izinkan pop-up untuk mencetak.', 'error'); return; }
+  const pengawas = (typeof Meta.pengawas === 'function') ? Meta.pengawas() : (Meta.get('identitas_pengawas', {}) || {});
+  const tglPenilaian = nowLocal().slice(0, 10);
   const fields = [
     ['Nama Kepala Madrasah', k.nama], ['NIP', k.nip], ['Jabatan', k.jabatan],
+    ['Masa Kerja (berdasarkan TMT)', hitungMasaKerja(k.masa_jabatan_mulai) || '-'],
     ['Nama Madrasah', k.nama_madrasah], ['NSM', k.nsm], ['NPSN', k.npsn],
     ['Jenjang', k.jenjang], ['Status Madrasah', k.status], ['Alamat Madrasah', k.alamat],
     ['Nomor Telepon', k.telp || k.telepon], ['Email', k.email], ['KKM', k.kkma],
+    ['Tanggal Penilaian', new Date(`${tglPenilaian}T00:00:00`).toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' })],
   ].filter(([, value]) => value != null && String(value).trim() !== '');
   w.document.write(`<!doctype html><html lang="id"><head><meta charset="utf-8"><title>Lembar Identitas Kepala Madrasah</title>
     <style>
@@ -553,7 +557,7 @@ function cetakIdentitasKamad(k) {
     </style></head><body>
     <h2>Lembar Identitas Kepala Madrasah</h2><p class="sub">Data Kepala Madrasah — PKKM</p><hr class="rule">
     <table>${fields.map(([label,value]) => `<tr><td>${escapeHTML(label)}</td><td>:</td><td>${escapeHTML(value)}</td></tr>`).join('')}</table>
-    <div class="signature">Mengetahui,<br>Pengawas Madrasah<br><br><br><strong>........................................</strong><br>NIP. ................................</div>
+    <div class="signature">Mengetahui,<br>Pengawas Madrasah<br><br><br><strong>${escapeHTML(pengawas.nama || '........................................')}</strong><br>NIP. ${escapeHTML(pengawas.nip || '................................')}</div>
     <script>window.onload=()=>{window.print()}</script></body></html>`);
   w.document.close();
 }
