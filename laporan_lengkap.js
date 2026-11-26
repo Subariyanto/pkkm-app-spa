@@ -49,18 +49,49 @@
   // ===== Data builder =====
 
   function buildContext(kkma, periode_id) {
-    const periode = window.Periode.get(periode_id);
+    const allPeriods = String(periode_id) === 'all';
+    const periodeList = window.Periode.list();
+    let periode = allPeriods
+      ? { id: 'all', label: 'Semua Periode (rata-rata)', type: 'all' }
+      : window.Periode.get(periode_id);
     if (!periode) return null;
+    if (allPeriods) {
+      const dates = periodeList.map(p => p.tanggal_penilaian).filter(Boolean).sort();
+      periode.tanggal_penilaian = dates.length ? dates[dates.length - 1] : '';
+    }
 
     const allKamad = window.Kamad.list();
     const kamadList = allKamad.filter(k => (k.kkma || '').trim() === (kkma || '').trim());
 
-    const isFourYear = periode.type === 'tahun_4';
+    const isFourYear = allPeriods ? periodeList.some(p => p.type === 'tahun_4') : periode.type === 'tahun_4';
 
     // Untuk tiap kamad, ambil agregat (kalau multi-assessor) atau penilaian utama
     const rows = kamadList.map(k => {
-      // Coba pakai agregat dulu (multi-assessor); fallback ke penilaian tunggal
+      // Agregasikan dahulu penilai dalam satu periode, lalu rata-ratakan hasil antarperiode.
       let nilaiAkhir = null, detail = null, sebutan = null, penilaian = null, sumberNilai = null;
+      if (allPeriods) {
+        const byPeriod = periodeList.map(p => {
+          const sessions = window.Penilaian.forKamadPeriode(k.id, p.id);
+          if (!sessions.length) return null;
+          const agg = window.hitungNilaiAgregat ? window.hitungNilaiAgregat(k.id, p.id) : null;
+          const one = sessions.length === 1 ? window.hitungNilaiAkhir(sessions[0].id) : null;
+          const final = agg && agg.nilaiAgregat != null ? agg.nilaiAgregat : one?.nilaiAkhir;
+          const components = (window.PKKM_KOMPONEN_META || window.PKKM_KOMPONEN || []).map(km => {
+            const vals = sessions.map(s => window.hitungNilaiKomponen(s.id, km.code).nilai).filter(v => v != null);
+            return { code: km.code, label: km.label, no: km.no, bobot_default: km.bobot_default, nilai: vals.length ? vals.reduce((a,b) => a+b, 0) / vals.length : null };
+          });
+          return final == null ? null : { final, components, pen: sessions[0] };
+        }).filter(Boolean);
+        const avg = vals => { const valid = vals.filter(v => v != null); return valid.length ? valid.reduce((a,b) => a+b, 0) / valid.length : null; };
+        nilaiAkhir = avg(byPeriod.map(x => x.final));
+        detail = (window.PKKM_KOMPONEN_META || window.PKKM_KOMPONEN || []).map(km => ({
+          code: km.code, label: km.label, no: km.no, bobot: 0, kontribusi: 0,
+          nilai: avg(byPeriod.map(x => x.components.find(c => c.code === km.code)?.nilai)),
+        }));
+        penilaian = byPeriod[0]?.pen || null;
+        sumberNilai = byPeriod.length ? `rata-rata ${byPeriod.length} periode` : null;
+      }
+      if (!allPeriods) {
       if (window.hitungNilaiAgregat) {
         try {
           const agg = window.hitungNilaiAgregat(k.id, periode.id);
@@ -82,6 +113,7 @@
           detail = a.detail;
           sumberNilai = 'penilaian tunggal';
         }
+      }
       }
       sebutan = safeSebutan(nilaiAkhir);
       return { k, penilaian, nilaiAkhir, detail, sebutan, sumberNilai };
@@ -115,12 +147,17 @@
       const kList = (window.getInstrumenByJenjang ? window.getInstrumenByJenjang(r.k && r.k.jenjang) : null) || KOMP_LIST;
       for (const k of kList) {
         if (!isFourYear && k.code === 'HK') continue;
+        const sessions = allPeriods
+          ? periodeList.flatMap(p => window.Penilaian.forKamadPeriode(r.k.id, p.id))
+          : [pen];
         for (const a of (k.aspek || [])) {
-          const ha = window.hitungNilaiAspek(pen.id, k.code, a.kode);
-          if (ha.terisi > 0 && ha.nilai != null) {
-            const key = `${k.code}|${a.kode}`;
-            if (!subAggMap[key]) subAggMap[key] = { komponen: k.label, kode: a.kode, unsur: a.unsur, vals: [] };
-            subAggMap[key].vals.push(ha.nilai);
+          for (const session of sessions) {
+            const ha = window.hitungNilaiAspek(session.id, k.code, a.kode);
+            if (ha.terisi > 0 && ha.nilai != null) {
+              const key = `${k.code}|${a.kode}`;
+              if (!subAggMap[key]) subAggMap[key] = { komponen: k.label, kode: a.kode, unsur: a.unsur, vals: [] };
+              subAggMap[key].vals.push(ha.nilai);
+            }
           }
         }
       }

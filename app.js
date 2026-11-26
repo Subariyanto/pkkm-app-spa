@@ -2195,6 +2195,7 @@ route('#/laporan-lengkap', (root) => {
             <select class="form-select" name="periode_id" required>
               <option value="">-- pilih --</option>
               ${periodeList.map(p => `<option value="${p.id}">${escapeHTML(p.label)}</option>`).join('')}
+              <option value="all">Semua Periode (rata-rata)</option>
             </select>
           </div>
           <div class="col-12">
@@ -2210,13 +2211,14 @@ route('#/laporan-lengkap', (root) => {
     const kkma = fd.get('kkma');
     const pid = fd.get('periode_id');
     if (!kkma || !pid) return;
-    location.hash = `#/laporan-lengkap/${encodeURIComponent(kkma)}/${pid}`;
+    location.hash = `#/laporan-lengkap/${encodeURIComponent(kkma)}/${encodeURIComponent(pid)}`;
   });
 });
 
 route('#/laporan-lengkap/:kkma/:periodeId', (root, params) => {
   const kkma = decodeURIComponent(params.kkma || '');
-  const pid = Number(params.periodeId);
+  const allPeriods = params.periodeId === 'all';
+  const pid = allPeriods ? 'all' : Number(params.periodeId);
   if (typeof window.renderLaporanLengkapKKM !== 'function') {
     root.innerHTML = `<div class="alert alert-danger">Modul Laporan Lengkap belum termuat. Hard refresh (Ctrl+Shift+R) lalu coba lagi.</div>`;
     return;
