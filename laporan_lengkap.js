@@ -156,10 +156,11 @@
       `KANTOR KEMENTERIAN AGAMA KABUPATEN ${String(kabTampil).toUpperCase()}`,
       'POKJAWAS MADRASAH',
     ];
+    const alamatKantor = String(window.Meta.get('alamat_kantor', '') || '').trim();
 
     return {
       kkma, periode, kamadList, rows, dinilai, rataKKM, tertinggi, terendah,
-      komponenAgg, subAggList, pengawas, pokjawas, tempat, kab, kabTampil, kopLaporan, isFourYear,
+      komponenAgg, subAggList, pengawas, pokjawas, tempat, kab, kabTampil, kopLaporan, alamatKantor, isFourYear,
       penyusunSama,
     };
   }
@@ -171,7 +172,7 @@
       <section class="ll-page ll-cover">
         <div class="ll-cover-inner">
           <div class="ll-cover-top">
-            <div class="ll-cover-instansi">${ctx.kopLaporan.map(escapeHTML).join('<br>')}</div>
+            <div class="ll-cover-instansi">${ctx.kopLaporan.map(escapeHTML).join('<br>')}${ctx.alamatKantor ? `<br>${escapeHTML(ctx.alamatKantor)}` : ''}</div>
           </div>
           <div class="ll-cover-mid">
             <h1 class="ll-cover-title">LAPORAN<br>PENILAIAN KINERJA<br>KEPALA MADRASAH<br>(PKKM)</h1>
