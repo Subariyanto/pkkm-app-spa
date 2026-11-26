@@ -4584,6 +4584,7 @@ route('#/pengaturan', (root) => {
   const pokjawas = (typeof Meta.pokjawas === 'function') ? Meta.pokjawas() : Meta.get('identitas_ketua_pokjawas', { nama: '', nip: '' });
   const tempat = (typeof Meta.tempat === 'function') ? Meta.tempat('') : Meta.get('lokasi_ttd', '');
   const kabKota = Meta.kab('');
+  const kop = Meta.get('identitas_kop', {});
 
   // Use META komponen list (5 komp) supaya tidak terpengaruh role aktif
   const KOMP_META = window.PKKM_KOMPONEN_META || window.PKKM_KOMPONEN.map(k => ({ no: k.no, code: k.code, label: k.label, bobot_default: 20 }));
@@ -4598,6 +4599,8 @@ route('#/pengaturan', (root) => {
             <p class="text-tiny text-muted mb-2">Isian ini dipakai untuk kop, sampul, lembar pengesahan, dan blok tanda tangan pada semua dokumen cetak. Bila dikosongkan, aplikasi mencoba mengisi otomatis dari akun login dan data madrasah.</p>
             <form id="ttdForm">
               <div class="row g-2">
+                <div class="col-12"><label class="form-label text-tiny mb-1">Kop Laporan (3 baris)</label><div class="text-tiny text-muted mb-1">Isi tiga baris kop sesuai identitas instansi. Baris kosong akan dilewati. Kosongkan semua untuk memakai kop bawaan.</div></div>
+                ${[1,2,3].map(i => `<div class="col-md-4"><label class="form-label text-tiny mb-1">Baris ${i}</label><input class="form-control form-control-sm" name="kop_${i}" value="${escapeHTML(kop[i] || '')}" placeholder="Teks baris ${i} kop"></div>`).join('')}
                 <div class="col-md-4">
                   <label class="form-label text-tiny mb-1">Nama Kabupaten / Kota</label>
                   <input class="form-control form-control-sm" name="kabupaten_kota" value="${escapeHTML(kabKota)}" placeholder="Contoh: Jember, Bondowoso, Banyuwangi...">
@@ -4727,6 +4730,7 @@ route('#/pengaturan', (root) => {
     const fd = new FormData(e.target);
     Meta.set('kabupaten_kota', fd.get('kabupaten_kota'));
     Meta.set('lokasi_ttd', fd.get('lokasi_ttd'));
+    Meta.set('identitas_kop', { 1: fd.get('kop_1'), 2: fd.get('kop_2'), 3: fd.get('kop_3') });
     Meta.set('identitas_pengawas', { nama: fd.get('pengawas_nama'), nip: fd.get('pengawas_nip') });
     Meta.set('identitas_ketua_pokjawas', { nama: fd.get('pokjawas_nama'), nip: fd.get('pokjawas_nip') });
     syncAuthUI(); // langsung perbarui nama kabupaten di navbar & footer

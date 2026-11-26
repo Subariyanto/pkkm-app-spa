@@ -149,10 +149,17 @@
     // Bila pengguna belum mengisi nama kabupaten, tampilkan garis isian supaya
     // dokumen tetap rapi dan jelas bahwa kolom itu perlu dilengkapi.
     const kabTampil = kab || '____________';
+    const kopSetelan = window.Meta.get('identitas_kop', {}) || {};
+    const kopBaris = [kopSetelan[1], kopSetelan[2], kopSetelan[3]].map(x => String(x || '').trim()).filter(Boolean);
+    const kopLaporan = kopBaris.length ? kopBaris : [
+      'KEMENTERIAN AGAMA REPUBLIK INDONESIA',
+      `KANTOR KEMENTERIAN AGAMA KABUPATEN ${String(kabTampil).toUpperCase()}`,
+      'POKJAWAS MADRASAH',
+    ];
 
     return {
       kkma, periode, kamadList, rows, dinilai, rataKKM, tertinggi, terendah,
-      komponenAgg, subAggList, pengawas, pokjawas, tempat, kab, kabTampil, isFourYear,
+      komponenAgg, subAggList, pengawas, pokjawas, tempat, kab, kabTampil, kopLaporan, isFourYear,
       penyusunSama,
     };
   }
@@ -164,7 +171,7 @@
       <section class="ll-page ll-cover">
         <div class="ll-cover-inner">
           <div class="ll-cover-top">
-            <div class="ll-cover-instansi">KEMENTERIAN AGAMA REPUBLIK INDONESIA<br>KANTOR KEMENTERIAN AGAMA KABUPATEN ${escapeHTML(String(ctx.kabTampil).toUpperCase())}<br>POKJAWAS MADRASAH</div>
+            <div class="ll-cover-instansi">${ctx.kopLaporan.map(escapeHTML).join('<br>')}</div>
           </div>
           <div class="ll-cover-mid">
             <h1 class="ll-cover-title">LAPORAN<br>PENILAIAN KINERJA<br>KEPALA MADRASAH<br>(PKKM)</h1>
