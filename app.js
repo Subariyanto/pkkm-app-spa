@@ -702,6 +702,11 @@ route('#/kamad/:id', (root, params) => {
             <input class="form-control" type="date" name="masa_jabatan_mulai" value="${escapeHTML(k.masa_jabatan_mulai||'')}">
           </div>
           <div class="col-md-4">
+            <label class="form-label">Masa Kerja</label>
+            <input class="form-control" type="text" id="kamadMasaKerja" value="${escapeHTML(hitungMasaKerja(k.masa_jabatan_mulai))}" readonly placeholder="Otomatis dari TMT">
+            <div class="form-text">Dihitung otomatis dari Tanggal Mulai Tugas (TMT) sampai hari ini.</div>
+          </div>
+          <div class="col-md-4">
             <label class="form-label">Masa Jabatan Selesai <span class="text-muted">(opsional)</span></label>
             <input class="form-control" type="date" name="masa_jabatan_selesai" value="${escapeHTML(k.masa_jabatan_selesai||'')}">
             <div class="form-text">Diisi bila sudah berakhir/pindah.</div>
@@ -757,6 +762,10 @@ route('#/kamad/:id', (root, params) => {
     </form>
   `;
 
+  const tmtInput = $('#kamadForm [name="masa_jabatan_mulai"]');
+  const masaKerjaInput = $('#kamadMasaKerja');
+  tmtInput?.addEventListener('input', () => { masaKerjaInput.value = hitungMasaKerja(tmtInput.value); });
+
   $('#kamadForm').addEventListener('submit', (ev) => {
     ev.preventDefault();
     const fd = new FormData(ev.target);
@@ -772,6 +781,25 @@ route('#/kamad/:id', (root, params) => {
     }
   });
 });
+
+function hitungMasaKerja(tmt) {
+  if (!tmt) return '';
+  const [year, month, day] = tmt.split('-').map(Number);
+  const start = new Date(year, month - 1, day);
+  const now = new Date();
+  const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+  if (Number.isNaN(start.getTime()) || start > today) return 'TMT belum tiba';
+  let years = today.getFullYear() - start.getFullYear();
+  let months = today.getMonth() - start.getMonth();
+  let days = today.getDate() - start.getDate();
+  if (days < 0) {
+    months--;
+    days += new Date(today.getFullYear(), today.getMonth(), 0).getDate();
+  }
+  if (months < 0) { years--; months += 12; }
+  return [years ? `${years} tahun` : '', months ? `${months} bulan` : '', days ? `${days} hari` : '']
+    .filter(Boolean).join(' ') || '0 hari';
+}
 
 // --- Import / Export Excel kamad + Integrasi PKG --------------
 route('#/import', (root) => {
