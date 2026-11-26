@@ -994,8 +994,9 @@ route('#/penilaian', (root) => {
                         <div class="text-tiny text-muted text-truncate">${escapeHTML(p.tanggal_penilaian||'-')} · ${escapeHTML(p.type)}</div>
                       </div>
                       <div class="d-flex flex-shrink-0 ms-1">
-                        ${p.kamad_id == null ? `<span class="badge bg-light text-secondary me-2" title="Periode lama bersama; data lama dipertahankan">Bersama</span>
-                        <button class="btn btn-sm btn-link text-primary p-0" data-action="split-periode" data-id="${p.id}" title="Pecah jadi periode tiap madrasah"><i class="bi bi-diagram-3"></i></button>` : `
+                        ${p.kamad_id == null ? `<span class="badge bg-light text-secondary me-1" title="Periode lama bersama; dipakai semua madrasah">Bersama</span>
+                        <button class="btn btn-sm btn-link text-primary p-0 me-2" data-action="split-periode" data-id="${p.id}" title="Pecah periode bersama menjadi periode milik tiap madrasah (data dipindahkan, tidak hilang)"><i class="bi bi-diagram-3"></i></button>
+                        <button class="btn btn-sm btn-link text-danger p-0" data-action="del-periode" data-id="${p.id}" title="Hapus periode bersama (hanya bila belum ada penilaian)"><i class="bi bi-x-circle"></i></button>` : `
                         <button class="btn btn-sm btn-link text-primary p-0 me-2" data-action="edit-periode" data-id="${p.id}" title="Edit periode"><i class="bi bi-pencil"></i></button>
                         <button class="btn btn-sm btn-link text-danger p-0" data-action="del-periode" data-id="${p.id}" title="Hapus periode"><i class="bi bi-x-circle"></i></button>`}
                       </div>
@@ -1098,7 +1099,7 @@ route('#/penilaian', (root) => {
     const id = Number(b.dataset.id);
     if (confirmAction('Hapus periode ini? Periode hanya terhapus bila belum ada penilaian di dalamnya, jadi riwayat tetap aman.')) {
       const removed = Periode.remove(id);
-      if (!removed) { toast('Periode masih dipakai penilaian, jadi tidak dihapus. Riwayat penilaian tetap aman.', 'error'); return; }
+      if (!removed) { toast('Periode masih dipakai penilaian, jadi tidak dihapus. Klik ikon Pecah (diagram) untuk memindahkan data ke periode masing-masing madrasah.', 'error'); return; }
       render();
     }
   }));
