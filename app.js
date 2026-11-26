@@ -506,6 +506,7 @@ route('#/kamad', (root) => {
                       <div class="aksi-baris">
                         <a href="#/kamad/${k.id}" class="btn btn-sm btn-outline-primary" title="Edit"><i class="bi bi-pencil"></i></a>
                         <a href="#/riwayat/${k.id}" class="btn btn-sm btn-outline-secondary" title="Riwayat"><i class="bi bi-clock-history"></i></a>
+                        <button class="btn btn-sm btn-outline-success" data-action="print-kamad" data-id="${k.id}" title="Cetak lembar identitas"><i class="bi bi-printer"></i></button>
                         <button class="btn btn-sm btn-outline-danger" data-action="del-kamad" data-id="${k.id}" title="Hapus"><i class="bi bi-trash"></i></button>
                       </div>
                     </td>
@@ -517,6 +518,10 @@ route('#/kamad', (root) => {
     ${kamadImportModalHTML(list.length)}
   `;
   $('#btnAddKamad').addEventListener('click', () => navigate('#/kamad/new'));
+  $$('[data-action="print-kamad"]').forEach(b => b.addEventListener('click', () => {
+    const kamad = Kamad.get(Number(b.dataset.id));
+    if (kamad) cetakIdentitasKamad(kamad);
+  }));
   $$('[data-action="del-kamad"]').forEach(b => b.addEventListener('click', () => {
     const id = Number(b.dataset.id);
     const kamad = Kamad.get(id);
@@ -532,6 +537,26 @@ route('#/kamad', (root) => {
   }));
   wireKamadImport();
 });
+
+function cetakIdentitasKamad(k) {
+  const w = window.open('', '_blank');
+  if (!w) { toast('Pop-up diblokir. Izinkan pop-up untuk mencetak.', 'error'); return; }
+  const fields = [
+    ['Nama Kepala Madrasah', k.nama], ['NIP', k.nip], ['Jabatan', k.jabatan],
+    ['Nama Madrasah', k.nama_madrasah], ['NSM', k.nsm], ['NPSN', k.npsn],
+    ['Jenjang', k.jenjang], ['Status Madrasah', k.status], ['Alamat Madrasah', k.alamat],
+    ['Nomor Telepon', k.telp || k.telepon], ['Email', k.email], ['KKM', k.kkma],
+  ].filter(([, value]) => value != null && String(value).trim() !== '');
+  w.document.write(`<!doctype html><html lang="id"><head><meta charset="utf-8"><title>Lembar Identitas Kepala Madrasah</title>
+    <style>
+      body{font:14px Arial,sans-serif;color:#111;margin:28mm 24mm}h2{text-align:center;font-size:18px;margin:0 0 6px;text-transform:uppercase}p.sub{text-align:center;margin:0 0 24px;font-size:13px}.rule{border:0;border-top:2px solid #111;margin:12px 0 22px}table{width:100%;border-collapse:collapse}td{padding:8px 6px;vertical-align:top}td:first-child{width:34%;font-weight:bold}td:nth-child(2){width:15px}.signature{margin:45px 0 0 auto;width:260px;text-align:center;line-height:1.7}@media print{body{margin:20mm}}
+    </style></head><body>
+    <h2>Lembar Identitas Kepala Madrasah</h2><p class="sub">Data Kepala Madrasah — PKKM</p><hr class="rule">
+    <table>${fields.map(([label,value]) => `<tr><td>${escapeHTML(label)}</td><td>:</td><td>${escapeHTML(value)}</td></tr>`).join('')}</table>
+    <div class="signature">Mengetahui,<br>Pengawas Madrasah<br><br><br><strong>........................................</strong><br>NIP. ................................</div>
+    <script>window.onload=()=>{window.print()}</script></body></html>`);
+  w.document.close();
+}
 
 // --- Modal Template & Import Excel untuk halaman Kamad ----------
 function kamadImportModalHTML(jumlahData) {
