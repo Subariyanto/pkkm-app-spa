@@ -3953,6 +3953,7 @@ route('#/pkb', (root) => {
           <div class="btn-group">
             <button class="btn btn-sm btn-gradient-print" data-cetak-pkb="${g.kamad_id}_${g.periode_id}" title="Cetak rencana PKB"><i class="bi bi-printer"></i> Cetak</button>
             <a href="#/pkb/${g.kamad_id}/${g.periode_id}" class="btn btn-sm btn-outline-primary"><i class="bi bi-pencil-square"></i> Buka</a>
+            <button class="btn btn-sm btn-outline-danger" data-hapus-pkb="${g.kamad_id}_${g.periode_id}" title="Hapus semua prioritas PKB"><i class="bi bi-trash"></i> Hapus</button>
           </div>
         </div>
       </div>`;
@@ -3964,6 +3965,17 @@ route('#/pkb', (root) => {
       const items = window.PKB.forKamadPeriode(kid, pid);
       if (!items.length) { toast('Belum ada PKB untuk dicetak.', 'error'); return; }
       cetakPKB([{ kamad: Kamad.get(kid), periode: Periode.get(pid), items }]);
+    });
+  });
+  root.querySelectorAll('[data-hapus-pkb]').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const [kid, pid] = btn.dataset.hapusPkb.split('_').map(Number);
+      const kamad = Kamad.get(kid);
+      const periode = Periode.get(pid);
+      if (!confirm(`Hapus seluruh prioritas PKB ${kamad?.nama || ''} · ${periode?.label || ''}?`)) return;
+      window.PKB.removeAll(kid, pid);
+      toast('Seluruh prioritas PKB pada periode ini dihapus.');
+      window.render();
     });
   });
 });
