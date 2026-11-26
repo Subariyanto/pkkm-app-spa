@@ -1384,12 +1384,19 @@ function openPeriodeModal(id, preset, kamadId) {
     // Tahunan. Arahkan pengguna ke daftar yang sesuai setelah menyimpan agar
     // periode yang baru dibuat tidak tampak seperti hilang.
     const targetJenis = data.type === 'tahun_4' ? '4tahunan' : 'tahunan';
-    if (targetJenis !== (isFourYear ? '4tahunan' : 'tahunan')) {
-      navigate(`#/penilaian?jenis=${targetJenis}${kamadId ? `&k=${kamadId}` : ''}`);
-    } else {
-      if (kamadId) location.hash = `#/penilaian?jenis=${targetJenis}&k=${kamadId}`;
-      else render();
-    }
+    // Dua perbaikan di sini:
+    // 1. navigate() dipakai (bukan `location.hash = ...`) karena menyetel hash
+    //    ke nilai yang sama tidak memicu hashchange -> daftar tidak ter-render
+    //    dan periode baru baru muncul setelah refresh manual.
+    // 2. render ditunda sampai modal benar-benar tertutup, agar backdrop
+    //    Bootstrap tidak tertinggal menutupi halaman.
+    const targetHash = `#/penilaian?jenis=${targetJenis}${kamadId ? `&k=${kamadId}` : ''}`;
+    const go = () => navigate(targetHash);
+    const modalEl = $('#periodeModal');
+    let moved = false;
+    const onceGo = () => { if (moved) return; moved = true; go(); };
+    if (modalEl) modalEl.addEventListener('hidden.bs.modal', onceGo, { once: true });
+    setTimeout(onceGo, 450);
   });
 }
 
