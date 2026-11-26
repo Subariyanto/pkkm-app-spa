@@ -1765,13 +1765,41 @@ route('#/rekap', (root) => {
     root.innerHTML = `<div class="alert alert-info">Belum ada periode. <a href="#/penilaian">Buat periode dulu</a>.</div>`;
     return;
   }
-  const selPid = Number(location.hash.match(/[?&]p=(\d+)/)?.[1]) || periodeList[0].id;
-  const periode = Periode.get(selPid);
+  const selectedPeriod = location.hash.match(/[?&]p=([^&]+)/)?.[1] || String(periodeList[0].id);
+  const allPeriods = selectedPeriod === 'all';
+  const selPid = allPeriods ? null : Number(selectedPeriod);
+  const periode = allPeriods ? null : Periode.get(selPid);
   const kamadList = Kamad.list();
 
   const rows = kamadList.map(k => {
-    const sessions = Penilaian.forKamadPeriode(k.id, selPid);
+    const sessions = allPeriods
+      ? Periode.list().flatMap(p => Penilaian.forKamadPeriode(k.id, p.id))
+      : Penilaian.forKamadPeriode(k.id, selPid);
     if (!sessions.length) return { k, pen: null, sessions: [], prog: null, akhir: null, sebutan: null, agg: null };
+    // Semua periode: hitung satu hasil per periode, lalu rata-ratakan nilai akhir dan komponen.
+    if (allPeriods) {
+      const periodIds = [...new Set(sessions.map(s => s.periode_id))];
+      const periodResults = periodIds.map(pid => {
+        const perSessions = sessions.filter(s => s.periode_id === pid);
+        const nilaiAkhir = perSessions.length > 1
+          ? hitungNilaiAgregat(k.id, pid).nilaiAgregat
+          : hitungNilaiAkhir(perSessions[0].id).nilaiAkhir;
+        const detailMap = new Map();
+        for (const km of (window.PKKM_KOMPONEN_META||window.PKKM_KOMPONEN)) {
+          const nilaiPerSesi = perSessions.map(s => hitungNilaiKomponen(s.id, km.code).nilai).filter(v => v != null);
+          detailMap.set(km.code, nilaiPerSesi.length ? nilaiPerSesi.reduce((a,b)=>a+b,0)/nilaiPerSesi.length : null);
+        }
+        return { nilaiAkhir, detailMap };
+      }).filter(x => x.nilaiAkhir != null);
+      if (!periodResults.length) return { k, pen: null, sessions: [], prog: null, akhir: null, sebutan: null, agg: null };
+      const avg = nums => { const valid = nums.filter(v => v != null); return valid.length ? valid.reduce((a,b)=>a+b,0)/valid.length : null; };
+      const detail = (window.PKKM_KOMPONEN_META||window.PKKM_KOMPONEN).map(km => ({
+        code: km.code, label: km.label,
+        nilai: avg(periodResults.map(x => x.detailMap.get(km.code))), bobot: 0, kontribusi: 0,
+      }));
+      const nilaiAkhir = avg(periodResults.map(x => x.nilaiAkhir));
+      return { k, pen: sessions[0], sessions, prog: null, akhir: { nilaiAkhir, detail, totalBobot: 0 }, sebutan: window.getPKKMSebutan(nilaiAkhir), agg: null };
+    }
     // Agregat multi-role kalau >1 session, single kalau cuma 1
     let akhir = null;
     let agg = null;
@@ -1796,6 +1824,7 @@ route('#/rekap', (root) => {
         <label class="text-tiny text-muted mb-0">Periode:</label>
         <select class="form-select form-select-sm" id="periodeSelect" style="min-width: 200px;">
           ${periodeList.map(p => `<option value="${p.id}" ${p.id===selPid?'selected':''}>${escapeHTML(p.label)}</option>`).join('')}
+          <option value="all" ${allPeriods?'selected':''}>Semua Periode (rata-rata)</option>
         </select>
         <button class="btn btn-sm btn-gradient-excel" id="btnExportRekap"><i class="bi bi-file-earmark-excel"></i> Export Excel</button>
         <button class="btn btn-sm btn-gradient-print" id="btnPrintRekap"><i class="bi bi-printer"></i> Cetak Laporan</button>
@@ -1803,7 +1832,7 @@ route('#/rekap', (root) => {
     </div>
     <div class="print-only print-header text-center mb-3" style="display:none;">
       <h5 class="mb-1">REKAP NILAI PKKM</h5>
-      <div>${escapeHTML(periode.label)}</div>
+      <div>${escapeHTML(allPeriods ? 'Rata-rata semua periode' : periode.label)}</div>
     </div>
     <div class="card">
       <div class="card-body p-0">
@@ -1851,13 +1880,13 @@ route('#/rekap', (root) => {
   `;
 
   $('#periodeSelect').addEventListener('change', e => {
-    location.hash = `#/rekap?p=${e.target.value}`;
+    location.hash = `#/rekap?p=${encodeURIComponent(e.target.value)}`;
   });
   $$('[data-action="open-rekap-penilaian"]').forEach(b => b.addEventListener('click', () => {
     openPilihRoleModal(Number(b.dataset.kamad), selPid);
   }));
 
-  $('#btnExportRekap').addEventListener('click', () => exportRekapExcel(periode, rows));
+  $('#btnExportRekap').addEventListener('click', () => exportRekapExcel(periode || { label: 'Semua_Periode_Rata-rata' }, rows));
   $('#btnPrintRekap').addEventListener('click', () => window.print());
 });
 
