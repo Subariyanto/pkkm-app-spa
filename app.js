@@ -1821,7 +1821,7 @@ route('#/rekap', (root) => {
     <div class="page-header flex-wrap gap-2 no-print">
       <h5><i class="bi bi-bar-chart"></i> Rekap Nilai</h5>
       <div class="d-flex gap-2 align-items-center">
-        <label class="text-tiny text-muted mb-0">Periode:</label>
+        <label class="text-tiny text-white mb-0">Periode:</label>
         <select class="form-select form-select-sm" id="periodeSelect" style="min-width: 200px;">
           ${periodeList.map(p => `<option value="${p.id}" ${p.id===selPid?'selected':''}>${escapeHTML(p.label)}</option>`).join('')}
           <option value="all" ${allPeriods?'selected':''}>Semua Periode (rata-rata)</option>
