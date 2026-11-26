@@ -2486,6 +2486,49 @@ function cetakRekap4Tahunan(html) {
 }
 
 // --- Rekap Agregat (multi-assessor) ----------------------------
+route('#/rekap-agregat', (root) => {
+  const periodeList = Periode.list();
+  if (!periodeList.length) {
+    root.innerHTML = '<div class="alert alert-info">Belum ada periode penilaian. <a href="#/penilaian">Buat periode dulu</a>.</div>';
+    return;
+  }
+  const token = (location.hash.match(/[?&]p=([^&]+)/) || [])[1];
+  const selectedId = Number(token) || periodeList[0].id;
+  const periode = Periode.get(selectedId) || periodeList[0];
+  const rows = Kamad.list().map(k => ({
+    kamad: k,
+    sessions: Penilaian.forKamadPeriode(k.id, periode.id),
+  }));
+  root.innerHTML = `
+    <div class="page-header flex-wrap gap-2">
+      <h5><i class="bi bi-graph-up"></i> Detail Agregat</h5>
+      <div class="d-flex gap-2 align-items-center">
+        <label class="text-tiny text-white mb-0" for="rekapAgregatPeriode">Periode:</label>
+        <select class="form-select form-select-sm" id="rekapAgregatPeriode">
+          ${periodeList.map(p => `<option value="${p.id}" ${p.id === periode.id ? 'selected' : ''}>${escapeHTML(p.label)}</option>`).join('')}
+        </select>
+      </div>
+    </div>
+    <div class="alert alert-info py-2 text-tiny">Pilih kepala madrasah untuk melihat rincian agregat penilaian multi-penilai.</div>
+    <div class="card"><div class="card-body p-0"><div class="table-responsive">
+      <table class="table table-sm table-hover mb-0 align-middle">
+        <thead class="table-light"><tr><th>#</th><th>Kepala Madrasah / Madrasah</th><th class="text-center">Jumlah Penilai</th><th class="text-center">Nilai Agregat</th><th class="text-center">Aksi</th></tr></thead>
+        <tbody>${rows.map((r,i) => {
+          const agg = r.sessions.length ? hitungNilaiAgregat(r.kamad.id, periode.id) : null;
+          return `<tr><td>${i+1}</td>
+            <td><div class="fw-semibold">${escapeHTML(r.kamad.nama || '-')}</div><div class="text-tiny text-muted">${escapeHTML(r.kamad.nama_madrasah || '-')}</div></td>
+            <td class="text-center">${r.sessions.length || '-'}</td>
+            <td class="text-center fw-semibold">${agg ? fmtNilai(agg.nilaiAgregat) : '-'}</td>
+            <td class="text-center">${r.sessions.length ? `<a class="btn btn-sm btn-outline-primary" href="#/agregat/${r.kamad.id}/${periode.id}"><i class="bi bi-eye"></i> Detail</a>` : '<span class="text-muted text-tiny">Belum ada penilaian</span>'}</td>
+          </tr>`;
+        }).join('')}</tbody>
+      </table>
+    </div></div></div>`;
+  document.getElementById('rekapAgregatPeriode').addEventListener('change', ev => {
+    location.hash = `#/rekap-agregat?p=${ev.target.value}`;
+  });
+});
+
 route('#/agregat/:kamadId/:periodeId', (root, params) => {
   const kamad = Kamad.get(Number(params.kamadId));
   const periode = Periode.get(Number(params.periodeId));
