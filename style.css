@@ -1253,7 +1253,12 @@ body {
 .pkkm-nav .dropdown-menu {
   box-shadow: var(--emb-out), 0 0 0 1px rgba(255, 255, 255, .7) inset;
   border: 1px solid #e4eee7;
+  background: #fff !important;
+  background-image: none !important;
 }
+.pkkm-nav .dropdown-item { color: #212529 !important; background: #fff !important; }
+.pkkm-nav .dropdown-item:hover,
+.pkkm-nav .dropdown-item:focus { color: #047a3a !important; background: #eef8f1 !important; }
 
 /* --- Page header: panel hijau terangkat --- */
 .page-header {
