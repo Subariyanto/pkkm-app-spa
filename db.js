@@ -269,6 +269,36 @@ const Periode = {
     pSave(PKKM_KEYS.periode, all.filter(x => x.id !== id));
     return true;
   },
+  // Ringkasan pemakaian periode: berapa penilaian, skor, PKB, dan madrasah
+  // yang datanya menempel pada periode ini. Dipakai UI sebelum menghapus.
+  usage(id) {
+    const pid = Number(id);
+    const pens = pLoad(PKKM_KEYS.penilaian, []).filter(p => Number(p.periode_id) === pid);
+    const penIds = new Set(pens.map(p => p.id));
+    const skorCount = pLoad(PKKM_KEYS.skor, []).filter(s => penIds.has(s.penilaian_id)).length;
+    const pkbCount = pLoad(PKKM_KEYS.pkb, []).filter(x => Number(x.periode_id) === pid).length;
+    const kamadIds = [...new Set(pens.map(p => Number(p.kamad_id)).filter(v => !isNaN(v)))];
+    return { penilaian: pens.length, skor: skorCount, pkb: pkbCount, kamadIds };
+  },
+  // Hapus periode secara paksa: periode + seluruh penilaian, skor, dan PKB
+  // yang menempel. Dipakai hanya setelah pengguna menyetujui peringatan.
+  removeForce(id) {
+    const pid = Number(id);
+    const all = pLoad(PKKM_KEYS.periode, []);
+    if (!all.some(x => x.id === pid)) return { ok: false, reason: 'not-found' };
+    const pens = pLoad(PKKM_KEYS.penilaian, []);
+    const penIds = new Set(pens.filter(p => Number(p.periode_id) === pid).map(p => p.id));
+    const removedPen = pens.filter(p => penIds.has(p.id)).length;
+    if (penIds.size) pSave(PKKM_KEYS.penilaian, pens.filter(p => !penIds.has(p.id)));
+    const skorAll = pLoad(PKKM_KEYS.skor, []);
+    const removedSkor = skorAll.filter(s => penIds.has(s.penilaian_id)).length;
+    if (removedSkor) pSave(PKKM_KEYS.skor, skorAll.filter(s => !penIds.has(s.penilaian_id)));
+    const pkbAll = pLoad(PKKM_KEYS.pkb, []);
+    const removedPkb = pkbAll.filter(x => Number(x.periode_id) === pid).length;
+    if (removedPkb) pSave(PKKM_KEYS.pkb, pkbAll.filter(x => Number(x.periode_id) !== pid));
+    pSave(PKKM_KEYS.periode, all.filter(x => x.id !== pid));
+    return { ok: true, penilaian: removedPen, skor: removedSkor, pkb: removedPkb };
+  },
   // Pecah periode bersama (kamad_id == null) menjadi periode milik tiap madrasah.
   // Penilaian & PKB dipindahkan ke periode baru sesuai kamad-nya, jadi riwayat
   // tidak hilang; periode bersama hanya dihapus bila sudah tidak dipakai lagi.

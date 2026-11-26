@@ -1097,11 +1097,27 @@ route('#/penilaian', (root) => {
   $$('[data-action="del-periode"]').forEach(b => b.addEventListener('click', (e) => {
     e.stopPropagation();
     const id = Number(b.dataset.id);
-    if (confirmAction('Hapus periode ini? Periode hanya terhapus bila belum ada penilaian di dalamnya, jadi riwayat tetap aman.')) {
-      const removed = Periode.remove(id);
-      if (!removed) { toast('Periode masih dipakai penilaian, jadi tidak dihapus. Klik ikon Pecah (diagram) untuk memindahkan data ke periode masing-masing madrasah.', 'error'); return; }
-      render();
+    const usage = Periode.usage(id);
+    if (!usage.penilaian && !usage.pkb) {
+      if (confirmAction('Hapus periode ini? Periode belum dipakai penilaian apa pun.')) {
+        Periode.remove(id);
+        toast('Periode dihapus.');
+        render();
+      }
+      return;
     }
+    // Periode masih dipakai: beri opsi pindahkan data (Pecah) atau hapus total.
+    const pesan = `Periode ini masih dipakai:\n`
+      + `• ${usage.penilaian} penilaian (${usage.skor} skor/indikator)\n`
+      + `• ${usage.pkb} data PKB\n`
+      + `• ${usage.kamadIds.length} kepala madrasah\n\n`
+      + `Pilih OK = HAPUS TOTAL (semua penilaian, skor, dan PKB pada periode ini ikut terhapus, tidak bisa dikembalikan).\n`
+      + `Pilih Batal = batalkan, lalu gunakan ikon Pecah (diagram) bila ingin memindahkan data ke periode tiap madrasah.`;
+    if (!confirmAction(pesan)) { toast('Dibatalkan. Data periode tetap aman.', 'info'); return; }
+    const res = Periode.removeForce(id);
+    if (!res.ok) { toast('Periode tidak ditemukan.', 'error'); return; }
+    toast(`Periode dihapus. ${res.penilaian} penilaian, ${res.skor} skor, dan ${res.pkb} PKB ikut terhapus.`);
+    render();
   }));
 
   // Periode bersama -> dipecah menjadi periode milik tiap madrasah.
