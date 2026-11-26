@@ -1877,6 +1877,14 @@ route('#/rekap', (root) => {
         </table></div>
       </div>
     </div>
+    <div class="rekap-signature print-only">
+      <div class="rekap-signature-date">${escapeHTML((Meta.tempat ? Meta.tempat('Jember') : 'Jember'))}, ${escapeHTML(new Date().toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' }))}</div>
+      <div class="rekap-signature-block">
+        <div>Penilai I,</div><div class="rekap-signature-space"></div>
+        <strong>${escapeHTML((Meta.pengawas ? Meta.pengawas().nama : '') || '........................................')}</strong>
+        <div>NIP. ${escapeHTML((Meta.pengawas ? Meta.pengawas().nip : '') || '-')}</div>
+      </div>
+    </div>
   `;
 
   $('#periodeSelect').addEventListener('change', e => {
@@ -2717,8 +2725,10 @@ route('#/rekap-kkma', (root) => {
     root.innerHTML = `<div class="alert alert-info">Belum ada periode. <a href="#/penilaian">Buat periode dulu</a>.</div>`;
     return;
   }
-  const selPid = Number(location.hash.match(/[?&]p=(\d+)/)?.[1]) || periodeList[0].id;
-  const periode = Periode.get(selPid);
+  const selectedPeriod = location.hash.match(/[?&]p=([^&]+)/)?.[1] || String(periodeList[0].id);
+  const allPeriods = selectedPeriod === 'all';
+  const selPid = allPeriods ? null : Number(selectedPeriod);
+  const periode = allPeriods ? { id: 'all', label: 'Semua Periode (rata-rata)' } : Periode.get(selPid);
   const kamadList = Kamad.list();
 
   // group by kkma
@@ -2726,14 +2736,38 @@ route('#/rekap-kkma', (root) => {
   for (const k of kamadList) {
     const key = (k.kkma || '(Tanpa KKM)').trim();
     if (!groups[key]) groups[key] = { kkma: key, kamad: [] };
-    const pen = Penilaian.byKamadPeriode(k.id, selPid);
-    let akhir = null, sebutan = null;
-    if (pen) {
-      const a = hitungNilaiAkhir(pen.id);
-      akhir = a.nilaiAkhir;
-      sebutan = window.getPKKMSebutan(akhir);
+    const sessions = allPeriods
+      ? Periode.list().flatMap(p => Penilaian.forKamadPeriode(k.id, p.id))
+      : Penilaian.forKamadPeriode(k.id, selPid);
+    let akhir = null, sebutan = null, detail = [];
+    if (sessions.length) {
+      if (allPeriods) {
+        const periodIds = [...new Set(sessions.map(s => s.periode_id))];
+        const perResults = periodIds.map(pid => {
+          const ss = sessions.filter(s => s.periode_id === pid);
+          const final = ss.length > 1 ? hitungNilaiAgregat(k.id, pid)?.nilaiAgregat : hitungNilaiAkhir(ss[0].id).nilaiAkhir;
+          const components = (window.PKKM_KOMPONEN_META||window.PKKM_KOMPONEN).map(km => {
+            const vals = ss.map(s => hitungNilaiKomponen(s.id, km.code).nilai).filter(v => v != null);
+            return { code: km.code, label: km.label, nilai: vals.length ? vals.reduce((a,b)=>a+b,0)/vals.length : null };
+          });
+          return { final, components };
+        }).filter(x => x.final != null);
+        const average = vals => { const valid = vals.filter(v => v != null); return valid.length ? valid.reduce((a,b)=>a+b,0)/valid.length : null; };
+        akhir = average(perResults.map(x => x.final));
+        detail = (window.PKKM_KOMPONEN_META||window.PKKM_KOMPONEN).map(km => ({
+          code: km.code, label: km.label, nilai: average(perResults.map(x => x.components.find(c => c.code === km.code)?.nilai)),
+        }));
+      } else {
+        const a = sessions.length === 1 ? hitungNilaiAkhir(sessions[0].id) : null;
+        akhir = a ? a.nilaiAkhir : hitungNilaiAgregat(k.id, selPid)?.nilaiAgregat;
+        detail = a ? a.detail : (window.PKKM_KOMPONEN_META||window.PKKM_KOMPONEN).map(km => {
+          const vals = sessions.map(s => hitungNilaiKomponen(s.id, km.code).nilai).filter(v => v != null);
+          return { code: km.code, label: km.label, nilai: vals.length ? vals.reduce((x,y)=>x+y,0)/vals.length : null };
+        });
+      }
+      if (akhir != null) sebutan = window.getPKKMSebutan(akhir);
     }
-    groups[key].kamad.push({ k, pen, akhir, sebutan });
+    groups[key].kamad.push({ k, pen: sessions[0] || null, sessions, detail, akhir, sebutan });
   }
   const groupRows = Object.values(groups).map(g => {
     const dinilai = g.kamad.filter(x => x.akhir != null).map(x => x.akhir);
@@ -2747,9 +2781,10 @@ route('#/rekap-kkma', (root) => {
     <div class="page-header flex-wrap gap-2 no-print">
       <h5><i class="bi bi-diagram-3"></i> Rekap KKM</h5>
       <div class="d-flex gap-2 align-items-center">
-        <label class="text-tiny text-muted mb-0">Periode:</label>
+        <label class="text-tiny text-white mb-0">Periode:</label>
         <select class="form-select form-select-sm" id="periodeSelectKkma" style="min-width: 220px;">
           ${periodeList.map(p => `<option value="${p.id}" ${p.id===selPid?'selected':''}>${escapeHTML(p.label)}</option>`).join('')}
+          <option value="all" ${allPeriods?'selected':''}>Semua Periode (rata-rata)</option>
         </select>
         <button class="btn btn-sm btn-gradient-excel" id="btnExportKkma"><i class="bi bi-file-earmark-excel"></i> Export Excel</button>
         <button class="btn btn-sm btn-gradient-print" id="btnPrintKkma"><i class="bi bi-printer"></i> Cetak Laporan</button>
@@ -2836,7 +2871,7 @@ route('#/rekap-kkma', (root) => {
   `;
 
   $('#periodeSelectKkma').addEventListener('change', e => {
-    location.hash = `#/rekap-kkma?p=${e.target.value}`;
+    location.hash = `#/rekap-kkma?p=${encodeURIComponent(e.target.value)}`;
   });
 
   $('#btnExportKkma').addEventListener('click', async () => {

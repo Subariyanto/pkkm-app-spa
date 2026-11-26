@@ -488,10 +488,35 @@
     // Placeholder bila nama kabupaten/kota belum diisi di Pengaturan.
     const kabTampil = kab || '____________';
 
-    const prefPid = Number((location.hash.match(/[?&]p=(\d+)/) || [])[1]) || (periodeList[0] ? periodeList[0].id : 0);
-    const selected = periodeList.find((p) => p.id === prefPid) || periodeList[0] || null;
+    const selectedToken = (location.hash.match(/[?&]p=([^&]+)/) || [])[1] || (periodeList[0] ? String(periodeList[0].id) : '');
+    const allPeriods = selectedToken === 'all';
+    const prefPid = allPeriods ? null : Number(selectedToken);
+    const selected = allPeriods ? { id: 'all', label: 'Semua Periode (rata-rata)' } : (periodeList.find((p) => p.id === prefPid) || periodeList[0] || null);
 
-    const rows = selected ? buildRecap(selected.id) : [];
+    let rows = selected ? (allPeriods ? buildAllPeriodRecap() : buildRecap(selected.id)) : [];
+    function buildAllPeriodRecap() {
+      const average = (values) => { const valid = values.filter((v) => v != null && Number.isFinite(v)); return valid.length ? valid.reduce((a, b) => a + b, 0) / valid.length : null; };
+      return window.Kamad.list().map((k) => {
+        const sessions = periodeList.flatMap((p) => window.Penilaian.forKamadPeriode(k.id, p.id));
+        const byPeriod = [...new Set(sessions.map((s) => s.periode_id))].map((pid) => {
+          const ss = sessions.filter((s) => s.periode_id === pid);
+          const final = ss.length > 1 ? window.hitungNilaiAgregat(k.id, pid)?.nilaiAgregat : window.hitungNilaiAkhir(ss[0].id).nilaiAkhir;
+          const detail = KOMP_META().map((km) => {
+            const vals = ss.map((s) => window.hitungNilaiKomponen(s.id, km.code).nilai).filter((v) => v != null);
+            return { code: km.code, label: km.label, nilai: average(vals) };
+          });
+          return { final, detail };
+        }).filter((x) => x.final != null);
+        const nilaiAkhir = average(byPeriod.map((x) => x.final));
+        const detail = KOMP_META().map((km) => ({ code: km.code, label: km.label, nilai: average(byPeriod.map((x) => x.detail.find((d) => d.code === km.code)?.nilai)) }));
+        const penilai = [...new Set(sessions.map((s) => s.penilai_nama || roleLabel(s.role)).filter(Boolean))];
+        const pkbList = [];
+        if (window.PKB && window.PKB.forKamadPeriode) periodeList.forEach((p) => pkbList.push(...window.PKB.forKamadPeriode(k.id, p.id)));
+        const progs = sessions.map((s) => { try { return window.progressPenilaian(s.id).persen; } catch (_) { return 0; } });
+        const persen = Math.max(0, ...progs);
+        return { k, sessions, nilaiAkhir, detail, persen, penilai, pkbList, pkbTerisi: pkbList.filter((x) => (x.kegiatan_pkb || '').trim()).length, sebutan: nilaiAkhir != null ? sebutan(nilaiAkhir) : null };
+      });
+    }
     const dinilai = rows.filter((r) => r.nilaiAkhir != null && r.persen > 0);
     const rata = dinilai.length ? dinilai.reduce((a, r) => a + r.nilaiAkhir, 0) / dinilai.length : null;
 
@@ -504,7 +529,8 @@
         <div class="rk-header-actions">
           ${periodeList.length ? `
           <select class="form-select form-select-sm" id="rkPeriode" title="Pilih periode">
-            ${periodeList.map((p) => `<option value="${p.id}" ${selected && p.id === selected.id ? 'selected' : ''}>${esc(p.label)}</option>`).join('')}
+            ${periodeList.map((p) => `<option value="${p.id}" ${!allPeriods && selected && p.id === selected.id ? 'selected' : ''}>${esc(p.label)}</option>`).join('')}
+            <option value="all" ${allPeriods ? 'selected' : ''}>Semua Periode (rata-rata)</option>
           </select>` : ''}
           <button class="btn btn-sm btn-gradient-excel" id="rkExport" ${rows.length ? '' : 'disabled'}><i class="bi bi-file-earmark-excel"></i> Export Excel</button>
           <button class="btn btn-sm btn-gradient-print" id="rkPrint" ${rows.length ? '' : 'disabled'}><i class="bi bi-printer"></i> Cetak</button>
@@ -699,7 +725,7 @@
 
     // ---------- periode & cetak ----------
     const sel = document.getElementById('rkPeriode');
-    if (sel) sel.addEventListener('change', (e) => { location.hash = `#/rekap-kabupaten?p=${e.target.value}`; });
+    if (sel) sel.addEventListener('change', (e) => { location.hash = `#/rekap-kabupaten?p=${encodeURIComponent(e.target.value)}`; });
 
     const btnPrint = document.getElementById('rkPrint');
     if (btnPrint) btnPrint.addEventListener('click', () => window.print());
