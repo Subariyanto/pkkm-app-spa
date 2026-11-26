@@ -1807,7 +1807,7 @@ route('#/rekap', (root) => {
     </div>
     <div class="card">
       <div class="card-body p-0">
-        <div class="table-responsive"><table class="table table-hover mb-0 align-middle">
+        <div class="table-responsive"><table class="table table-hover table-sm mb-0 align-middle rekap-compact">
           <thead class="table-light">
             <tr>
               <th width="40">#</th>
@@ -2464,7 +2464,7 @@ route('#/agregat/:kamadId/:periodeId', (root, params) => {
           <div class="card-header"><i class="bi bi-list-ul"></i> Detail per Penilai</div>
           <div class="card-body p-0">
             <div class="table-responsive">
-              <table class="table table-hover mb-0 align-middle">
+              <table class="table table-hover table-sm mb-0 align-middle rekap-compact">
                 <thead class="table-light">
                   <tr><th>Penilai</th><th class="text-end">Nilai Akhir</th><th class="text-center">Status</th><th class="text-end">Aksi</th></tr>
                 </thead>
@@ -2619,7 +2619,7 @@ route('#/riwayat/:kamadId', (root, params) => {
       <div class="card-body p-0">
         ${rows.length === 0
           ? `<div class="text-center text-muted py-4">Belum ada riwayat. <a href="#/penilaian">Mulai penilaian</a>.</div>`
-          : `<div class="table-responsive"><table class="table table-hover mb-0 align-middle">
+          : `<div class="table-responsive"><table class="table table-hover table-sm mb-0 align-middle rekap-compact">
               <thead class="table-light">
                 <tr>
                   <th>Periode</th>
@@ -2735,7 +2735,7 @@ route('#/rekap-kkma', (root) => {
     <div class="card mb-3">
       <div class="card-header"><i class="bi bi-collection"></i> Ringkasan per KKM — ${escapeHTML(periode.label)}</div>
       <div class="card-body p-0">
-        <div class="table-responsive"><table class="table table-hover mb-0 align-middle">
+        <div class="table-responsive"><table class="table table-hover table-sm mb-0 align-middle rekap-compact">
           <thead class="table-light">
             <tr>
               <th>KKM / Wilayah</th>
@@ -4318,7 +4318,7 @@ route('#/rekap-tahunan', (root) => {
       <div class="card-header"><i class="bi bi-bar-chart"></i> Tren Komponen 4 Tahun</div>
       <div class="card-body p-0">
         <div class="table-responsive">
-          <table class="table mb-0 align-middle">
+          <table class="table table-sm mb-0 align-middle rekap-compact">
             <thead class="table-light">
               <tr>
                 <th>Komponen</th>

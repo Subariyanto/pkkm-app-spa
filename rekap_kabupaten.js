@@ -613,7 +613,7 @@
         </div>
         <div class="card-body p-0">
           ${rows.length ? `
-          <div class="table-responsive"><table class="table table-hover mb-0 align-middle" id="rkTable">
+          <div class="table-responsive"><table class="table table-hover table-sm mb-0 align-middle rekap-compact" id="rkTable">
             <thead class="table-light">
               <tr>
                 <th width="40">#</th>

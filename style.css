@@ -524,6 +524,10 @@ a:hover { color: var(--pkkm-primary-dark); }
 }
 
 /* ===== Laporan Lengkap PKKM ===== */
+.rekap-compact th,
+.rekap-compact td { padding-top: .3rem !important; padding-bottom: .3rem !important; line-height: 1.2; }
+.rekap-compact .text-tiny { line-height: 1.1; }
+
 .ll-doc {
   max-width: 800px;
   margin: 0 auto;
