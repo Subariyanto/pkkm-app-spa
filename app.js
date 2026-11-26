@@ -2683,6 +2683,7 @@ route('#/agregat/:kamadId/:periodeId', (root, params) => {
                         <td class="text-end">
                           <a href="#/penilaian/${kamad.id}/${periode.id}/${s.role||'pengawas_1'}" class="btn btn-sm btn-outline-primary" title="Buka"><i class="bi bi-pencil-square"></i></a>
                           <a href="#/cetak/${s.id}" class="btn btn-sm btn-outline-secondary" title="Cetak"><i class="bi bi-printer"></i></a>
+                          <button type="button" class="btn btn-sm btn-outline-danger" data-del-sesi="${s.id}" title="Hapus hasil penilaian ini"><i class="bi bi-trash"></i></button>
                         </td>
                       </tr>`;
                   }).join('')}
@@ -2734,6 +2735,18 @@ route('#/agregat/:kamadId/:periodeId', (root, params) => {
     if (typeof window.exportPKKMExcel !== 'function') { toast('Modul export belum siap.', 'error'); return; }
     await window.exportPKKMExcel(kamad.id);
   });
+
+  // Hapus hasil penilaian per penilai (beserta seluruh skor & buktinya).
+  // PKB tidak ikut terhapus karena PKB menempel pada madrasah + periode.
+  $$('[data-del-sesi]').forEach(btn => btn.addEventListener('click', () => {
+    const sid = Number(btn.dataset.delSesi);
+    const sesi = Penilaian.get(sid);
+    const label = roleLabel(sesi?.role || 'pengawas_1');
+    if (!confirmAction(`Hapus hasil penilaian ${label} untuk ${kamad.nama} pada periode ${periode.label}?\n\nSeluruh skor, catatan, dan bukti dukung pada penilaian ini akan terhapus dan tidak bisa dikembalikan.`)) return;
+    Penilaian.remove(sid);
+    toast(`Hasil penilaian ${label} dihapus.`);
+    navigate(`#/agregat/${kamad.id}/${periode.id}`);
+  }));
 
   // Cetak laporan rata-rata Pengawas Madrasah I & II
   $$('.btn-agg-cetak-atur').forEach(btn => {
