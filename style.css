@@ -1588,7 +1588,7 @@ body {
 /* Tanda tangan Penilai I pada cetak Rekap Nilai PKKM */
 .rekap-signature { display: none; }
 @media print {
-  body:has(#btnPrintRekap) .rekap-signature { display: block !important; margin: 1.5rem 1rem 0 auto; width: 260px; text-align: center; page-break-inside: avoid; }
+  body:has(#btnPrintRekap) .rekap-signature { display: block !important; margin: 1.5rem 4rem 0 auto; width: 260px; text-align: center; page-break-inside: avoid; }
   body:has(#btnPrintRekap) .rekap-signature-date { margin-bottom: .25rem; }
   body:has(#btnPrintRekap) .rekap-signature-space { height: 3.5rem; }
 }
