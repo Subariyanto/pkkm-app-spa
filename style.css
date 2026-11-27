@@ -676,10 +676,9 @@ a:hover { color: var(--pkkm-primary-dark); }
   display: flex;
   flex-direction: column;
   justify-content: flex-start;
-  min-height: 14cm;
 }
 .ll-ttd-page .ll-ttd-grid {
-  margin-top: 2cm !important;
+  margin-top: 0 !important;
 }
 @media print {
   .ll-page {
@@ -690,8 +689,18 @@ a:hover { color: var(--pkkm-primary-dark); }
     min-height: auto;
   }
   .ll-ttd-page {
-    min-height: 24cm;
+    min-height: 0;
     justify-content: flex-start;
+    page-break-before: auto;
+  }
+  .ll-ttd-page .ll-ttd-grid {
+    margin-top: 0 !important;
+  }
+  .ll-ttd-box {
+    min-height: 0;
+  }
+  .ll-ttd-spacer {
+    min-height: 2.5rem;
   }
   .ll-doc { padding: 0; max-width: none; }
 }
