@@ -2332,7 +2332,8 @@ route('#/laporan-lengkap', (root) => {
     periodeSelect.innerHTML = `<option value="">-- pilih --</option>${relevant.map(p => {
       const owner = p.kamad_id == null ? 'Bersama' : (Kamad.get(Number(p.kamad_id))?.nama_madrasah || 'Madrasah');
       return `<option value="${p.id}">${escapeHTML(p.label)} — ${escapeHTML(owner)}</option>`;
-    }).join('')}<option value="all">Semua Periode (rata-rata)</option>`;
+    }).join('')}<option value="all">Semua Periode (rata-rata)</option>
+      ${[...new Set(relevant.map(p => Number(p.tahun)).filter(Number.isFinite))].sort((a,b) => b-a).map(y => `<option value="tahun:${y}">Semua Madrasah — Tahun ${y} (rata-rata periode)</option>`).join('')}`;
   });
   $('#frmLapLengkap').addEventListener('submit', (e) => {
     e.preventDefault();
@@ -2346,8 +2347,8 @@ route('#/laporan-lengkap', (root) => {
 
 route('#/laporan-lengkap/:kkma/:periodeId', (root, params) => {
   const kkma = decodeURIComponent(params.kkma || '');
-  const allPeriods = params.periodeId === 'all';
-  const pid = allPeriods ? 'all' : Number(params.periodeId);
+  const multiPeriod = params.periodeId === 'all' || /^tahun:\d{4}$/.test(params.periodeId);
+  const pid = multiPeriod ? params.periodeId : Number(params.periodeId);
   if (typeof window.renderLaporanLengkapKKM !== 'function') {
     root.innerHTML = `<div class="alert alert-danger">Modul Laporan Lengkap belum termuat. Hard refresh (Ctrl+Shift+R) lalu coba lagi.</div>`;
     return;

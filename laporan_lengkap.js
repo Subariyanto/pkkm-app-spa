@@ -49,12 +49,26 @@
   // ===== Data builder =====
 
   function buildContext(kkma, periode_id) {
-    const allPeriods = String(periode_id) === 'all';
-    const periodeList = window.Periode.list();
+    const tok = String(periode_id);
+    // Token 'tahun:YYYY' = satu tahun pelajaran, semua madrasah, semua periode
+    // yang bertahun sama dirata-ratakan. Berguna bila periode disimpan per
+    // madrasah (id berbeda) sehingga satu id periode tidak mencakup semuanya.
+    const mYear = tok.match(/^tahun:(\d{4})$/);
+    const tahunSel = mYear ? Number(mYear[1]) : null;
+    const allPeriodsRaw = window.Periode.list();
+    const allPeriods = tok === 'all' || tahunSel != null;
+    const periodeList = tahunSel != null
+      ? allPeriodsRaw.filter(p => Number(p.tahun) === tahunSel)
+      : allPeriodsRaw;
     let periode = allPeriods
-      ? { id: 'all', label: 'Semua Periode (rata-rata)', type: 'all' }
+      ? {
+          id: tok,
+          label: tahunSel != null ? `Semua Periode Tahun ${tahunSel}` : 'Semua Periode (rata-rata)',
+          type: 'all',
+        }
       : window.Periode.get(periode_id);
     if (!periode) return null;
+    if (tahunSel != null && periodeList.length === 0) return null;
     if (allPeriods) {
       const dates = periodeList.map(p => p.tanggal_penilaian).filter(Boolean).sort();
       periode.tanggal_penilaian = dates.length ? dates[dates.length - 1] : '';
@@ -622,7 +636,9 @@
 
   function renderLaporanLengkapKKM(kkma, periode_id) {
     if (!kkma) return `<div class="alert alert-warning">KKM tidak ditentukan.</div>`;
-    const ctx = buildContext(kkma, String(periode_id) === 'all' ? 'all' : Number(periode_id));
+    const tok = String(periode_id);
+    const multi = tok === 'all' || /^tahun:\d{4}$/.test(tok);
+    const ctx = buildContext(kkma, multi ? tok : Number(periode_id));
     if (!ctx) return `<div class="alert alert-warning">Periode tidak ditemukan.</div>`;
     if (ctx.kamadList.length === 0) {
       return `<div class="alert alert-info">Tidak ada Kepala Madrasah terdaftar pada KKM <strong>${escapeHTML(kkma)}</strong>. Silakan tambahkan kamad dengan field KKM = "${escapeHTML(kkma)}" terlebih dahulu.</div>`;
