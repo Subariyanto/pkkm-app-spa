@@ -622,7 +622,7 @@
 
   function renderLaporanLengkapKKM(kkma, periode_id) {
     if (!kkma) return `<div class="alert alert-warning">KKM tidak ditentukan.</div>`;
-    const ctx = buildContext(kkma, Number(periode_id));
+    const ctx = buildContext(kkma, String(periode_id) === 'all' ? 'all' : Number(periode_id));
     if (!ctx) return `<div class="alert alert-warning">Periode tidak ditemukan.</div>`;
     if (ctx.kamadList.length === 0) {
       return `<div class="alert alert-info">Tidak ada Kepala Madrasah terdaftar pada KKM <strong>${escapeHTML(kkma)}</strong>. Silakan tambahkan kamad dengan field KKM = "${escapeHTML(kkma)}" terlebih dahulu.</div>`;
