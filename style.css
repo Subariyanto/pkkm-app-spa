@@ -675,7 +675,11 @@ a:hover { color: var(--pkkm-primary-dark); }
 .ll-ttd-page {
   display: flex;
   flex-direction: column;
-  justify-content: flex-end;
+  justify-content: flex-start;
+  min-height: 14cm;
+}
+.ll-ttd-page .ll-ttd-grid {
+  margin-top: 2cm !important;
 }
 @media print {
   .ll-page {
@@ -684,6 +688,10 @@ a:hover { color: var(--pkkm-primary-dark); }
     margin: 0;
     padding: 1cm 1.5cm;
     min-height: auto;
+  }
+  .ll-ttd-page {
+    min-height: 24cm;
+    justify-content: flex-start;
   }
   .ll-doc { padding: 0; max-width: none; }
 }
