@@ -93,6 +93,17 @@ function slugBerkas(s) {
 
 function namaMadrasahBackup() {
   try {
+    // Prioritas 1: nama KKM/KKMA dari isian data kepala madrasah, karena
+    // berkas backup biasanya direkap per KKM (mis. "KKMA 04 Jember").
+    const kkmas = [];
+    (pLoad(PKKM_KEYS.kamad, []) || []).forEach(k => {
+      const v = String((k && k.kkma) || '').trim();
+      if (v && !kkmas.some(x => x.toLowerCase() === v.toLowerCase())) kkmas.push(v);
+    });
+    if (kkmas.length === 1) return kkmas[0];
+    if (kkmas.length > 1) return kkmas[0] + ' dan ' + (kkmas.length - 1) + ' lainnya';
+
+    // Prioritas 2: nama madrasah bila KKM belum diisi.
     const names = [];
     (pLoad(PKKM_KEYS.kamad, []) || []).forEach(k => {
       const n = String((k && k.nama_madrasah) || '').trim();
@@ -101,7 +112,7 @@ function namaMadrasahBackup() {
     if (names.length === 1) return names[0];
     if (names.length > 1) return names[0] + ' dan ' + (names.length - 1) + ' lainnya';
 
-    // Belum ada data kamad: pakai wilayah kerja / madrasah akun
+    // Prioritas 3: belum ada data kamad -> pakai wilayah kerja / madrasah akun
     const kab = (window.Meta && typeof window.Meta.kab === 'function') ? window.Meta.kab() : '';
     if (kab) return /^pokjawas/i.test(kab) ? kab : ('Pokjawas ' + kab);
     const info = (window.PKKMAuth && typeof window.PKKMAuth.getUserInfo === 'function')

@@ -4851,10 +4851,14 @@ route('#/backup', (root) => {
     };
     const blob = new Blob([JSON.stringify(payload, null, 2)], { type: 'application/json' });
     const url = URL.createObjectURL(blob);
-    const kab = (window.Meta && Meta.kab) ? window.slugBerkas(Meta.kab()) : '';
+    // Nama berkas gabungan memakai nama KKM dari data isian (bila ada), sama
+    // seperti penamaan backup, agar mudah dikenali saat direkap.
+    const wilayah = (typeof window.backupFileName === 'function')
+      ? window.backupFileName().replace(/^pkkm_backup_/, '').replace(/_\d{4}-\d{2}-\d{2}\.json$/, '')
+      : '';
     const a = document.createElement('a');
     a.href = url;
-    a.download = `pkkm_gabungan_${gb.entries.length}-file${kab ? '_' + kab : ''}_${nowLocal().slice(0,10)}.json`;
+    a.download = `pkkm_gabungan_${gb.entries.length}-file${wilayah ? '_' + wilayah : ''}_${nowLocal().slice(0,10)}.json`;
     document.body.appendChild(a); a.click(); a.remove();
     setTimeout(() => URL.revokeObjectURL(url), 1000);
     toast('File JSON gabungan diunduh.');
