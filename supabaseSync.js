@@ -181,7 +181,7 @@
       o = await vpsLoginHash(username, passwordHash);
     }
 
-    if (o && o.data) {
+    if (o && !o.err && o.data && o.data.ok === true && o.data.token) {
       markVpsLatched(username);
       return vpsPayloadToResult(o.data);
     }
@@ -211,7 +211,7 @@
   // DAFTAR CERDAS: coba VPS dulu, gagal jaringan -> server lama.
   async function registerAccountSmart(code, username, passwordHash, fullname, madrasah, deviceInfo) {
     var o = await vpsActivateHash(code, username, passwordHash, fullname, madrasah);
-    if (o && o.data) {
+    if (o && !o.err && o.data && o.data.ok === true && o.data.token) {
       markVpsLatched(username);
       return { success: true, reason: 'claimed', via: 'vps', fullname: o.data.fullname, role: o.data.role };
     }
